@@ -215,23 +215,32 @@ public interface CVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitDirectAbstractDeclaratorTail(CParser.DirectAbstractDeclaratorTailContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#typedefName}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitTypedefName(CParser.TypedefNameContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link CParser#statement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitStatement(CParser.StatementContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#labeledStatement}.
+	 * Visit a parse tree produced by the {@code LabelStatement}
+	 * labeled alternative in {@link CParser#labeledStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitLabeledStatement(CParser.LabeledStatementContext ctx);
+	T visitLabelStatement(CParser.LabelStatementContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code CaseStatement}
+	 * labeled alternative in {@link CParser#labeledStatement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCaseStatement(CParser.CaseStatementContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code DefaultCaseStatement}
+	 * labeled alternative in {@link CParser#labeledStatement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDefaultCaseStatement(CParser.DefaultCaseStatementContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link CParser#expressionStatement}.
 	 * @param ctx the parse tree
@@ -245,141 +254,225 @@ public interface CVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitCompoundStatement(CParser.CompoundStatementContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#selectionStatement}.
+	 * Visit a parse tree produced by the {@code IfSolo}
+	 * labeled alternative in {@link CParser#selectionStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitSelectionStatement(CParser.SelectionStatementContext ctx);
+	T visitIfSolo(CParser.IfSoloContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#iterationStatement}.
+	 * Visit a parse tree produced by the {@code IfElse}
+	 * labeled alternative in {@link CParser#selectionStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitIterationStatement(CParser.IterationStatementContext ctx);
+	T visitIfElse(CParser.IfElseContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#jumpStatement}.
+	 * Visit a parse tree produced by the {@code Switch}
+	 * labeled alternative in {@link CParser#selectionStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitJumpStatement(CParser.JumpStatementContext ctx);
+	T visitSwitch(CParser.SwitchContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#expression}.
+	 * Visit a parse tree produced by the {@code While}
+	 * labeled alternative in {@link CParser#iterationStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitExpression(CParser.ExpressionContext ctx);
+	T visitWhile(CParser.WhileContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#assignmentExpression}.
+	 * Visit a parse tree produced by the {@code Do}
+	 * labeled alternative in {@link CParser#iterationStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitAssignmentExpression(CParser.AssignmentExpressionContext ctx);
+	T visitDo(CParser.DoContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#conditionalExpression}.
+	 * Visit a parse tree produced by the {@code For}
+	 * labeled alternative in {@link CParser#iterationStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitConditionalExpression(CParser.ConditionalExpressionContext ctx);
+	T visitFor(CParser.ForContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#constantExpression}.
+	 * Visit a parse tree produced by the {@code Goto}
+	 * labeled alternative in {@link CParser#jumpStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitConstantExpression(CParser.ConstantExpressionContext ctx);
+	T visitGoto(CParser.GotoContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#logicalOrExpression}.
+	 * Visit a parse tree produced by the {@code Continue}
+	 * labeled alternative in {@link CParser#jumpStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitLogicalOrExpression(CParser.LogicalOrExpressionContext ctx);
+	T visitContinue(CParser.ContinueContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#logicalAndExpression}.
+	 * Visit a parse tree produced by the {@code Break}
+	 * labeled alternative in {@link CParser#jumpStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitLogicalAndExpression(CParser.LogicalAndExpressionContext ctx);
+	T visitBreak(CParser.BreakContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#inclusiveOrExpression}.
+	 * Visit a parse tree produced by the {@code Return}
+	 * labeled alternative in {@link CParser#jumpStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitInclusiveOrExpression(CParser.InclusiveOrExpressionContext ctx);
+	T visitReturn(CParser.ReturnContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#exclusiveOrExpression}.
+	 * Visit a parse tree produced by {@link CParser#constantExpressionList}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitExclusiveOrExpression(CParser.ExclusiveOrExpressionContext ctx);
+	T visitConstantExpressionList(CParser.ConstantExpressionListContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#andExpression}.
+	 * Visit a parse tree produced by {@link CParser#expressionList}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitAndExpression(CParser.AndExpressionContext ctx);
+	T visitExpressionList(CParser.ExpressionListContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#equalityExpression}.
+	 * Visit a parse tree produced by the {@code FloatExpr}
+	 * labeled alternative in {@link CParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitEqualityExpression(CParser.EqualityExpressionContext ctx);
+	T visitFloatExpr(CParser.FloatExprContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#relationalExpression}.
+	 * Visit a parse tree produced by the {@code BinaryExpr}
+	 * labeled alternative in {@link CParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitRelationalExpression(CParser.RelationalExpressionContext ctx);
+	T visitBinaryExpr(CParser.BinaryExprContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#shiftExpression}.
+	 * Visit a parse tree produced by the {@code SizeofExprExpr}
+	 * labeled alternative in {@link CParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitShiftExpression(CParser.ShiftExpressionContext ctx);
+	T visitSizeofExprExpr(CParser.SizeofExprExprContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#additiveExpression}.
+	 * Visit a parse tree produced by the {@code AssignmentExpr}
+	 * labeled alternative in {@link CParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitAdditiveExpression(CParser.AdditiveExpressionContext ctx);
+	T visitAssignmentExpr(CParser.AssignmentExprContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#multiplicativeExpression}.
+	 * Visit a parse tree produced by the {@code DotExpr}
+	 * labeled alternative in {@link CParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitMultiplicativeExpression(CParser.MultiplicativeExpressionContext ctx);
+	T visitDotExpr(CParser.DotExprContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#castExpression}.
+	 * Visit a parse tree produced by the {@code ConditionalExpr}
+	 * labeled alternative in {@link CParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitCastExpression(CParser.CastExpressionContext ctx);
+	T visitConditionalExpr(CParser.ConditionalExprContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#unaryExpression}.
+	 * Visit a parse tree produced by the {@code SizeofTypeExpr}
+	 * labeled alternative in {@link CParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitUnaryExpression(CParser.UnaryExpressionContext ctx);
+	T visitSizeofTypeExpr(CParser.SizeofTypeExprContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#postfixExpression}.
+	 * Visit a parse tree produced by the {@code IndexExpr}
+	 * labeled alternative in {@link CParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitPostfixExpression(CParser.PostfixExpressionContext ctx);
+	T visitIndexExpr(CParser.IndexExprContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#primaryExpression}.
+	 * Visit a parse tree produced by the {@code PrefixExpr}
+	 * labeled alternative in {@link CParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitPrimaryExpression(CParser.PrimaryExpressionContext ctx);
+	T visitPrefixExpr(CParser.PrefixExprContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#argumentExpressionList}.
+	 * Visit a parse tree produced by the {@code CharExpr}
+	 * labeled alternative in {@link CParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitArgumentExpressionList(CParser.ArgumentExpressionListContext ctx);
+	T visitCharExpr(CParser.CharExprContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link CParser#constant}.
+	 * Visit a parse tree produced by the {@code EnumExpr}
+	 * labeled alternative in {@link CParser#expression}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitConstant(CParser.ConstantContext ctx);
+	T visitEnumExpr(CParser.EnumExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code ApplicationExpr}
+	 * labeled alternative in {@link CParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitApplicationExpr(CParser.ApplicationExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code IntegerExpr}
+	 * labeled alternative in {@link CParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitIntegerExpr(CParser.IntegerExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code PreIncDecExpr}
+	 * labeled alternative in {@link CParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPreIncDecExpr(CParser.PreIncDecExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code IdentifierExpr}
+	 * labeled alternative in {@link CParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitIdentifierExpr(CParser.IdentifierExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code PostIncDecExpr}
+	 * labeled alternative in {@link CParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPostIncDecExpr(CParser.PostIncDecExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code CastExpr}
+	 * labeled alternative in {@link CParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCastExpr(CParser.CastExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code LiteralExpr}
+	 * labeled alternative in {@link CParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLiteralExpr(CParser.LiteralExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code NestedExpr}
+	 * labeled alternative in {@link CParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNestedExpr(CParser.NestedExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code ArrowExpr}
+	 * labeled alternative in {@link CParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitArrowExpr(CParser.ArrowExprContext ctx);
 }

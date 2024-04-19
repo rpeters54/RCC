@@ -1,10 +1,10 @@
 package ast.expr;
 
-public class FloatingExpression implements Expression {
-    private int lineNum;
-    private String value;
+public class FloatExpression implements Expression {
+    private final int lineNum;
+    private final String value;
 
-    public FloatingExpression(int lineNum, String value) {
+    public FloatExpression(int lineNum, String value) {
         this.lineNum = lineNum;
         this.value = value;
     }

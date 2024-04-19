@@ -9,6 +9,7 @@ struct dow {
 
 /* Hello World Test Program */
 int main() {
+    dow tuesday;
     printf("Hello World!\n");
     return 0;
 }

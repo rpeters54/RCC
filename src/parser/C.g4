@@ -1,8 +1,7 @@
-
 grammar C;
 
 translationUnit
-    : externalDeclaration*
+    : externalDeclaration* EOF
     ;
 
 externalDeclaration
@@ -11,11 +10,16 @@ externalDeclaration
     ;
 
 functionDefinition
-    : declarationSpecifier* declarator declaration* compoundStatement
+    : retType=declarationSpecifier* name=declarator args=declaration* body=compoundStatement
     ;
 
 declaration
-    : declarationSpecifier+ initDeclaratorList? ';'
+    : typeDeclaraion
+    | type=declarationSpecifier+ initDeclaratorList? ';'
+    ;
+
+typeDeclaraion
+    : 'typedef' declarationSpecifier+ initDeclaratorList ';'
     ;
 
 declarationSpecifier
@@ -29,7 +33,6 @@ storageClassSpecifier
     | 'register'
     | 'static'
     | 'extern'
-    | 'typedef'
     ;
 
 typeSpecifier
@@ -44,7 +47,7 @@ typeSpecifier
     | 'unsigned'
     | structOrUnionSpecifier
     | enumSpecifier
-    | typedefName
+    | Identifier
     ;
 
 typeQualifier
@@ -96,7 +99,7 @@ structDeclaratorList
 
 structDeclarator
     : declarator
-    | declarator? ':' constantExpression
+    | declarator? ':' constantExpressionList
     ;
 
 enumSpecifier
@@ -110,17 +113,17 @@ enumeratorList
 
 enumerator
     : Identifier
-    | Identifier '=' constantExpression
+    | Identifier '=' constantExpressionList
     ;
 
 declarator
     : pointer? directDeclarator
     ;
 
-directDeclarator
+directDeclarator    //function declarations
     : Identifier
     | '(' declarator ')'
-    | directDeclarator '[' constantExpression? ']'
+    | directDeclarator '[' constantExpressionList? ']'
     | directDeclarator '(' parameterTypeList ')'
     | directDeclarator '(' identifierList? ')'
     ;
@@ -149,7 +152,7 @@ identifierList
     ;
 
 initializer
-    : assignmentExpression
+    : expression
     | '{' initializerList '}'
     | '{' initializerList ',' '}'
     ;
@@ -173,13 +176,10 @@ directAbstractDeclarator
     ;
 
 directAbstractDeclaratorTail
-    : '[' constantExpression? ']'
+    : '[' constantExpressionList? ']'
     | '(' parameterTypeList? ')'
     ;
 
-typedefName
-    : Identifier
-    ;
 
 statement
     : labeledStatement
@@ -191,13 +191,13 @@ statement
     ;
 
 labeledStatement
-    : Identifier ':' statement
-    | 'case' constantExpression ':' statement
-    | 'default' ':' statement
+    : Identifier ':' statement                      #LabelStatement
+    | 'case' constantExpressionList ':' statement   #CaseStatement
+    | 'default' ':' statement                       #DefaultCaseStatement
     ;
 
 expressionStatement
-    : expression? ';'
+    : expressionList? ';'
     ;
 
 compoundStatement
@@ -205,125 +205,66 @@ compoundStatement
     ;
 
 selectionStatement
-    : 'if' '(' expression ')' statement
-    | 'if' '(' expression ')' statement 'else' statement
-    | 'switch' '(' expression ')' statement
+    : 'if' '(' expressionList ')' statement                                             #IfSolo
+    | 'if' '(' expressionList ')' statement 'else' statement                            #IfElse
+    | 'switch' '(' expressionList ')' statement                                         #Switch
     ;
 
 iterationStatement
-    : 'while' '(' expression ')' statement
-    | 'do' statement 'while' '(' expression ')' ';'
-    | 'for' '(' expression? ';' expression? ';' expression? ')' statement
+    : 'while' '(' expressionList ')' statement                                          #While
+    | 'do' statement 'while' '(' expressionList ')' ';'                                 #Do
+    | 'for' '(' expressionList? ';' expressionList? ';' expressionList? ')' statement   #For
     ;
 
 jumpStatement
-    : 'goto' Identifier ';'
-    | 'continue' ';'
-    | 'break' ';'
-    | 'return' expression? ';'
+    : 'goto' Identifier ';'             #Goto
+    | 'continue' ';'                    #Continue
+    | 'break' ';'                       #Break
+    | 'return' expressionList? ';'      #Return
+    ;
+
+/* K&R Definition is a mess of nested Expression defintions so this I what I came up with to fix it */
+constantExpressionList : expressionList;
+
+expressionList
+    : expression (',' expression)*
     ;
 
 expression
-    : assignmentExpression (',' assignmentExpression)*
+    : arr=expression '[' index=expression ']'                           #IndexExpr
+    | func=expression '(' args=expressionList? ')'                      #ApplicationExpr
+    | operand=expression op='.' member=Identifier                       #DotExpr
+    | operand=expression op='->' member=Identifier                      #ArrowExpr
+    | operand=expression op=('++'|'--')                                 #PostIncDecExpr
+    | op=('++'|'--') operand=expression                                 #PreIncDecExpr
+    | op=('&' | '*' | '+' | '-' | '~' | '!') operand=expression         #PrefixExpr
+    | 'sizeof' '(' type=typeName ')'                                    #SizeofTypeExpr
+    | 'sizeof' operand=expression                                       #SizeofExprExpr
+    | '(' type=typeName ')' operand=expression                          #CastExpr
+    | left=expression op=('*' | '/' | '%') right=expression             #BinaryExpr
+    | left=expression op=('+' | '-') right=expression                   #BinaryExpr
+    | left=expression op=('<<' | '>>') right=expression                 #BinaryExpr
+    | left=expression op=('<' | '>' | '<=' | '>=') right=expression     #BinaryExpr
+    | left=expression op=('==' | '!=') right=expression                 #BinaryExpr
+    | left=expression op='&' right=expression                           #BinaryExpr
+    | left=expression op='^' right=expression                           #BinaryExpr
+    | left=expression op='|' right=expression                           #BinaryExpr
+    | left=expression op='&&' right=expression                          #BinaryExpr
+    | left=expression op='||' right=expression                          #BinaryExpr
+    | guard=expression op='?' then=expression ':' other=expression       #ConditionalExpr
+    | left=expression op=('='|'*='|'/='|'%='|'+='|'-='|'<<='|'>>='|'&='|'^='|'|=') right=expression  #AssignmentExpr
+    | Identifier                                                        #IdentifierExpr
+    | IntegerConstant                                                   #IntegerExpr
+    | FloatingConstant                                                  #FloatExpr
+    | EnumerationConstant                                               #EnumExpr
+    | CharacterConstant                                                 #CharExpr
+    | StringLiteral                                                     #LiteralExpr
+    | '(' expression ')'                                                #NestedExpr
     ;
 
-assignmentExpression
-    : conditionalExpression
-    | unaryExpression ('=' | '*=' | '/=' | '%=' | '+=' | '-=' | '<<=' | '>>=' | '&=' | '^=' | '|=') assignmentExpression
-    ;
-
-conditionalExpression
-    : logicalOrExpression
-    | logicalOrExpression '?' expression ':' conditionalExpression
-    ;
-
-constantExpression
-    : conditionalExpression
-    ;
-
-logicalOrExpression
-    : logicalAndExpression ('||' logicalAndExpression)*
-    ;
-
-logicalAndExpression
-    : inclusiveOrExpression ('&&' inclusiveOrExpression)*
-    ;
-
-inclusiveOrExpression
-    : exclusiveOrExpression ('|' exclusiveOrExpression)*
-    ;
-
-exclusiveOrExpression
-    : andExpression ('^' andExpression)*
-    ;
-
-andExpression
-    : equalityExpression ('&' equalityExpression)*
-    ;
-
-equalityExpression
-    : relationalExpression (('==' | '!=') relationalExpression)*
-    ;
-
-relationalExpression
-    : shiftExpression (('<' | '>' | '<=' | '>=') shiftExpression)*
-    ;
-
-shiftExpression
-    : additiveExpression (('<<' | '>>') additiveExpression)*
-    ;
-
-additiveExpression
-    : multiplicativeExpression (('+' | '-') multiplicativeExpression)*
-    ;
-
-multiplicativeExpression
-    : castExpression (('*' | '/' | '%') castExpression)*
-    ;
-
-castExpression
-    : unaryExpression
-    | '(' typeName ')' castExpression
-    ;
-
-unaryExpression
-    : postfixExpression
-    | '++' unaryExpression
-    | '--' unaryExpression
-    | ('&' | '*' | '+' | '-' | '~' | '!') castExpression
-    | 'sizeof' unaryExpression
-    | 'sizeof' '(' typeName ')'
-    ;
-
-postfixExpression
-    : primaryExpression
-    | postfixExpression '[' expression ']'
-    | postfixExpression '(' argumentExpressionList? ')'
-    | postfixExpression '.' Identifier
-    | postfixExpression '->' Identifier
-    | postfixExpression '++'
-    | postfixExpression '--'
-    ;
-
-primaryExpression
-    : Identifier
-    | constant
-    | StringLiteral
-    | '(' expression ')'
-    ;
-
-argumentExpressionList
-    : assignmentExpression (',' assignmentExpression)*
-    ;
 
 /* Below is borrowed from ANTLR c99 grammar */
 /* May introduce unintended features */
-constant
-    : IntegerConstant
-    | FloatingConstant
-    | EnumerationConstant
-    | CharacterConstant
-    ;
 
 Identifier
     : IdentifierNondigit (IdentifierNondigit | Digit)*

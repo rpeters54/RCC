@@ -1,15 +1,28 @@
 package ast;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.List;
 
 public class Program {
-    private ArrayList<FunctionDeclaration> funcs;
-    private ArrayList<GeneralDeclaration> decls;
+    private List<FunctionDefinition> funcs;
+    private List<Declaration> decls;
 
-    public Program(ArrayList<FunctionDeclaration> funcs,
-                   ArrayList<GeneralDeclaration> decls) {
+    public Program(List<FunctionDefinition> funcs,
+                   List<Declaration> decls) {
         this.funcs = funcs;
         this.decls = decls;
+    }
+
+    public Program() {
+        this.funcs = new ArrayList<>();
+        this.decls = new ArrayList<>();
+    }
+
+    public List<FunctionDefinition> getFuncs() {
+        return funcs;
+    }
+
+    public List<Declaration> getDecls() {
+        return decls;
     }
 }

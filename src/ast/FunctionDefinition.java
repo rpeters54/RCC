@@ -1,4 +1,5 @@
 package ast;
 
-public class FunctionDeclaration {
+public class FunctionDefinition {
+
 }

@@ -1,2 +1,4 @@
-package ast.statements;public interface Statement {
+package ast.statements;
+
+public interface Statement {
 }

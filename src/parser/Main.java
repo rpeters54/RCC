@@ -1,5 +1,7 @@
 package parser;
 
+import ast.Program;
+import ast.expr.Expression;
 import org.antlr.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
@@ -9,6 +11,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+
 
 import static java.lang.System.exit;
 
@@ -34,6 +37,13 @@ public class Main {
             tree = parser.translationUnit();
             System.out.print(tree.toStringTree());
 
+            ASTProgramVisitor progVis = new ASTProgramVisitor();
+            Program program = progVis.visit(tree);
+
+            //ASTExpressionVisitor expv = new ASTExpressionVisitor();
+            //Expression expression = expv.visit(tree);
+
+            System.out.println("done");
         } catch (IOException e) {
             e.printStackTrace();
             exit(-1);

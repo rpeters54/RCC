@@ -1,2 +1,6 @@
-package ast.types;public class Float {
+package ast.types;
+
+public class Float {
+
 }
+

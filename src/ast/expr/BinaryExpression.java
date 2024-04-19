@@ -1,15 +1,13 @@
-package ast.expression;
+package ast.expr;
 
-import ast.Expression;
-
-public class BinaryExpression implements ast.expression.Expression {
+public class BinaryExpression implements ast.expr.Expression {
     private final int lineNum;
     private final Operator operator;
-    private final ast.Expression left;
-    private final ast.Expression right;
+    private final Expression left;
+    private final Expression right;
 
     private BinaryExpression(int lineNum, Operator operator,
-                             ast.Expression left, ast.Expression right) {
+                             Expression left, Expression right) {
         this.lineNum = lineNum;
         this.operator = operator;
         this.left = left;
@@ -17,7 +15,7 @@ public class BinaryExpression implements ast.expression.Expression {
     }
 
     public static BinaryExpression create(int lineNum, String opStr,
-                                          ast.Expression left, Expression right) {
+                                          Expression left, Expression right) {
         return switch (opStr) {
             case TIMES_OPERATOR -> new BinaryExpression(lineNum, Operator.TIMES, left, right);
             case DIVIDE_OPERATOR -> new BinaryExpression(lineNum, Operator.DIVIDE, left, right);
@@ -60,7 +58,7 @@ public class BinaryExpression implements ast.expression.Expression {
     private static final String LOGICAL_AND_OPERATOR = "&&";
     private static final String LOGICAL_OR_OPERATOR = "||";
 
-    public static enum Operator {
+    public enum Operator {
         TIMES, DIVIDE, MODULO, PLUS, MINUS, SL, SR, LT, GT, LE, GE, EQ, NE, B_AND, B_XOR, B_OR, L_AND, L_OR
     }
 }

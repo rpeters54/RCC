@@ -1,4 +1,4 @@
-package ast.expression;
+package ast.expr;
 
 public interface Expression {
 }

@@ -1,4 +1,4 @@
 package ast;
 
-public class GeneralDeclaration {
+public class Declaration {
 }

@@ -1,2 +1,4 @@
-package ast.types;public interface Type {
+package ast.types;
+
+public interface Type {
 }
