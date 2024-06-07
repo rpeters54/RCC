@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/ANSIParser.iml" filepath="$PROJECT_DIR$/ANSIParser.iml" />
+      <module fileurl="file://$PROJECT_DIR$/RCC.iml" filepath="$PROJECT_DIR$/RCC.iml" />
     </modules>
   </component>
 </project>
