@@ -10,6 +10,7 @@ import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 
@@ -18,11 +19,25 @@ import static java.lang.System.exit;
 public class Main {
 
     public static void main(String[] args) {
-        ParseTree tree;
-        parseParameters(args);
+        Program program = parseProgram(args);
+        program.verifySemantics();
+    }
+
+    public static Program parseProgram(String[] args) {
+        Program program = null;
+
+        try {
+            if (args.length != 1)
+                throw new FileNotFoundException("Main: Input File Not Found");
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            System.err.println(e.getMessage());
+            exit(1);
+        }
+        String filepath = args[0];
         try {
             // Create a CharStream that reads from the input file
-            CharStream input = CharStreams.fromFileName(_inputFile);
+            CharStream input = CharStreams.fromFileName(filepath);
 
             // Create a lexer that feeds off of input CharStream
             CLexer lexer = new CLexer(input);
@@ -34,44 +49,22 @@ public class Main {
             CParser parser = new CParser(tokens);
 
             // Begin parsing at top-most rule
-            tree = parser.translationUnit();
-            System.out.print(tree.toStringTree());
+            ParseTree tree = parser.translationUnit();
+            //System.out.print(tree.toStringTree());
 
-            ASTProgramVisitor progVis = new ASTProgramVisitor();
-            Program program = progVis.visit(tree);
+            if (parser.getNumberOfSyntaxErrors() > 0) {
+                System.err.println("syntax error");
+                exit(1);
+            }
 
-            //ASTExpressionVisitor expv = new ASTExpressionVisitor();
-            //Expression expression = expv.visit(tree);
+            ASTVisitor progVis = new ASTVisitor();
+            program = (Program) progVis.visit(tree);
 
-            System.out.println("done");
         } catch (IOException e) {
             e.printStackTrace();
             exit(-1);
         }
-
+        return program;
     }
 
-
-    private static String _inputFile = null;
-
-    private static void parseParameters(String [] args)
-    {
-        for (int i = 0; i < args.length; i++)
-        {
-            if (args[i].charAt(0) == '-')
-            {
-                System.err.println("unexpected option: " + args[i]);
-                exit(1);
-            }
-            else if (_inputFile != null)
-            {
-                System.err.println("too many files specified");
-                exit(1);
-            }
-            else
-            {
-                _inputFile = args[i];
-            }
-        }
-    }
 }

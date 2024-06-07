@@ -1,5 +1,9 @@
 package ast.expr;
 
+import ast.declarations.DeclarationSpecifier;
+import ast.types.*;
+import semantics.TypeEnvironment;
+
 public class PrefixExpression implements Expression {
 
     private final int lineNum;
@@ -21,7 +25,7 @@ public class PrefixExpression implements Expression {
             case MINUS_OPERATOR -> new PrefixExpression(lineNum, PrefixExpression.Operator.MINUS, operand);
             case INV_OPERATOR -> new PrefixExpression(lineNum, PrefixExpression.Operator.INV, operand);
             case NOT_OPERATOR -> new PrefixExpression(lineNum, PrefixExpression.Operator.NOT, operand);
-            default -> throw new IllegalArgumentException();
+            default -> throw new RuntimeException("PrefixExpression::create: invalid operator: " + opStr);
         };
     }
 
@@ -34,5 +38,28 @@ public class PrefixExpression implements Expression {
 
     public enum Operator {
         REF, POINTER, POS, MINUS, INV, NOT
+    }
+
+    @Override
+    public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+        DeclarationSpecifier opDeclSpec = operand.verifySemantics(globalEnv,localEnv);
+        switch (operator) {
+            case REF -> {
+                return new DeclarationSpecifier(new PointerType(opDeclSpec.getType()),
+                        opDeclSpec.getStorage(), opDeclSpec.getQualifier());
+            }
+            case POINTER -> {
+                if (!(opDeclSpec.getType() instanceof CompoundType))
+                    throw new RuntimeException("PrefixExpression::verifySemantics: Can't dereference a non-pointer/array");
+                Type baseType = ((CompoundType) opDeclSpec.getType()).getBase();
+                return new DeclarationSpecifier(baseType, opDeclSpec.getStorage(),opDeclSpec.getQualifier());
+            }
+            case POS, MINUS, INV, NOT -> {
+                if (!(opDeclSpec.getType() instanceof PrimitiveType))
+                    throw new RuntimeException("PrefixExpression::verifySemantics: Can't use +/-/!/~ on a non-primitive");
+                return opDeclSpec;
+            }
+            default -> throw new RuntimeException("PrefixExpression::verifySemantics: Invalid Operator");
+        }
     }
 }

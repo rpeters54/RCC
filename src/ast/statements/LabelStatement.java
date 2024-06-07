@@ -1,5 +1,9 @@
 package ast.statements;
 
+import ast.declarations.DeclarationSpecifier;
+import ast.declarations.FunctionDefinition;
+import semantics.TypeEnvironment;
+
 public class LabelStatement implements Statement {
     private final int lineNum;
     private final String label;
@@ -9,5 +13,15 @@ public class LabelStatement implements Statement {
         this.lineNum = lineNum;
         this.label = label;
         this.statement = statement;
+    }
+
+    @Override
+    public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, FunctionDefinition function) {
+        return statement.verifySemantics(globalEnv, localEnv, function);
+    }
+
+    @Override
+    public boolean alwaysReturns() {
+        return false;
     }
 }

@@ -6,20 +6,37 @@ translationUnit
 
 externalDeclaration
     : functionDefinition
+    | typeDeclaration
     | declaration
     ;
 
+    /*
+     * Support old and new-style function definitions:
+     * new:
+     * retType name(argType0 arg0, argType1 arg1, ...) {
+     *     ... body ...
+     * }
+     * old:
+     * retType name(arg0, arg1, ...)
+     * argType0 arg0;
+     * argType1 arg1;
+     * ...
+     * {
+     *     ... body ...
+     * }
+     */
+
 functionDefinition
-    : retType=declarationSpecifier* name=declarator args=declaration* body=compoundStatement
+    : retType=declarationSpecifier* name=declarator declaration* body=compoundStatement
     ;
 
 declaration
-    : typeDeclaraion
-    | type=declarationSpecifier+ initDeclaratorList? ';'
+    : type=declarationSpecifier+ initDeclaratorList ';'
+    | type=declarationSpecifier+ ';'
     ;
 
-typeDeclaraion
-    : 'typedef' declarationSpecifier+ initDeclaratorList ';'
+typeDeclaration
+    : 'typedef' specifierQualifier+ Identifier ';'
     ;
 
 declarationSpecifier
@@ -99,8 +116,10 @@ structDeclaratorList
 
 structDeclarator
     : declarator
-    | declarator? ':' constantExpressionList
     ;
+
+//     structDeclarator does not implement bitfields
+//    | declarator? ':' constantExpressionList
 
 enumSpecifier
     : 'enum' Identifier? '{' enumeratorList '}'
@@ -121,12 +140,13 @@ declarator
     ;
 
 directDeclarator    //function declarations
-    : Identifier
-    | '(' declarator ')'
-    | directDeclarator '[' constantExpressionList? ']'
-    | directDeclarator '(' parameterTypeList ')'
-    | directDeclarator '(' identifierList? ')'
+    : Identifier                                        #VariableDeclarator
+    | '(' declarator ')'                                #NestedDeclarator
+    | directDeclarator '[' constantExpressionList? ']'  #ArrayDeclarator
+    | directDeclarator '(' parameterTypeList ')'        #FunctionDeclarator
+    | directDeclarator '(' identifierList? ')'          #OldFunctionDeclarator
     ;
+
 
 pointer
     : '*' typeQualifier* pointer?
@@ -134,8 +154,8 @@ pointer
 
 /* Not sure if this case is correct */
 parameterTypeList
-    : parameterList
-    | parameterList ',' parameterList*
+    : parameterList             #FixedParams
+    | parameterList ',' '...'   #VariadicParams
     ;
 
 parameterList
@@ -143,12 +163,16 @@ parameterList
     ;
 
 parameterDeclaration
-    : declarationSpecifier+ declarator
-    | declarationSpecifier+ abstractDeclarator?
+    : declarationSpecifier+ declarator              #StandardParameterDecl
+    | declarationSpecifier+ abstractDeclarator?     #AbstractParameterDecl
     ;
 
 identifierList
     : Identifier (',' Identifier)*
+    ;
+
+initializerList
+    : initializer (',' initializer)*
     ;
 
 initializer
@@ -157,29 +181,26 @@ initializer
     | '{' initializerList ',' '}'
     ;
 
-initializerList
-    : initializer (',' initializer)*
-    ;
-
 typeName
     : specifierQualifier+ abstractDeclarator?
     ;
 
 abstractDeclarator
-    : pointer
-    | pointer? directAbstractDeclarator
+    : pointer                               #AbsPointer
+    | pointer? directAbstractDeclarator     #AbsDeclarator
     ;
 
 /* K&R Definition is Mutually-Left Recursive, so I had to modify the original structure */
 directAbstractDeclarator
-    : '(' abstractDeclarator ')' directAbstractDeclaratorTail*
-    ;
-
-directAbstractDeclaratorTail
-    : '[' constantExpressionList? ']'
+    : '(' abstractDeclarator ')'     directAbstractDeclaratorTail*
+    | '[' constantExpressionList ']' directAbstractDeclaratorTail*
     | '(' parameterTypeList? ')'
     ;
 
+directAbstractDeclaratorTail
+    : '[' constantExpressionList ']'
+    | '(' parameterTypeList? ')'
+    ;
 
 statement
     : labeledStatement
@@ -205,15 +226,15 @@ compoundStatement
     ;
 
 selectionStatement
-    : 'if' '(' expressionList ')' statement                                             #IfSolo
-    | 'if' '(' expressionList ')' statement 'else' statement                            #IfElse
+    : 'if' '(' expressionList ')' thenBlock=statement                                   #IfSolo
+    | 'if' '(' expressionList ')' thenBlock=statement 'else' elseBlock=statement        #IfElse
     | 'switch' '(' expressionList ')' statement                                         #Switch
     ;
 
 iterationStatement
-    : 'while' '(' expressionList ')' statement                                          #While
-    | 'do' statement 'while' '(' expressionList ')' ';'                                 #Do
-    | 'for' '(' expressionList? ';' expressionList? ';' expressionList? ')' statement   #For
+    : 'while' '(' guard=expressionList ')' body=statement                                                   #While
+    | 'do' body=statement 'while' '(' guard=expressionList ')' ';'                                          #Do
+    | 'for' '(' init=expressionList? ';' guard=expressionList? ';' step=expressionList? ')' body=statement  #For
     ;
 
 jumpStatement

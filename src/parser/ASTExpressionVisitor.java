@@ -1,11 +1,16 @@
 package parser;
 
+import ast.declarations.Declaration;
+import ast.declarations.DeclarationSpecifier;
 import ast.expr.*;
+import ast.types.Type;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
+
+    private static ASTVisitor topVisitor = new ASTVisitor();
 
     public ASTExpressionVisitor() {}
 
@@ -21,10 +26,11 @@ public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
     @Override
     public Expression visitApplicationExpr(CParser.ApplicationExprContext ctx) {
         List<Expression> expList = new ArrayList<>();
-        List<CParser.ExpressionContext> expCtxList = ctx.expressionList().expression();
-
-        for (CParser.ExpressionContext expCtx : expCtxList) {
-            expList.add(visit(expCtx));
+        if (ctx.expressionList() != null) {
+            List<CParser.ExpressionContext> expCtxList = ctx.expressionList().expression();
+            for (CParser.ExpressionContext expCtx : expCtxList) {
+                expList.add(visit(expCtx));
+            }
         }
 
         return new ApplicationExpression(
@@ -61,10 +67,30 @@ public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
     }
 
     @Override
+    public Expression visitSizeofTypeExpr(CParser.SizeofTypeExprContext ctx) {
+        Object obj = topVisitor.visit(ctx.typeName());
+        if (!(obj instanceof DeclarationSpecifier)) {
+            throw new RuntimeException("visitSizeofTypeExpr: typename should refer to a Declaration Specifier");
+        }
+        return new SizeofTypeExpression(((DeclarationSpecifier) obj).getType());
+    }
+
+    @Override
     public Expression visitSizeofExprExpr(CParser.SizeofExprExprContext ctx) {
         return new SizeofExprExpression(
             visit(ctx.operand)
         );
+    }
+
+    @Override
+    public Expression visitCastExpr(CParser.CastExprContext ctx) {
+        Object obj = topVisitor.visit(ctx.typeName());
+        if (!(obj instanceof DeclarationSpecifier)) {
+            throw new RuntimeException("visitCastExpr: typename should refer to a Declaration Specifier");
+        }
+        Type type = ((DeclarationSpecifier) obj).getType();
+        Expression operand = visit(ctx.operand);
+        return new CastExpression(type, operand);
     }
 
     @Override
@@ -105,7 +131,7 @@ public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
                     case "&=" -> BinaryExpression.create(lineNum, "&", left, right);
                     case "^=" -> BinaryExpression.create(lineNum, "^", left, right);
                     case "|=" -> BinaryExpression.create(lineNum, "|", left, right);
-                    default -> throw new IllegalArgumentException();
+                    default -> throw new RuntimeException("visitAssignmentExpr: Undefined Desugared Binary Expression");
                 }
         );
     }
@@ -163,4 +189,14 @@ public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
         return visit(ctx.expression());
     }
 
+
+
+    public List<Expression> parseExpressionList(CParser.ExpressionListContext elctx) {
+        List<Expression> expressionList = new ArrayList<>();
+        for (CParser.ExpressionContext epctx : elctx.expression()) {
+            Expression exp = visit(epctx);
+            expressionList.add(exp);
+        }
+        return expressionList;
+    }
 }
