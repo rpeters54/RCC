@@ -8,7 +8,7 @@ public class VoidType implements Type {
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof VoidType;
+        return obj instanceof Type;
     }
 
     @Override

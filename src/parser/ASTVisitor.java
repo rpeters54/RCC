@@ -440,7 +440,7 @@ public class ASTVisitor extends CBaseVisitor<Object> {
     @Override
     public Object visitInitializer(CParser.InitializerContext ctx) {
         List<Expression> initList = new ArrayList<>();
-        if (ctx.expression() == null) {
+        if (ctx.expression() != null) {
             initList.add(expVisitor.visit(ctx.expression()));
         }
         if (ctx.initializerList() != null) {
@@ -599,7 +599,9 @@ public class ASTVisitor extends CBaseVisitor<Object> {
 
     @Override
     public Object visitAbsPointer(CParser.AbsPointerContext ctx) {
-        return visit(ctx.pointer());
+        Declaration absPointerDecl = new Declaration(null);
+        absPointerDecl.setDeclSpec((DeclarationSpecifier) visit(ctx.pointer()));
+        return absPointerDecl;
     }
 
     @Override

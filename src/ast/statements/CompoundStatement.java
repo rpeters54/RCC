@@ -35,7 +35,7 @@ public class CompoundStatement implements Statement {
             if (updated == null)
                 updated = globalEnv.stripDefinedTypes(declaration.getDeclSpec());
             if (updated == null)
-                throw new RuntimeException("CompoundStatement::verifySemantics: can resolve defined type");
+                throw new RuntimeException("CompoundStatement::verifySemantics: can't resolve defined type");
             inner.update(declaration);
         }
         DeclarationSpecifier specifier = new DeclarationSpecifier();
