@@ -18,7 +18,9 @@ public class DefinedType implements Type{
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null) return false;
+        if (o.getClass() == VoidType.class) return true;
+        if (getClass() != o.getClass()) return false;
         DefinedType that = (DefinedType) o;
         return Objects.equals(name, that.name);
     }

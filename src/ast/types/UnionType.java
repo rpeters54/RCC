@@ -29,7 +29,9 @@ public class UnionType implements Type {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null) return false;
+        if (o.getClass() == VoidType.class) return true;
+        if (getClass() != o.getClass()) return false;
         UnionType unionType = (UnionType) o;
         return Objects.equals(name, unionType.name);
     }

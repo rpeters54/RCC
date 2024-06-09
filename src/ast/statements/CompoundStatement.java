@@ -3,6 +3,8 @@ package ast.statements;
 import ast.declarations.Declaration;
 import ast.declarations.DeclarationSpecifier;
 import ast.declarations.FunctionDefinition;
+import codegen.BasicBlock;
+import codegen.values.Register;
 import semantics.TypeEnvironment;
 
 import java.util.List;
@@ -29,18 +31,17 @@ public class CompoundStatement implements Statement {
 
     @Override
     public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, FunctionDefinition function) {
-        TypeEnvironment inner = localEnv.duplicate();
         for (Declaration declaration : declarations) {
-            DeclarationSpecifier updated = inner.stripDefinedTypes(declaration.getDeclSpec());
+            DeclarationSpecifier updated = localEnv.stripDefinedTypes(declaration.getDeclSpec());
             if (updated == null)
                 updated = globalEnv.stripDefinedTypes(declaration.getDeclSpec());
             if (updated == null)
                 throw new RuntimeException("CompoundStatement::verifySemantics: can't resolve defined type");
-            inner.update(declaration);
+            localEnv.update(declaration);
         }
         DeclarationSpecifier specifier = new DeclarationSpecifier();
         for (Statement statement : statements) {
-            specifier = statement.verifySemantics(globalEnv, inner, function);
+            specifier = statement.verifySemantics(globalEnv, localEnv, function);
         }
         return specifier;
     }
@@ -52,5 +53,12 @@ public class CompoundStatement implements Statement {
                 return true;
         }
         return false;
+    }
+
+    @Override
+    public void codegen(List<BasicBlock> blocks, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+        for (Statement statement : statements) {
+            statement.codegen(blocks, globalEnv, localEnv);
+        }
     }
 }

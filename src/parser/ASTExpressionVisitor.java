@@ -58,6 +58,24 @@ public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
     }
 
     @Override
+    public Expression visitPostIncDecExpr(CParser.PostIncDecExprContext ctx) {
+        return IncDecExpression.createPostfix(
+                ctx.op.getLine(),
+                ctx.op.getText(),
+                visit(ctx.operand)
+        );
+    }
+
+    @Override
+    public Expression visitPreIncDecExpr(CParser.PreIncDecExprContext ctx) {
+        return IncDecExpression.createPrefix(
+                ctx.op.getLine(),
+                ctx.op.getText(),
+                visit(ctx.operand)
+        );
+    }
+
+    @Override
     public Expression visitPrefixExpr(CParser.PrefixExprContext ctx) {
         return PrefixExpression.create(
                 ctx.op.getLine(),
@@ -65,6 +83,8 @@ public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
                 visit(ctx.operand)
         );
     }
+
+
 
     @Override
     public Expression visitSizeofTypeExpr(CParser.SizeofTypeExprContext ctx) {
@@ -117,8 +137,10 @@ public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
     public Expression visitAssignmentExpr(CParser.AssignmentExprContext ctx) {
         int lineNum = ctx.op.getLine();
         Expression left = visit(ctx.left);
+        if (!(left instanceof LValue leftValue))
+            throw new RuntimeException("visitAssignmentExpr: left value should be a LValue");
         Expression right = visit(ctx.right);
-        return new AssignmentExpression(lineNum,left,
+        return new AssignmentExpression(lineNum,leftValue,
                 switch(ctx.op.getText()) {
                     case "=" -> right;
                     case "*=" -> BinaryExpression.create(lineNum, "*", left, right);

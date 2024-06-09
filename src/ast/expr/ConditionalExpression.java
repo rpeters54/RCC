@@ -2,6 +2,8 @@ package ast.expr;
 
 import ast.declarations.DeclarationSpecifier;
 import ast.types.PrimitiveType;
+import codegen.BasicBlock;
+import codegen.values.Source;
 import semantics.TypeEnvironment;
 
 public class ConditionalExpression implements Expression {
@@ -36,5 +38,10 @@ public class ConditionalExpression implements Expression {
         } else {
             throw new RuntimeException("ConditionalExpression::verifySemantics: cases have conflicting types");
         }
+    }
+
+    @Override
+    public Source codegen(BasicBlock block, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+        throw new RuntimeException("Not Implemented");
     }
 }

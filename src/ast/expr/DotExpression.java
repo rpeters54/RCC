@@ -2,16 +2,16 @@ package ast.expr;
 
 import ast.declarations.Declaration;
 import ast.declarations.DeclarationSpecifier;
-import ast.types.EnumType;
 import ast.types.StructType;
 import ast.types.UnionType;
+import codegen.BasicBlock;
+import codegen.values.Register;
+import codegen.values.Source;
 import semantics.TypeEnvironment;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
-public class DotExpression implements Expression {
+public class DotExpression implements LValue {
     private final int lineNum;
     private final Expression operand;
     private final String member;
@@ -40,5 +40,15 @@ public class DotExpression implements Expression {
         if (index == -1)
             throw new RuntimeException("DotExpression::verifySemantics: member " + member + " not found");
         return members.get(index).getDeclSpec();
+    }
+
+    @Override
+    public Source codegen(BasicBlock block, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+        throw new RuntimeException("Not Implemented");
+    }
+
+    @Override
+    public Register getLValue(BasicBlock block) {
+        throw new RuntimeException("Not Implemented");
     }
 }

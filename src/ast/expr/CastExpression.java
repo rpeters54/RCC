@@ -1,8 +1,9 @@
 package ast.expr;
 
 import ast.declarations.DeclarationSpecifier;
-import ast.types.IntegerType;
 import ast.types.Type;
+import codegen.BasicBlock;
+import codegen.values.Source;
 import semantics.TypeEnvironment;
 
 public class CastExpression implements Expression {
@@ -22,5 +23,10 @@ public class CastExpression implements Expression {
         return new DeclarationSpecifier(type,
                 DeclarationSpecifier.StorageClass.NONE,
                 DeclarationSpecifier.TypeQualifier.NONE);
+    }
+
+    @Override
+    public Source codegen(BasicBlock block, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+        throw new RuntimeException("Not Implemented");
     }
 }

@@ -3,6 +3,7 @@ package ast.statements;
 import ast.declarations.DeclarationSpecifier;
 import ast.declarations.FunctionDefinition;
 import ast.expr.Expression;
+import codegen.BasicBlock;
 import semantics.TypeEnvironment;
 
 import java.util.List;
@@ -28,5 +29,13 @@ public class ExpressionStatement implements Statement {
     @Override
     public boolean alwaysReturns() {
         return false;
+    }
+
+    @Override
+    public void codegen(List<BasicBlock> blocks, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+        BasicBlock currentBlock = blocks.getLast();
+        for (Expression exp : expressionList) {
+            exp.codegen(currentBlock, globalEnv, localEnv);
+        }
     }
 }

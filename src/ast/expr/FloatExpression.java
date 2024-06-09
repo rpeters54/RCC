@@ -2,7 +2,8 @@ package ast.expr;
 
 import ast.declarations.DeclarationSpecifier;
 import ast.types.FloatingType;
-import ast.types.IntegerType;
+import codegen.BasicBlock;
+import codegen.values.Source;
 import semantics.TypeEnvironment;
 
 public class FloatExpression implements Expression {
@@ -18,5 +19,10 @@ public class FloatExpression implements Expression {
     public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv) {
         return new DeclarationSpecifier(new FloatingType(value, Float.BYTES*8, true),
                 DeclarationSpecifier.StorageClass.NONE, DeclarationSpecifier.TypeQualifier.NONE);
+    }
+
+    @Override
+    public Source codegen(BasicBlock block, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+        throw new RuntimeException("Not Implemented");
     }
 }

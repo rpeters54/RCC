@@ -2,9 +2,12 @@ package ast.expr;
 
 import ast.declarations.DeclarationSpecifier;
 import ast.types.*;
+import codegen.BasicBlock;
+import codegen.values.Register;
+import codegen.values.Source;
 import semantics.TypeEnvironment;
 
-public class PrefixExpression implements Expression {
+public class PrefixExpression implements LValue {
 
     private final int lineNum;
     private final Operator operator;
@@ -36,6 +39,7 @@ public class PrefixExpression implements Expression {
     private static final String INV_OPERATOR = "~";
     private static final String NOT_OPERATOR = "!";
 
+
     public enum Operator {
         REF, POINTER, POS, MINUS, INV, NOT
     }
@@ -61,5 +65,15 @@ public class PrefixExpression implements Expression {
             }
             default -> throw new RuntimeException("PrefixExpression::verifySemantics: Invalid Operator");
         }
+    }
+
+    @Override
+    public Source codegen(BasicBlock block, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+        throw new RuntimeException("Not Implemented");
+    }
+
+    @Override
+    public Register getLValue(BasicBlock block) {
+        throw new RuntimeException("Not Implemented");
     }
 }

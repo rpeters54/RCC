@@ -2,27 +2,26 @@ package semantics;
 
 import ast.declarations.Declaration;
 import ast.declarations.DeclarationSpecifier;
+import ast.declarations.FunctionDefinition;
 import ast.declarations.TypeDeclaration;
 import ast.types.*;
+import org.antlr.v4.codegen.model.decl.Decl;
 
-import java.security.spec.RSAOtherPrimeInfo;
 import java.util.HashMap;
 import java.util.Map;
 
 public class TypeEnvironment {
-    private Map<String, DeclarationSpecifier> types;
-    private Map<String, EnumType> enums;
-    private Map<String, StructType> structs;
-    private Map<String, UnionType> unions;
-    private Map<String, FunctionType> funcs;
-    private Map<String, DeclarationSpecifier> variables;
+    private final Map<String, DeclarationSpecifier> types;
+    private final Map<String, EnumType> enums;
+    private final Map<String, StructType> structs;
+    private final Map<String, UnionType> unions;
+    private final Map<String, DeclarationSpecifier> variables;
 
     public TypeEnvironment() {
         this.types = new HashMap<>();
         this.enums = new HashMap<>();
         this.structs = new HashMap<>();
         this.unions = new HashMap<>();
-        this.funcs = new HashMap<>();
         this.variables = new HashMap<>();
     }
 
@@ -32,9 +31,16 @@ public class TypeEnvironment {
         clone.enums.putAll(this.enums);
         clone.structs.putAll(this.structs);
         clone.unions.putAll(this.unions);
-        clone.funcs.putAll(this.funcs);
         clone.variables.putAll(this.variables);
         return clone;
+    }
+
+    public void clear() {
+        this.types.clear();
+        this.enums.clear();
+        this.structs.clear();
+        this.unions.clear();
+        this.variables.clear();
     }
 
     public void update(Declaration declaration) {
@@ -55,10 +61,6 @@ public class TypeEnvironment {
                 if (enumeration.getName() != null && !enumeration.getEnumerators().isEmpty())
                     this.addEnum(enumeration.getName(), enumeration);
             }
-            case FunctionType function -> {
-                if (declaration.getName() != null)
-                    this.addFunc(declaration.getName(), function);
-            }
             default -> {}
         }
 
@@ -66,20 +68,32 @@ public class TypeEnvironment {
             switch (type) {
                 case StructType s -> {
                     StructType struct = getStruct(s.getName());
-                    declaration.getDeclSpec().setType(struct);
-                    this.addVariable(declaration.getName(), declaration.getDeclSpec());
+                    DeclarationSpecifier structDeclSpec = new DeclarationSpecifier();
+                    structDeclSpec.setType(struct);
+                    structDeclSpec.updateBoth(declaration.getDeclSpec());
+                    this.addBinding(declaration.getName(), structDeclSpec);
                 }
                 case UnionType u -> {
                     UnionType union = getUnion(u.getName());
-                    declaration.getDeclSpec().setType(union);
-                    this.addVariable(declaration.getName(), declaration.getDeclSpec());
+                    DeclarationSpecifier unionDeclSpec = new DeclarationSpecifier();
+                    unionDeclSpec.setType(union);
+                    unionDeclSpec.updateBoth(declaration.getDeclSpec());
+                    this.addBinding(declaration.getName(), unionDeclSpec);
                 }
                 case EnumType e -> {
                     EnumType enumeration = getEnum(e.getName());
-                    declaration.getDeclSpec().setType(enumeration);
-                    this.addVariable(declaration.getName(), declaration.getDeclSpec());
+                    DeclarationSpecifier enumDeclSpec = new DeclarationSpecifier();
+                    enumDeclSpec.setType(enumeration);
+                    enumDeclSpec.updateBoth(declaration.getDeclSpec());
+                    this.addBinding(declaration.getName(), enumDeclSpec);
                 }
-                default -> addVariable(declaration.getName(), declaration.getDeclSpec());
+                case FunctionType f -> {
+                    DeclarationSpecifier funDeclSpec = new DeclarationSpecifier();
+                    funDeclSpec.setType(new PointerType(f));
+                    funDeclSpec.updateBoth(declaration.getDeclSpec());
+                    this.addBinding(declaration.getName(), funDeclSpec);
+                }
+                default -> this.addBinding(declaration.getName(), declaration.getDeclSpec());
             }
         }
     }
@@ -158,13 +172,13 @@ public class TypeEnvironment {
         unions.put(name, union);
     }
 
-    public void addFunc(String name, FunctionType func) {
-        if (funcs.get(name) != null)
-            throw new RuntimeException(String.format("TypeEnvironment: Function with name %s already exists", name));
-        funcs.put(name, func);
-    }
+//    public void addFunc(String name, FunctionType func) {
+//        if (funcs.get(name) != null)
+//            throw new RuntimeException(String.format("TypeEnvironment: Function with name %s already exists", name));
+//        funcs.put(name, func);
+//    }
 
-    public void addVariable(String name, DeclarationSpecifier variable) {
+    public void addBinding(String name, DeclarationSpecifier variable) {
         if (variables.get(name) != null)
             throw new RuntimeException(String.format("TypeEnvironment: Variable with name %s already exists", name));
         variables.put(name, variable);
@@ -200,22 +214,15 @@ public class TypeEnvironment {
         return union;
     }
 
-    public FunctionType getFunc(String name) {
-        FunctionType func = funcs.get(name);
-        if (func == null)
-            throw new RuntimeException(String.format("TypeEnvironment: Function with name %s does not exist", name));
-        return func;
-    }
+//    public FunctionType getFunc(String name) {
+//        FunctionType func = funcs.get(name);
+//        if (func == null)
+//            throw new RuntimeException(String.format("TypeEnvironment: Function with name %s does not exist", name));
+//        return func;
+//    }
 
-    public DeclarationSpecifier getVariable(String name) {
+    public DeclarationSpecifier getBinding(String name) {
         DeclarationSpecifier declarationSpecifier = variables.get(name);
-        if (declarationSpecifier == null) {
-            FunctionType func = funcs.get(name);
-            if (func != null) {
-                declarationSpecifier = new DeclarationSpecifier();
-                declarationSpecifier.setType(func);
-            }
-        }
 //        if (declarationSpecifier == null)
 //            throw new RuntimeException(String.format("TypeEnvironment: Variable with name %s does not exist", name));
         return declarationSpecifier;

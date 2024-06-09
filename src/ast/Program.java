@@ -4,20 +4,21 @@ import ast.declarations.*;
 import ast.statements.CompoundStatement;
 import ast.statements.Statement;
 import ast.types.*;
+import codegen.BasicBlock;
+import codegen.instruction.Instruction;
 import semantics.TypeEnvironment;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Program {
-    private List<ExternalDeclaration> declarations;
-
-    public Program(List<ExternalDeclaration> declarations) {
-        this.declarations = declarations;
-    }
+    private final List<ExternalDeclaration> declarations;
+    private final TypeEnvironment globalEnv;
 
     public Program() {
         this.declarations = new ArrayList<>();
+        this.globalEnv = new TypeEnvironment();
     }
 
     public void addDeclaration(ExternalDeclaration declaration) {
@@ -33,16 +34,21 @@ public class Program {
      * Verifies that the program is runnable (typechecking, scope, etc.)
      */
     public void verifySemantics() {
-        TypeEnvironment globalEnv = new TypeEnvironment();
+        // ensure that the environment is empty before starting
+        globalEnv.clear();
         for (ExternalDeclaration externalDeclaration : declarations) {
             // add all global variables to the global environment
             switch (externalDeclaration) {
                 case Declaration declaration -> globalEnv.update(declaration);
                 case TypeDeclaration declaration -> globalEnv.addType(declaration);
                 case FunctionDefinition definition -> {
-                    TypeEnvironment localEnv = new TypeEnvironment();
+                    TypeEnvironment localEnv = definition.getLocalEnv();
+                    localEnv.clear();
                     Declaration stub = definition.getDeclaration();
                     Statement stmt = definition.getBody();
+
+                    // add function definition to the environment
+                    globalEnv.update(stub);
 
                     // ensure that the function has function type and add its args to the local env
                     if (!(stub.getDeclSpec().getType() instanceof FunctionType func))
@@ -65,10 +71,27 @@ public class Program {
                     }
 
                     // debugging code
-                    System.out.println("Function " + stub.getName() + " Done");
+                    //System.out.println("Function " + stub.getName() + " Done");
                 }
                 case null, default -> {
                     throw new RuntimeException("Program::verifySemantics: Undefined ExternalDeclaration");
+                }
+            }
+        }
+    }
+
+    public void shittyCodegen() {
+        for (ExternalDeclaration externalDeclaration : declarations) {
+            switch (externalDeclaration) {
+                case FunctionDefinition definition -> {
+                    List<BasicBlock> blocks = Arrays.asList(new BasicBlock());
+                    definition.getBody().codegen(blocks, globalEnv, definition.getLocalEnv());
+                    for (Instruction instruction : blocks.getFirst().getAllInstructions()) {
+                        System.out.println(instruction);
+                    }
+                }
+                case null, default -> {
+                    throw new RuntimeException("Program::shittyCodegen: Not Implemented");
                 }
             }
         }

@@ -21,6 +21,8 @@ public class Main {
     public static void main(String[] args) {
         Program program = parseProgram(args);
         program.verifySemantics();
+        program.shittyCodegen();
+        //System.out.println("Done");
     }
 
     public static Program parseProgram(String[] args) {

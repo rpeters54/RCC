@@ -1,29 +1,31 @@
 package ast.types;
 
+import java.util.Objects;
+
 public class FloatingType implements NumberType {
     private String value;
     private int bitsPrecision;
-    private boolean isSigned;
+    private boolean signed;
 
     public FloatingType() {
         this.value = null;
         this.bitsPrecision = Float.BYTES*8;
-        this.isSigned = true;
+        this.signed = true;
 
     }
 
-    public FloatingType(String value, int bitsPrecision, boolean isSigned) {
+    public FloatingType(String value, int bitsPrecision, boolean signed) {
         this.value = value;
         this.bitsPrecision = bitsPrecision;
-        this.isSigned = isSigned;
+        this.signed = signed;
     }
 
     public void setSigned(boolean signed) {
-        isSigned = signed;
+        this.signed = signed;
     }
 
     public boolean isSigned() {
-        return isSigned;
+        return signed;
     }
 
     public void setBits(int bitsPrecision) {
@@ -32,6 +34,22 @@ public class FloatingType implements NumberType {
 
     public int getBits() {
         return bitsPrecision;
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        if (o.getClass() == VoidType.class) return true;
+        if (getClass() != o.getClass()) return false;
+        FloatingType that = (FloatingType) o;
+        return bitsPrecision == that.bitsPrecision && signed == that.signed;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(bitsPrecision, signed);
     }
 }
 

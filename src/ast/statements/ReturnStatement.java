@@ -4,6 +4,7 @@ import ast.declarations.DeclarationSpecifier;
 import ast.declarations.FunctionDefinition;
 import ast.expr.Expression;
 import ast.types.FunctionType;
+import codegen.BasicBlock;
 import semantics.TypeEnvironment;
 
 import java.util.List;
@@ -39,5 +40,10 @@ public class ReturnStatement implements Statement {
     @Override
     public boolean alwaysReturns() {
         return true;
+    }
+
+    @Override
+    public void codegen(List<BasicBlock> blocks, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+        throw new RuntimeException("Not implemented yet");
     }
 }

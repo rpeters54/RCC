@@ -1,10 +1,10 @@
 package ast.statements;
 
-import ast.declarations.Declaration;
 import ast.declarations.DeclarationSpecifier;
 import ast.declarations.FunctionDefinition;
 import ast.expr.Expression;
 import ast.types.PrimitiveType;
+import codegen.BasicBlock;
 import semantics.TypeEnvironment;
 
 import java.util.List;
@@ -35,6 +35,11 @@ public class WhileStatement implements Statement {
     @Override
     public boolean alwaysReturns() {
         return body.alwaysReturns();
+    }
+
+    @Override
+    public void codegen(List<BasicBlock> blocks, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+        throw new RuntimeException("Not implemented yet");
     }
 }
 

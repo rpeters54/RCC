@@ -1,8 +1,10 @@
 package ast.expr;
 
-import ast.declarations.Declaration;
 import ast.declarations.DeclarationSpecifier;
 import ast.types.FunctionType;
+import ast.types.PointerType;
+import codegen.BasicBlock;
+import codegen.values.Source;
 import semantics.TypeEnvironment;
 
 import java.util.List;
@@ -22,10 +24,9 @@ public class ApplicationExpression implements Expression {
     public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv) {
         DeclarationSpecifier functionSpecifier = func.verifySemantics(globalEnv,localEnv);
 
-        if (!(functionSpecifier.getType() instanceof FunctionType))
-            throw new RuntimeException("ApplicationExpression::verifySemantics: Can't Apply a Non-Function");
-
-        FunctionType functionType = (FunctionType) functionSpecifier.getType();
+        if (!(functionSpecifier.getType() instanceof PointerType)
+                || !(((PointerType) functionSpecifier.getType()).getBase() instanceof FunctionType functionType))
+            throw new RuntimeException("ApplicationExpression::verifySemantics: Can't Apply a Non-Function Pointer");
 
         if (!functionType.isVariadic() && args.size() != functionType.getInputTypes().size())
             throw new RuntimeException("ApplicationExpression::verifySemantics: Function Expected a Different Number of Args");
@@ -39,5 +40,10 @@ public class ApplicationExpression implements Expression {
                 throw new RuntimeException("ApplicationExpression::verifySemantics: Mismatch Argument/Parameter Type");
         }
         return new DeclarationSpecifier(functionType.getReturnType(), functionSpecifier.getStorage(), functionSpecifier.getQualifier());
+    }
+
+    @Override
+    public Source codegen(BasicBlock block, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+        throw new RuntimeException("Not Implemented");
     }
 }

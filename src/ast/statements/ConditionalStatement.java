@@ -4,6 +4,7 @@ import ast.declarations.DeclarationSpecifier;
 import ast.declarations.FunctionDefinition;
 import ast.expr.Expression;
 import ast.types.PrimitiveType;
+import codegen.BasicBlock;
 import semantics.TypeEnvironment;
 
 import java.util.List;
@@ -45,5 +46,10 @@ public class ConditionalStatement implements Statement {
             boolean elseReturn = elseBlock.alwaysReturns();
             return thenReturn && elseReturn;
         }
+    }
+
+    @Override
+    public void codegen(List<BasicBlock> blocks, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+        throw new RuntimeException("Not implemented yet");
     }
 }

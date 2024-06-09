@@ -42,11 +42,13 @@ public class FunctionType implements Type {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null) return false;
+        if (o.getClass() == VoidType.class) return true;
+        if (getClass() != o.getClass()) return false;
         FunctionType that = (FunctionType) o;
         if (this.inputTypes.size() != that.inputTypes.size()) return false;
         for (int i = 0; i < this.inputTypes.size(); i++) {
-            if (this.inputTypes.get(i).getDeclSpec().getType().equals(that.inputTypes.get(i).getDeclSpec().getType())) {
+            if (!this.inputTypes.get(i).getDeclSpec().getType().equals(that.inputTypes.get(i).getDeclSpec().getType())) {
                 return false;
             }
         }

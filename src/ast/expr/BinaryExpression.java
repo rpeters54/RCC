@@ -1,11 +1,14 @@
 package ast.expr;
 
-import ast.declarations.Declaration;
 import ast.declarations.DeclarationSpecifier;
 import ast.types.*;
+import codegen.BasicBlock;
+import codegen.instruction.riscv.BinaryInstruction;
+import codegen.instruction.riscv.LoadImmInstruction;
+import codegen.values.Literal;
+import codegen.values.Register;
+import codegen.values.Source;
 import semantics.TypeEnvironment;
-
-import java.nio.channels.Pipe;
 
 public class BinaryExpression implements ast.expr.Expression {
     private final int lineNum;
@@ -146,4 +149,35 @@ public class BinaryExpression implements ast.expr.Expression {
         }
     }
 
+    @Override
+    public Source codegen(BasicBlock block, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+        Source leftSource = left.codegen(block, globalEnv, localEnv);
+        Source rightSource = right.codegen(block, globalEnv, localEnv);
+
+        Register leftReg;
+        if (leftSource instanceof Literal leftLiteral) {
+            leftReg = Register.RISC_Register(leftLiteral.getType());
+            block.addInstruction(new LoadImmInstruction(leftReg, leftLiteral));
+        } else {
+            leftReg = (Register) leftSource;
+        }
+
+        Register rightReg;
+        if (rightSource instanceof Literal rightLiteral) {
+            rightReg = Register.RISC_Register(rightLiteral.getType());
+            block.addInstruction(new LoadImmInstruction(rightReg, rightLiteral));
+        } else {
+            rightReg = (Register) rightSource;
+        }
+
+        switch (operator) {
+            case PLUS, MINUS, TIMES, DIVIDE -> {
+                Register result = Register.RISC_Register(promoteType(leftReg.getType(), rightReg.getType()));
+                block.addInstruction(new BinaryInstruction(result, operator, leftReg, rightReg));
+                return result;
+            }
+            default -> throw new RuntimeException("TypeHandler::codegen: not implemented yet");
+        }
+
+    }
 }
