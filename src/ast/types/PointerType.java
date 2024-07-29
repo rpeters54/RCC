@@ -2,7 +2,7 @@ package ast.types;
 
 import java.util.Objects;
 
-public class PointerType implements CompoundType {
+public class PointerType extends CompoundType {
     private Type base;
 
     public PointerType(Type base) {
@@ -18,6 +18,11 @@ public class PointerType implements CompoundType {
     }
 
     @Override
+    public Type clone() {
+        return new PointerType(base.clone());
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
@@ -30,5 +35,14 @@ public class PointerType implements CompoundType {
     @Override
     public int hashCode() {
         return Objects.hashCode(base);
+    }
+
+    public String typeString() {
+        return base.toString() + "*";
+    }
+
+    @Override
+    public String toString() {
+        return "ptr";
     }
 }

@@ -2,8 +2,10 @@ package ast.expr;
 
 import ast.declarations.DeclarationSpecifier;
 import codegen.BasicBlock;
+import codegen.ControlFlowGraph;
+import codegen.TranslationUnit;
 import codegen.values.Source;
-import semantics.TypeEnvironment;
+import ast.TypeEnvironment;
 
 public class EnumExpression implements Expression{
     private final int lineNum;
@@ -21,7 +23,7 @@ public class EnumExpression implements Expression{
     }
 
     @Override
-    public Source codegen(BasicBlock block, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
         throw new RuntimeException("Not Implemented");
     }
 }

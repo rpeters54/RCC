@@ -10,7 +10,7 @@ import java.util.List;
 
 public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
 
-    private static ASTVisitor topVisitor = new ASTVisitor();
+    private static final ASTVisitor topVisitor = new ASTVisitor();
 
     public ASTExpressionVisitor() {}
 
@@ -194,7 +194,7 @@ public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
     public Expression visitCharExpr(CParser.CharExprContext ctx) {
         return new CharExpression(
                 ctx.start.getLine(),
-                ctx.getText().toCharArray()[0]
+                ctx.getText()
         );
     }
 

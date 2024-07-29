@@ -5,7 +5,9 @@ import ast.declarations.FunctionDefinition;
 import ast.expr.Expression;
 import ast.types.IntegerType;
 import codegen.BasicBlock;
-import semantics.TypeEnvironment;
+import ast.TypeEnvironment;
+import codegen.ControlFlowGraph;
+import codegen.TranslationUnit;
 
 import java.util.List;
 
@@ -49,7 +51,7 @@ public class SwitchStatement implements Statement {
     }
 
     @Override
-    public void codegen(List<BasicBlock> blocks, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
         throw new RuntimeException("Not implemented yet");
     }
 }

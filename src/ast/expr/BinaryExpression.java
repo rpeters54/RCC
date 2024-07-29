@@ -3,12 +3,19 @@ package ast.expr;
 import ast.declarations.DeclarationSpecifier;
 import ast.types.*;
 import codegen.BasicBlock;
-import codegen.instruction.riscv.BinaryInstruction;
-import codegen.instruction.riscv.LoadImmInstruction;
+import codegen.ControlFlowGraph;
+import codegen.TranslationUnit;
+import codegen.instruction.Instruction;
+import codegen.instruction.llvm.BinaryInstruction;
+import codegen.instruction.llvm.ComparatorInstruction;
+import codegen.instruction.llvm.ConversionInstruction;
+import codegen.instruction.llvm.GetElemPtrInstruction;
 import codegen.values.Literal;
 import codegen.values.Register;
 import codegen.values.Source;
-import semantics.TypeEnvironment;
+import ast.TypeEnvironment;
+
+import java.util.Arrays;
 
 public class BinaryExpression implements ast.expr.Expression {
     private final int lineNum;
@@ -78,106 +85,117 @@ public class BinaryExpression implements ast.expr.Expression {
         DeclarationSpecifier leftDecl = left.verifySemantics(globalEnv, localEnv);
         DeclarationSpecifier rightDecl = right.verifySemantics(globalEnv, localEnv);
 
-        DeclarationSpecifier result = new DeclarationSpecifier();
+        if (!(leftDecl.getType() instanceof PrimitiveType primLeft
+                && rightDecl.getType() instanceof PrimitiveType primRight)) {
+            throw new RuntimeException("BinaryExpression::verifySemantics: can only apply " +
+                    "binary operators to primitive types");
+        }
+
+        PrimitiveType resultType;
         switch (operator) {
-            case TIMES, DIVIDE, PLUS, MINUS -> {
-                result.setType(promoteType(leftDecl.getType(), rightDecl.getType()));
+            case PLUS, MINUS -> {
+                boolean left = primLeft instanceof CompoundType;
+                boolean right = primRight instanceof CompoundType;
+                if (left && !right || !left && right) {
+                    resultType = primLeft instanceof CompoundType ? primLeft : primRight;
+                } else if (left || right) {
+                    throw new RuntimeException("BinaryExpression::verifySemantics: " +
+                            "Can't do pointer arithmetic with two pointers");
+                } else {
+                    resultType = PrimitiveType.implicitConversion(primLeft, primRight);
+                }
+            }
+            case TIMES, DIVIDE -> {
+                boolean left = primLeft instanceof CompoundType;
+                boolean right = primRight instanceof CompoundType;
+                if (left || right) {
+                    throw new RuntimeException("BinaryExpression::verifySemantics: " +
+                            "Can't do multiplication with pointers");
+                } else {
+                    resultType = PrimitiveType.implicitConversion(primLeft, primRight);
+                }
             }
             case MODULO, SL, SR, B_AND, B_XOR, B_OR -> {
-                if (leftDecl.getType() instanceof FloatingType || rightDecl.getType() instanceof FloatingType) {
-                    throw new RuntimeException("BinaryExpression::verifySemantics: can apply " +
+                if (primLeft instanceof CompoundType || primRight instanceof CompoundType) {
+                    throw new RuntimeException("BinaryExpression::verifySemantics: " +
+                            "Can't apply bitwise operations on pointers");
+                }
+                if (primLeft instanceof FloatingType || primRight instanceof FloatingType) {
+                    throw new RuntimeException("BinaryExpression::verifySemantics: can't apply " +
                             "bitwise operators on floating point numbers");
                 }
-                result.setType(promoteType(leftDecl.getType(), rightDecl.getType()));
+                resultType = PrimitiveType.implicitConversion(primLeft, primRight);
             }
             case LT, GT, LE, GE, EQ, NE, L_AND, L_OR -> {
-                // run promoteType to ensure the operation is valid, but discard the type
-                promoteType(leftDecl.getType(), rightDecl.getType());
-                result.setType(new IntegerType());
+                resultType = PrimitiveType.implicitConversion(primLeft, primRight);
             }
             case null, default -> {
                 throw new RuntimeException("BinaryExpression::verifySemantics: undefined operator");
             }
         }
-        return result;
+        return new DeclarationSpecifier(resultType);
     }
 
-
-    /**
-     * Resolve the output type of an operation involving two primitive types:
-     * [arrays, pointers, integers, or floats]
-     * @param left the left operand
-     * @param right the right operand
-     * @return the resulting type of the operation
-     */
-    public static PrimitiveType promoteType(Type left, Type right) {
-        if (!(left instanceof PrimitiveType) || !(right instanceof PrimitiveType)) {
-            throw new RuntimeException("TypeHandler::promoteType: Can't have an operation with non-primitive types");
-        } else if (left instanceof FloatingType || right instanceof FloatingType) {
-            if (left instanceof CompoundType || right instanceof CompoundType) {
-                throw new RuntimeException("TypeHandler::promoteType: Can't have an operation with float and a pointer/array");
-            }
-            NumberType result = new FloatingType();
-            result.setBits(Math.max(((NumberType)left).getBits(), ((NumberType)right).getBits()));
-            return result;
-        } else if (left instanceof PointerType || right instanceof PointerType) {
-            if (left instanceof PointerType && right instanceof PointerType) {
-                if (((PointerType) left).getBase().equals(((PointerType) right).getBase())) {
-                    return (PointerType) left;
-                } else {
-                    throw new RuntimeException("TypeHandler::promoteType: Can't have an operation with two dissimilar pointers");
-                }
-            } else if (left instanceof IntegerType || right instanceof IntegerType) {
-                return left instanceof PointerType ? (PointerType) left : (PointerType) right;
-            } else {
-                throw new RuntimeException("TypeHandler::promoteType: Can't have an operation with a pointer/array");
-            }
-        } else if (left instanceof ArrayType || right instanceof ArrayType) {
-            if (left instanceof ArrayType && right instanceof ArrayType) {
-                if (((ArrayType) left).getBase().equals(((ArrayType) right).getBase())) {
-                    return (ArrayType) left;
-                } else {
-                    throw new RuntimeException("TypeHandler::promoteType: Can't have an operation with two dissimilar arrays");
-                }
-            } else {
-                return left instanceof ArrayType ? (ArrayType) left : (ArrayType) right;
-            }
-        } else {
-            NumberType result = new IntegerType();
-            result.setBits(Math.max(((NumberType)left).getBits(), ((NumberType)right).getBits()));
-            return result;
-        }
-    }
 
     @Override
-    public Source codegen(BasicBlock block, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
-        Source leftSource = left.codegen(block, globalEnv, localEnv);
-        Source rightSource = right.codegen(block, globalEnv, localEnv);
+    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+        Source leftSource = left.codegen(unit, cfg, block);
+        Source rightSource = right.codegen(unit, cfg, block);
 
-        Register leftReg;
-        if (leftSource instanceof Literal leftLiteral) {
-            leftReg = Register.RISC_Register(leftLiteral.getType());
-            block.addInstruction(new LoadImmInstruction(leftReg, leftLiteral));
+
+        Register result;
+        // handle ptr arithmetic
+        if (leftSource.type() instanceof CompoundType ^ rightSource.type() instanceof CompoundType) {
+            Source ptr = leftSource.type() instanceof CompoundType ? leftSource : rightSource;
+            Source operand = leftSource.type() instanceof CompoundType ? rightSource : leftSource;
+            result = Register.LLVM_Register(ptr.type());
+            block.addInstruction(new GetElemPtrInstruction(result, Arrays.asList(ptr, operand)));
         } else {
-            leftReg = (Register) leftSource;
-        }
+            // add implicit conversion if necessary
+            PrimitiveType conversion = PrimitiveType.implicitConversion(
+                    (PrimitiveType) leftSource.type(),
+                    (PrimitiveType) rightSource.type()
+            );
 
-        Register rightReg;
-        if (rightSource instanceof Literal rightLiteral) {
-            rightReg = Register.RISC_Register(rightLiteral.getType());
-            block.addInstruction(new LoadImmInstruction(rightReg, rightLiteral));
-        } else {
-            rightReg = (Register) rightSource;
-        }
-
-        switch (operator) {
-            case PLUS, MINUS, TIMES, DIVIDE -> {
-                Register result = Register.RISC_Register(promoteType(leftReg.getType(), rightReg.getType()));
-                block.addInstruction(new BinaryInstruction(result, operator, leftReg, rightReg));
-                return result;
+            if (!conversion.equals(leftSource.type())) {
+                Instruction converter = ConversionInstruction.make(leftSource, conversion);
+                block.addInstruction(converter);
+                leftSource = converter.getResult().clone();
             }
-            default -> throw new RuntimeException("TypeHandler::codegen: not implemented yet");
-        }
+            if (!conversion.equals(rightSource.type())) {
+                Instruction converter = ConversionInstruction.make(rightSource, conversion);
+                block.addInstruction(converter);
+                rightSource = converter.getResult().clone();
+            }
 
+            switch (operator) {
+                case PLUS, MINUS, TIMES, DIVIDE, MODULO, SL, SR, B_AND, B_XOR, B_OR -> {
+                    result = Register.LLVM_Register(leftSource.type().clone());
+                    block.addInstruction(new BinaryInstruction(result, operator, leftSource, rightSource));
+                }
+                case LT, GT, LE, GE, EQ, NE -> {
+                    result = Register.LLVM_Register(new IntegerType(IntegerType.Width.BOOL, true));
+                    block.addInstruction(new ComparatorInstruction(result, operator, leftSource, rightSource));
+                }
+                case L_AND -> {
+                    Register temp = Register.LLVM_Register(leftSource.type().clone());
+                    result = Register.LLVM_Register(new IntegerType(IntegerType.Width.BOOL, true));
+                    block.addInstruction(new BinaryInstruction(temp, Operator.B_AND, leftSource, rightSource));
+                    block.addInstruction(new ComparatorInstruction(result, Operator.NE, temp.clone(),
+                            new Literal("0", temp.type().clone())));
+                }
+                case L_OR -> {
+                    Register temp = Register.LLVM_Register(leftSource.type().clone());
+                    result = Register.LLVM_Register(new IntegerType(IntegerType.Width.BOOL, true));
+                    block.addInstruction(new BinaryInstruction(temp, Operator.B_OR, leftSource, rightSource));
+                    block.addInstruction(new ComparatorInstruction(result, Operator.NE, temp.clone(),
+                            new Literal("0", temp.type().clone())));
+                }
+                default -> throw new RuntimeException("BinaryExpression::codegen: undefined operator");
+            }
+        }
+        return result.clone();
     }
+
+
 }

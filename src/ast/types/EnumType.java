@@ -5,10 +5,10 @@ import ast.expr.Expression;
 import java.util.List;
 import java.util.Objects;
 
-public class EnumType implements Type {
+public class EnumType extends Type {
 
-    private String name;
-    private List<Enumeration> enumerators;
+    private final String name;
+    private final List<Enumeration> enumerators;
 
     public EnumType(String name, List<Enumeration> enumerators) {
         this.name = name;
@@ -21,6 +21,10 @@ public class EnumType implements Type {
 
     public List<Enumeration> getEnumerators() {
         return enumerators;
+    }
+
+    public Type clone() {
+        throw new RuntimeException("not implemented yet");
     }
 
     @Override
@@ -36,5 +40,10 @@ public class EnumType implements Type {
     @Override
     public int hashCode() {
         return Objects.hash(name);
+    }
+
+    @Override
+    public String toString() {
+        throw new RuntimeException("Not implemented yet");
     }
 }

@@ -5,8 +5,8 @@ import ast.declarations.Declaration;
 import java.util.List;
 import java.util.Objects;
 
-public class StructType implements Type {
-    private String name;
+public class StructType extends Type {
+    private final String name;
     private List<Declaration> members;
 
     public StructType(String name, List<Declaration> members) {
@@ -27,6 +27,11 @@ public class StructType implements Type {
     }
 
     @Override
+    public Type clone() {
+        throw new RuntimeException("not implemented yet");
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
@@ -39,6 +44,11 @@ public class StructType implements Type {
     @Override
     public int hashCode() {
         return Objects.hashCode(name);
+    }
+
+    @Override
+    public String toString() {
+        return "struct." + name;
     }
 }
 

@@ -5,20 +5,25 @@ import ast.statements.CompoundStatement;
 import ast.statements.Statement;
 import ast.types.*;
 import codegen.BasicBlock;
-import codegen.instruction.Instruction;
-import semantics.TypeEnvironment;
+import codegen.ControlFlowGraph;
+import codegen.TranslationUnit;
+import codegen.instruction.llvm.FunctionDeclaration;
+import codegen.instruction.llvm.PhiInstruction;
+import codegen.values.Register;
+import org.antlr.v4.runtime.misc.Pair;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+
+import java.util.*;
 
 public class Program {
     private final List<ExternalDeclaration> declarations;
     private final TypeEnvironment globalEnv;
+    private final List<TypeEnvironment> localEnvs;
 
     public Program() {
         this.declarations = new ArrayList<>();
         this.globalEnv = new TypeEnvironment();
+        this.localEnvs = new ArrayList<>();
     }
 
     public void addDeclaration(ExternalDeclaration declaration) {
@@ -36,6 +41,7 @@ public class Program {
     public void verifySemantics() {
         // ensure that the environment is empty before starting
         globalEnv.clear();
+        localEnvs.clear();
         for (ExternalDeclaration externalDeclaration : declarations) {
             // add all global variables to the global environment
             switch (externalDeclaration) {
@@ -48,7 +54,7 @@ public class Program {
                     Statement stmt = definition.getBody();
 
                     // add function definition to the environment
-                    globalEnv.update(stub);
+                    globalEnv.addDefinition(stub.getName(), definition);
 
                     // ensure that the function has function type and add its args to the local env
                     if (!(stub.getDeclSpec().getType() instanceof FunctionType func))
@@ -70,6 +76,7 @@ public class Program {
                                 " Does Not Return for All Paths");
                     }
 
+                    localEnvs.add(localEnv);
                     // debugging code
                     //System.out.println("Function " + stub.getName() + " Done");
                 }
@@ -80,14 +87,46 @@ public class Program {
         }
     }
 
-    public void shittyCodegen() {
-        for (ExternalDeclaration externalDeclaration : declarations) {
+
+    public TranslationUnit codegen() {
+        TranslationUnit unit = new TranslationUnit(globalEnv.duplicate());
+        int j = 0;
+        for (int i = 0; i < declarations.size(); i++) {
+            ExternalDeclaration externalDeclaration = declarations.get(i);
             switch (externalDeclaration) {
                 case FunctionDefinition definition -> {
-                    List<BasicBlock> blocks = Arrays.asList(new BasicBlock());
-                    definition.getBody().codegen(blocks, globalEnv, definition.getLocalEnv());
-                    for (Instruction instruction : blocks.getFirst().getAllInstructions()) {
-                        System.out.println(instruction);
+                    // get type environment
+                    TypeEnvironment localEnv = localEnvs.get(j++).duplicate();
+                    // construct a new cfg for the function
+                    ControlFlowGraph graph = new ControlFlowGraph(localEnv, definition);
+                    BasicBlock prologue = new BasicBlock();
+                    graph.addBlock(prologue);
+                    // add all parameter registers
+                    for (Pair<String, Type> paramPair : definition.getParameters()) {
+                        Register param = Register.LLVM_Register(paramPair.b);
+                        prologue.addBinding(paramPair.a, param);
+                        graph.addParameter(param.clone());
+                    }
+                    // generate a new register for the return value and
+                    definition.getBody().codegen(unit, graph, prologue);
+
+                    BasicBlock epilogue = new BasicBlock();
+                    Optional<PhiInstruction> returnPhi = graph.getReturnPhi();
+                    if (returnPhi.isPresent()) {
+                        Register returnRegister = Register.LLVM_Register(definition.getReturnType());
+                        graph.declareReturnRegister(returnRegister);
+                        epilogue.addInstruction(returnPhi.get());
+                    }
+
+                    graph.placeReturnBlock();
+                    unit.addControlFlowGraph(graph);
+                }
+                case Declaration declaration -> {
+                    if (declaration.getDeclSpec().getType() instanceof FunctionType func) {
+                        FunctionDeclaration decl = new FunctionDeclaration(declaration.getName(), func);
+                        unit.getGlobalBlock().addInstruction(decl);
+                    } else {
+                        throw new RuntimeException("Program::shittyCodegen: Other decls not implemented");
                     }
                 }
                 case null, default -> {
@@ -95,5 +134,7 @@ public class Program {
                 }
             }
         }
+
+        return unit;
     }
 }

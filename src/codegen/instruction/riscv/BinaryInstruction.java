@@ -8,7 +8,7 @@ import java.util.Arrays;
 
 public class BinaryInstruction extends Instruction {
 
-    BinaryExpression.Operator op;
+    private final BinaryExpression.Operator op;
 
     public BinaryInstruction(Register result, BinaryExpression.Operator op, Register op1, Register op2) {
         super(Arch.RISCV, Arrays.asList(result), Arrays.asList(op1, op2));
@@ -17,12 +17,18 @@ public class BinaryInstruction extends Instruction {
 
     @Override
     public String toString() {
-        switch(op) {
-            case PLUS -> {return String.format("add %s, %s, %s", getResult(), getSource(0), getSource(1));}
-            case MINUS -> {return String.format("sub %s, %s, %s", getResult(), getSource(0), getSource(1));}
-            case TIMES -> {return String.format("mul %s, %s, %s", getResult(), getSource(0), getSource(1));}
-            case DIVIDE -> {return String.format("div %s, %s, %s", getResult(), getSource(0), getSource(1));}
-            default -> throw new RuntimeException("Not Implemented: " + op);
-        }
+        String opString = switch(op) {
+            case PLUS -> "add";
+            case MINUS -> "sub";
+            case TIMES -> "mul";
+            case DIVIDE -> "div";
+            case B_XOR -> "xor";
+            case B_AND -> "and";
+            case B_OR -> "or";
+            case SR -> "srl";
+            case SL -> "sll";
+            default -> throw new RuntimeException("BinaryImmInstruction::toString: No Instruction exists with " + op);
+        };
+        return String.format("%s %s, %s, %s", opString, getResult(), getSource(0), getSource(1));
     }
 }

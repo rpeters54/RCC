@@ -4,8 +4,10 @@ import ast.declarations.DeclarationSpecifier;
 import ast.types.IntegerType;
 import ast.types.Type;
 import codegen.BasicBlock;
+import codegen.ControlFlowGraph;
+import codegen.TranslationUnit;
 import codegen.values.Source;
-import semantics.TypeEnvironment;
+import ast.TypeEnvironment;
 
 public class SizeofTypeExpression implements Expression {
     private final Type type;
@@ -18,12 +20,12 @@ public class SizeofTypeExpression implements Expression {
     @Override
     public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv) {
         return new DeclarationSpecifier(new IntegerType(),
-                DeclarationSpecifier.StorageClass.NONE,
-                DeclarationSpecifier.TypeQualifier.NONE);
+                Type.StorageClass.NONE,
+                Type.TypeQualifier.NONE);
     }
 
     @Override
-    public Source codegen(BasicBlock block, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
         throw new RuntimeException("Not Implemented");
     }
 }

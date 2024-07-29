@@ -18,4 +18,14 @@ public class TypeDeclaration implements ExternalDeclaration {
     public DeclarationSpecifier getMapping() {
         return mapping;
     }
+
+    @Override
+    public String toString() {
+        return "TypeDeclaration{" +
+                "name='" + name + '\'' +
+                ", mapping=" + mapping +
+                '}';
+    }
+
+
 }

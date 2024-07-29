@@ -5,7 +5,7 @@ import ast.declarations.Declaration;
 import java.util.List;
 import java.util.Objects;
 
-public class UnionType implements Type {
+public class UnionType extends Type {
     private String name;
     private List<Declaration> members;
 
@@ -27,6 +27,11 @@ public class UnionType implements Type {
     }
 
     @Override
+    public Type clone() {
+        throw new RuntimeException("not implemented yet");
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
@@ -39,5 +44,10 @@ public class UnionType implements Type {
     @Override
     public int hashCode() {
         return Objects.hashCode(name);
+    }
+
+    @Override
+    public String toString() {
+        return "union." + name;
     }
 }

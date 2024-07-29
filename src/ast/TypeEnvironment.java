@@ -1,11 +1,10 @@
-package semantics;
+package ast;
 
 import ast.declarations.Declaration;
 import ast.declarations.DeclarationSpecifier;
 import ast.declarations.FunctionDefinition;
 import ast.declarations.TypeDeclaration;
 import ast.types.*;
-import org.antlr.v4.codegen.model.decl.Decl;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -172,11 +171,21 @@ public class TypeEnvironment {
         unions.put(name, union);
     }
 
-//    public void addFunc(String name, FunctionType func) {
-//        if (funcs.get(name) != null)
-//            throw new RuntimeException(String.format("TypeEnvironment: Function with name %s already exists", name));
-//        funcs.put(name, func);
-//    }
+    public void addDefinition(String name, FunctionDefinition func) {
+        DeclarationSpecifier declSpec = variables.get(name);
+
+        if (declSpec != null) {
+            assert declSpec.getType() instanceof PointerType;
+            Type type = ((PointerType) declSpec.getType()).getBase();
+            if (!func.getDeclaration().getDeclSpec().getType().equals(type)) {
+                throw new RuntimeException(String.format("TypeEnvironment: Illegal Redifinition of Function %s", name));
+            }
+        }
+
+        DeclarationSpecifier newSpec = new DeclarationSpecifier(new PointerType(func.getDeclaration().getDeclSpec().getType()));
+        newSpec.updateBoth(func.getDeclaration().getDeclSpec());
+        variables.put(name, newSpec);
+    }
 
     public void addBinding(String name, DeclarationSpecifier variable) {
         if (variables.get(name) != null)
@@ -214,17 +223,8 @@ public class TypeEnvironment {
         return union;
     }
 
-//    public FunctionType getFunc(String name) {
-//        FunctionType func = funcs.get(name);
-//        if (func == null)
-//            throw new RuntimeException(String.format("TypeEnvironment: Function with name %s does not exist", name));
-//        return func;
-//    }
-
     public DeclarationSpecifier getBinding(String name) {
         DeclarationSpecifier declarationSpecifier = variables.get(name);
-//        if (declarationSpecifier == null)
-//            throw new RuntimeException(String.format("TypeEnvironment: Variable with name %s does not exist", name));
         return declarationSpecifier;
     }
 

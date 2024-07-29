@@ -3,9 +3,9 @@ package ast.statements;
 import ast.declarations.DeclarationSpecifier;
 import ast.declarations.FunctionDefinition;
 import codegen.BasicBlock;
-import semantics.TypeEnvironment;
-
-import java.util.List;
+import ast.TypeEnvironment;
+import codegen.ControlFlowGraph;
+import codegen.TranslationUnit;
 
 public class GotoStatement implements Statement {
     private final int lineNum;
@@ -27,7 +27,7 @@ public class GotoStatement implements Statement {
     }
 
     @Override
-    public void codegen(List<BasicBlock> blocks, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
         throw new RuntimeException("Not implemented yet");
     }
 }

@@ -11,12 +11,14 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public class ASTVisitor extends CBaseVisitor<Object> {
 
-    private static ASTExpressionVisitor expVisitor = new ASTExpressionVisitor();
-    private static ASTStatementVisitor stmtVisitor = new ASTStatementVisitor();
+    private static final ASTExpressionVisitor expVisitor = new ASTExpressionVisitor();
+    private static final ASTStatementVisitor stmtVisitor = new ASTStatementVisitor();
 
     /*
      ====================================================================================================
@@ -31,7 +33,7 @@ public class ASTVisitor extends CBaseVisitor<Object> {
 
     /**
      * Visit a program parse tree and return its definitions
-     * @param ctx
+     * @param ctx Antlr context for top level program
      * @return List[Declaration] corresponding to all declarations in the program
      */
     @Override
@@ -41,8 +43,8 @@ public class ASTVisitor extends CBaseVisitor<Object> {
             Object obj = visit(edctx);
             if (obj instanceof ExternalDeclaration) {
                 prog.addDeclaration((ExternalDeclaration) obj);
-            } else if (obj instanceof List<?> && ((List<?>) obj).size() > 0) {
-                if (((List<?>) obj).get(0) instanceof ExternalDeclaration) {
+            } else if (obj instanceof List<?> && !((List<?>) obj).isEmpty()) {
+                if (((List<?>) obj).getFirst() instanceof ExternalDeclaration) {
                     prog.getDeclarations().addAll((List<ExternalDeclaration>) obj);
                 }
             } else {
@@ -54,8 +56,8 @@ public class ASTVisitor extends CBaseVisitor<Object> {
 
     /**
      * Return the result of parsing either a function definition, declaration, or type declaration
-     * @param ctx
-     * @return
+     * @param ctx Antlr context for an external declaration
+     * @return Union[ExternalDeclaration, List[ExternalDeclaration]]
      */
     @Override
     public Object visitExternalDeclaration(CParser.ExternalDeclarationContext ctx) {
@@ -71,6 +73,11 @@ public class ASTVisitor extends CBaseVisitor<Object> {
         throw new IllegalArgumentException("Illegal ExternalDeclaration");
     }
 
+    /**
+     * Return the result of parsing a function definition
+     * @param ctx Antlr context for a function definition
+     * @return FunctionDefinition Object that defines the parsed function
+     */
     @Override
     public Object visitFunctionDefinition(CParser.FunctionDefinitionContext ctx) {
 
@@ -82,27 +89,24 @@ public class ASTVisitor extends CBaseVisitor<Object> {
             retType = parseDeclSpecCtxList(ctx.declarationSpecifier());
         } else {
             retType = new DeclarationSpecifier();
-            IntegerType type = new IntegerType();
-            type.setBits(BitsPerByte*Integer.BYTES);
-            retType.setType(type);
+            retType.setType(new IntegerType());
         }
 
         Object obj = visit(ctx.name);
-        if (!(obj instanceof Declaration)) {
+        if (!(obj instanceof Declaration functionDeclaration)) {
             throw new RuntimeException("visitFunctionDefinition: visit(ctx.name) should return List<Declaration>");
         }
-        Declaration functionDeclaration = (Declaration) obj;
 
         //update functionDeclaration to contain the DeclarationSpecifier found while parsing retType
         updateDeclaration(functionDeclaration, retType);
 
         // parse old-style list of parameter declarations
         // (probably never going to be used, but it's a case I have to handle)
-        if (ctx.declaration() != null && ctx.declaration().size() > 0) {
+        if (ctx.declaration() != null && !ctx.declaration().isEmpty()) {
             List<Declaration> oldStyleArgList = new ArrayList<>();
             for (CParser.DeclarationContext dctx : ctx.declaration()) {
                 obj = visit(dctx);
-                if (!(obj instanceof List<?> && ((List<?>) obj).size() > 0 && ((List<?>) obj).get(0) instanceof Declaration)) {
+                if (!(obj instanceof List<?> && !((List<?>) obj).isEmpty() && ((List<?>) obj).getFirst() instanceof Declaration)) {
                     throw new RuntimeException("visitFunctionDefinition: visit(ctx.name) should return List<Declaration>");
                 }
                 oldStyleArgList.addAll((List<Declaration>)obj);
@@ -140,6 +144,14 @@ public class ASTVisitor extends CBaseVisitor<Object> {
         return new FunctionDefinition(functionDeclaration, body);
     }
 
+
+    /**
+     * Return the result of parsing a declaration
+     * Note: since one declaration can declare >1 variable, this function returns a
+     * list of Declarations with each variable declared
+     * @param ctx Antlr context for a declaration
+     * @return List[Declaration] Object that defines all objects declared
+     */
     @Override
     public Object visitDeclaration(CParser.DeclarationContext ctx) {
         // get the declaration specifier which contains
@@ -161,13 +173,11 @@ public class ASTVisitor extends CBaseVisitor<Object> {
             // visiting an init declarator should return a declaration
             // if it doesn't throw an error
             Object obj = visit(idctx);
-            if (!(obj instanceof Declaration)) {
+            if (!(obj instanceof Declaration decl)) {
                 throw new RuntimeException("Init Declarator visit should return declaration");
             }
 
             // with the declaration parsed, merge the top declaration specifier and the declaration
-            Declaration decl = (Declaration) obj;
-
             updateDeclaration(decl, specifier);
 
             declList.add(decl);
@@ -177,6 +187,16 @@ public class ASTVisitor extends CBaseVisitor<Object> {
         return declList;
     }
 
+
+    /**
+     * Return the result of parsing a type declaration
+     * Note: traditionally, C has type declarations be a subset of
+     * normal declarations. I explicitly made type declarations their own language feature
+     * to make the parsing much easier. This may lead to some unintended effects.
+     * I'll leave discovering those cases as an exercise for the reader.
+     * @param ctx Antlr context for a type declaration
+     * @return TypeDeclaration Object that represents the mapping from a name to a type
+     */
     @Override
     public Object visitTypeDeclaration(CParser.TypeDeclarationContext ctx) {
         DeclarationSpecifier specifier = new DeclarationSpecifier();
@@ -184,8 +204,8 @@ public class ASTVisitor extends CBaseVisitor<Object> {
             Object obj = visit(sqctx);
             if (obj instanceof Type) {
                 specifier.setType((Type) obj);
-            } else if (obj instanceof DeclarationSpecifier.TypeQualifier) {
-                specifier.updateQualifier((DeclarationSpecifier.TypeQualifier)obj);
+            } else if (obj instanceof Type.TypeQualifier) {
+                specifier.updateQualifier((Type.TypeQualifier)obj);
             } else {
                 throw new RuntimeException("visitTypeDeclaration: unresolved specifier qualifier");
             }
@@ -193,6 +213,12 @@ public class ASTVisitor extends CBaseVisitor<Object> {
         return new TypeDeclaration(ctx.Identifier().getText(), specifier);
     }
 
+
+    /**
+     * Parses the context associated with typecasts (ex. int x = (int) 9.5)
+     * @param ctx Antlr context for a type name
+     * @return DeclarationSpecifier that defines the type and type modifiers
+     */
     @Override
     public Object visitTypeName(CParser.TypeNameContext ctx) {
         DeclarationSpecifier specifier = new DeclarationSpecifier();
@@ -201,8 +227,8 @@ public class ASTVisitor extends CBaseVisitor<Object> {
             Object obj = visit(sqctx);
             if (obj instanceof Type) {
                 typeList.add((Type) obj);
-            } else if (obj instanceof DeclarationSpecifier.TypeQualifier) {
-                specifier.updateQualifier((DeclarationSpecifier.TypeQualifier) obj);
+            } else if (obj instanceof Type.TypeQualifier) {
+                specifier.updateQualifier((Type.TypeQualifier) obj);
             } else {
                 throw new RuntimeException("visitTypeName: Encountered Malformed SpecifierQualifier");
             }
@@ -233,8 +259,8 @@ public class ASTVisitor extends CBaseVisitor<Object> {
 
     /**
      * Visits declarations specifier parse tree object
-     * @param ctx
-     * @return Union(StorageClassEnum, TypeQualifierEnum, Type)
+     * @param ctx Antlr context for a fields of a Declaration Specifier
+     * @return Union[StorageClassEnum, TypeQualifierEnum, Type]
      */
     @Override
     public Object visitDeclarationSpecifier(CParser.DeclarationSpecifierContext ctx) {
@@ -255,17 +281,17 @@ public class ASTVisitor extends CBaseVisitor<Object> {
 
 
     /**
-     * Visits storage class parse tree object
-     * @param ctx
-     * @return StorageClassEnum
+     * Parses a storage class specifier which declares how a variable should be handled in memory
+     * @param ctx Antlr context for a Storage Class Specifier
+     * @return StorageClassEnum representing the storage class specifier
      */
     @Override
     public Object visitStorageClassSpecifier(CParser.StorageClassSpecifierContext ctx) {
         switch (ctx.getText()) {
-            case "auto" -> {return DeclarationSpecifier.StorageClass.AUTO;}
-            case "register" -> {return DeclarationSpecifier.StorageClass.REGISTER;}
-            case "static" -> {return DeclarationSpecifier.StorageClass.STATIC;}
-            case "extern" -> {return DeclarationSpecifier.StorageClass.EXTERN;}
+            case "auto" -> {return Type.StorageClass.AUTO;}
+            case "register" -> {return Type.StorageClass.REGISTER;}
+            case "static" -> {return Type.StorageClass.STATIC;}
+            case "extern" -> {return Type.StorageClass.EXTERN;}
             default -> throw new IllegalArgumentException("Nonexistent Storage Class Specifier");
         }
     }
@@ -295,8 +321,8 @@ public class ASTVisitor extends CBaseVisitor<Object> {
     @Override
     public Object visitTypeQualifier(CParser.TypeQualifierContext ctx) {
         switch (ctx.getText()) {
-            case "const" -> {return DeclarationSpecifier.TypeQualifier.CONST;}
-            case "volatile" -> {return DeclarationSpecifier.TypeQualifier.VOLATILE;}
+            case "const" -> {return Type.TypeQualifier.CONST;}
+            case "volatile" -> {return Type.TypeQualifier.VOLATILE;}
             default -> throw new IllegalArgumentException("Nonexistent Type Qualifier");
         }
     }
@@ -314,7 +340,7 @@ public class ASTVisitor extends CBaseVisitor<Object> {
             if (!(obj instanceof List)) {
                 throw new RuntimeException("visitStructOrUnionSpecifier: tried to visit member, didn't get declaration list");
             }
-            if (!(((List<?>) obj).size() > 0 && ((List<?>) obj).get(0) instanceof Declaration)) {
+            if (!(!((List<?>) obj).isEmpty() && ((List<?>) obj).getFirst() instanceof Declaration)) {
                 throw new RuntimeException("visitStructOrUnionSpecifier: tried to visit member, didn't get declaration list");
             }
 
@@ -349,8 +375,8 @@ public class ASTVisitor extends CBaseVisitor<Object> {
             if (!(obj instanceof List)) {
                 throw new RuntimeException("visitSpecifierQualifierList: Expected Declaration Specifier List");
             }
-            if (((List<?>) obj).size() > 0) {
-                if (!(((List<?>) obj).get(0) instanceof DeclarationSpecifier)) {
+            if (!((List<?>) obj).isEmpty()) {
+                if (!(((List<?>) obj).getFirst() instanceof DeclarationSpecifier)) {
                     throw new RuntimeException("visitSpecifierQualifierList: Expected Declaration Specifier List");
                 }
             }
@@ -367,10 +393,10 @@ public class ASTVisitor extends CBaseVisitor<Object> {
         }
         if (ctx.typeQualifier() != null) {
             Object obj = visit(ctx.typeQualifier());
-            if (!(obj instanceof DeclarationSpecifier.TypeQualifier)) {
+            if (!(obj instanceof Type.TypeQualifier)) {
                 throw new RuntimeException("visitSpecifierQualifierList: Expected Type Qualifier");
             }
-            specifier.updateQualifier((DeclarationSpecifier.TypeQualifier) obj);
+            specifier.updateQualifier((Type.TypeQualifier) obj);
         }
         specifierList.add(specifier);
         return specifierList;
@@ -393,8 +419,8 @@ public class ASTVisitor extends CBaseVisitor<Object> {
         if (!(obj instanceof List)) {
             throw new RuntimeException("visitSpecifierQualifierList: Expected Declaration Specifier List");
         }
-        if (((List<?>) obj).size() > 0) {
-            if (!(((List<?>) obj).get(0) instanceof DeclarationSpecifier)) {
+        if (!((List<?>) obj).isEmpty()) {
+            if (!(((List<?>) obj).getFirst() instanceof DeclarationSpecifier)) {
                 throw new RuntimeException("visitSpecifierQualifierList: Expected Declaration Specifier List");
             }
         }
@@ -410,10 +436,9 @@ public class ASTVisitor extends CBaseVisitor<Object> {
         }
         for (CParser.StructDeclaratorContext dectx : ctx.structDeclaratorList().structDeclarator()) {
             obj = visit(dectx.declarator());
-            if (!(obj instanceof Declaration)) {
+            if (!(obj instanceof Declaration decl)) {
                 throw new RuntimeException("visitStructDeclation: didn't get Declaration");
             }
-            Declaration decl = (Declaration) obj;
             updateDeclaration(decl, specifier);
             declarationList.add(decl);
         }
@@ -423,10 +448,9 @@ public class ASTVisitor extends CBaseVisitor<Object> {
     @Override
     public Object visitInitDeclarator(CParser.InitDeclaratorContext ctx) {
         Object obj = visit(ctx.declarator());
-        if (!(obj instanceof Declaration)) {
+        if (!(obj instanceof Declaration decl)) {
             throw new IllegalArgumentException("Invalid return from declarator visit");
         }
-        Declaration decl = (Declaration) obj;
         if (ctx.initializer() != null) {
             obj = visit(ctx.initializer());
             if (!(obj instanceof List)) {
@@ -473,14 +497,12 @@ public class ASTVisitor extends CBaseVisitor<Object> {
     @Override
     public Object visitDeclarator(CParser.DeclaratorContext ctx) {
         Object obj = visit(ctx.directDeclarator());
-        if (!(obj instanceof Declaration))
+        if (!(obj instanceof Declaration decl))
             throw new RuntimeException("Non-Declarator Found in visitDirectDeclarator");
-        Declaration decl = (Declaration) obj;
         if (ctx.pointer() != null) {
             obj = visit(ctx.pointer());
-            if (!(obj instanceof DeclarationSpecifier))
+            if (!(obj instanceof DeclarationSpecifier pointerSpecifier))
                 throw new RuntimeException("Non-DeclarationSpecifier Found in visitDeclarator");
-            DeclarationSpecifier pointerSpecifier = (DeclarationSpecifier) obj;
             decl = addPointerToDeclarator(pointerSpecifier, decl);
         }
         return decl;
@@ -498,8 +520,8 @@ public class ASTVisitor extends CBaseVisitor<Object> {
         }
         for (CParser.TypeQualifierContext tqctx : ctx.typeQualifier()) {
             Object obj = visit(tqctx);
-            if (obj instanceof DeclarationSpecifier.TypeQualifier) {
-                dt.updateQualifier((DeclarationSpecifier.TypeQualifier) obj);
+            if (obj instanceof Type.TypeQualifier) {
+                dt.updateQualifier((Type.TypeQualifier) obj);
             } else {
                 throw new IllegalArgumentException("Bad type qualifier in pointer");
             }
@@ -563,10 +585,9 @@ public class ASTVisitor extends CBaseVisitor<Object> {
     @Override
     public Object visitOldFunctionDeclarator(CParser.OldFunctionDeclaratorContext ctx) {
         Object obj = visit(ctx.directDeclarator());
-        if (!(obj instanceof Declaration))
-            throw new RuntimeException("visitOldFunctionDeclarator: visit declarator should return a Declaration");
         // get nested declarator
-        Declaration decl = (Declaration) obj;
+        if (!(obj instanceof Declaration decl))
+            throw new RuntimeException("visitOldFunctionDeclarator: visit declarator should return a Declaration");
 
         // build new function type
         FunctionType func = new FunctionType();
@@ -613,10 +634,9 @@ public class ASTVisitor extends CBaseVisitor<Object> {
         Declaration decl = (Declaration) obj;
         if (ctx.pointer() != null) {
             obj = visit(ctx.pointer());
-            if (!(obj instanceof DeclarationSpecifier)) {
+            if (!(obj instanceof DeclarationSpecifier pointerSpecifier)) {
                 throw new RuntimeException("Non-DeclarationSpecifier Found in visitAbstractDeclarator");
             }
-            DeclarationSpecifier pointerSpecifier = (DeclarationSpecifier) obj;
             decl = addPointerToDeclarator(pointerSpecifier, decl);
         }
         return decl;
@@ -643,7 +663,7 @@ public class ASTVisitor extends CBaseVisitor<Object> {
                 CompoundType outer = (CompoundType) typelist.get(i-1);
                 outer.setBase(base);
             }
-            type = typelist.get(0);
+            type = typelist.getFirst();
         }
 
         // if a constant expression list, return an array declaration
@@ -668,10 +688,9 @@ public class ASTVisitor extends CBaseVisitor<Object> {
 
         if (ctx.abstractDeclarator() != null) {
             Object obj = visit(ctx.abstractDeclarator());
-            if (!(obj instanceof Declaration))
+            if (!(obj instanceof Declaration abstractDecl))
                 throw new RuntimeException("visitDirectAbstractDeclarator: " +
                         "visitAbstractDeclarator returned non-Declaration");
-            Declaration abstractDecl = (Declaration) obj;
             if (type != null) {
                 Type absType = abstractDecl.getDeclSpec().getType();
                 if (type instanceof CompoundType && absType instanceof CompoundType) {
@@ -880,26 +899,19 @@ public class ASTVisitor extends CBaseVisitor<Object> {
 
         for (CParser.DeclarationSpecifierContext dsctx : ctx) {
             Object obj = visit(dsctx);
-            if (obj instanceof DeclarationSpecifier.StorageClass) {
-                declSpec.updateStorage((DeclarationSpecifier.StorageClass) obj);
-            } else if (obj instanceof Type) {
-                typeList.add((Type) obj);
-            } else if (obj instanceof DeclarationSpecifier.TypeQualifier) {
-                declSpec.updateQualifier((DeclarationSpecifier.TypeQualifier) obj);
-            } else {
-                throw new IllegalArgumentException("Unrecognized type specifier while parsing declaration");
+            switch (obj) {
+                case Type.StorageClass storageClass -> declSpec.updateStorage(storageClass);
+                case Type type -> typeList.add(type);
+                case Type.TypeQualifier typeQualifier -> declSpec.updateQualifier(typeQualifier);
+                case null, default ->
+                        throw new IllegalArgumentException("Unrecognized type specifier while parsing declaration");
             }
-        }
-        if (typeList.size() == 0) {
-            int i = 0;
         }
         declSpec.setType(buildBaseType(typeList));
         return declSpec;
     }
 
 
-
-    public static final int BitsPerByte = 8;
 
     /**
      * rectify list of type keywords into a single base type
@@ -908,15 +920,13 @@ public class ASTVisitor extends CBaseVisitor<Object> {
      * @return
      */
     public static Type buildBaseType(List<Type> typeList) {
-        Type sign = null;
-        boolean isSigned = true;
-        boolean intFlag = false;
-        boolean floatFlag = false;
-        boolean charFlag = false;
+        Optional<Type> sign = Optional.empty();
+        Optional<Type.Specifier> primType = Optional.empty();
+        AtomicBoolean isSigned = new AtomicBoolean(true);
         int shortCount = 0;
         int longCount = 0;
 
-        switch (typeList.get(0)) {
+        switch (typeList.getFirst()) {
             case DefinedType _:
             case StructType _:
             case UnionType _:
@@ -934,34 +944,34 @@ public class ASTVisitor extends CBaseVisitor<Object> {
             switch (type) {
                 case SignedType _:
                 case UnsignedType _:
-                    if (sign == null) {
-                        sign = type;
-                    } else {
-                        throw new IllegalArgumentException("Can't have multiple signed/unsigned keywords in a declaration");
-                    }
+                    sign.ifPresent((obj) -> { throw new IllegalArgumentException(
+                            "Can't have multiple signed/unsigned keywords in a declaration"
+                    );});
+                    sign = Optional.of(type);
                     break;
                 case IntType _:
-                    if (floatFlag || intFlag || charFlag) {
-                        throw new IllegalArgumentException("Either specified int twice or float, char, or int at same time");
-                    } else {
-                        intFlag = true;
-                    }
+                    primType.ifPresent((obj) -> { throw new IllegalArgumentException(
+                            "Either specified int twice or float, char, or int at same time"
+                    );});
+                    primType = Optional.of(Type.Specifier.INT);
                     break;
                 case DoubleType _:
-                    longCount++;
+                    primType.ifPresent((obj) -> { throw new IllegalArgumentException(
+                            "Either specified int twice or float, char, or int at same time"
+                    );});
+                    primType = Optional.of(Type.Specifier.DOUBLE);
+                    break;
                 case FloatType _:
-                    if (floatFlag || intFlag || charFlag) {
-                        throw new IllegalArgumentException("Either specified double/float twice or float, char, or int at same time");
-                    } else {
-                        floatFlag = true;
-                    }
+                    primType.ifPresent((obj) -> { throw new IllegalArgumentException(
+                            "Either specified int twice or float, char, or int at same time"
+                    );});
+                    primType = Optional.of(Type.Specifier.FLOAT);
                     break;
                 case CharType _:
-                    if (floatFlag || intFlag || charFlag) {
-                        throw new IllegalArgumentException("Either specified char twice or float, char, or int at same time");
-                    } else {
-                        charFlag = true;
-                    }
+                    primType.ifPresent((obj) -> { throw new IllegalArgumentException(
+                            "Either specified int twice or float, char, or int at same time"
+                    );});
+                    primType = Optional.of(Type.Specifier.CHAR);
                     break;
                 case ShortType _:
                     shortCount++;
@@ -974,87 +984,73 @@ public class ASTVisitor extends CBaseVisitor<Object> {
             }
         }
 
-//        for (Type type : typeList) {
-//            if (type instanceof SignedType || type instanceof UnsignedType) {
-//                if (sign == null) {
-//                    sign = type;
-//                } else {
-//                    throw new IllegalArgumentException("Can't have multiple signed/unsigned keywords in a declaration");
-//                }
-//            } else if (type instanceof IntType) {
-//                if (floatFlag || intFlag || charFlag) {
-//                    throw new IllegalArgumentException("Either specified int twice or float, char, or int at same time");
-//                } else {
-//                    intFlag = true;
-//                }
-//            } else if (type instanceof DoubleType || type instanceof FloatType) {
-//                if (floatFlag || intFlag || charFlag) {
-//                    throw new IllegalArgumentException("Either specified double/float twice or float, char, or int at same time");
-//                } else {
-//                    if (type instanceof DoubleType) longCount++;
-//                    floatFlag = true;
-//                }
-//            } else if (type instanceof CharType) {
-//                if (floatFlag || intFlag || charFlag) {
-//                    throw new IllegalArgumentException("Either specified char twice or float, char, or int at same time");
-//                } else {
-//                    charFlag = true;
-//                }
-//            } else if (type instanceof ShortType) {
-//                shortCount++;
-//            } else if (type instanceof LongType) {
-//                longCount++;
-//            } else {
-//                // failed to resolve type, likely because item is an identifier
-//                return null;
-//            }
-//        }
-
+        // check to make sure that long and short keywords were specified at the same time
         if (longCount > 0 && shortCount > 0) {
             throw new IllegalArgumentException("Can't specify long and short at the same time");
         }
-        if (sign instanceof UnsignedType) {
-            isSigned = false;
+
+        sign.ifPresentOrElse(
+                (obj) -> {
+                    switch (obj) {
+                        case SignedType _ -> isSigned.set(true);
+                        case UnsignedType _ -> isSigned.set(false);
+                        case null, default -> throw new RuntimeException("ASTVisitor::buildBaseType: Illegal object inside sign");
+                    }
+                },
+                () -> { isSigned.set(true); }
+        );
+
+        if (primType.isEmpty()) {
+            throw new IllegalArgumentException("Could Not Resolve Type");
         }
 
-        boolean noSpecifier = !(charFlag || intFlag || floatFlag);
-        if (charFlag) {
-            if (longCount > 0 || shortCount > 0) {
-                throw new IllegalArgumentException("No long or short specifiers for a char");
+        switch(primType.get()) {
+            case CHAR -> {
+                if (longCount > 0 || shortCount > 0) {
+                    throw new IllegalArgumentException("No long or short specifiers for a char");
+                }
+                return new IntegerType(IntegerType.Width.CHAR, isSigned.get());
             }
-            IntegerType ch = new IntegerType();
-            ch.setSigned(isSigned);
-            ch.setBits(BitsPerByte);
-            return ch;
+            case FLOAT -> {
+                if (longCount > 2 || shortCount > 0) {
+                    throw new IllegalArgumentException("Wrong number of long/short specifiers for float");
+                }
+                if (sign.isPresent()) {
+                    throw new IllegalArgumentException("Can't specify float as signed or unsigned");
+                }
+
+                FloatingType.Width size;
+                if (longCount > 0) {
+                    size = FloatingType.Width.DOUBLE;
+                } else {
+                    size = FloatingType.Width.FLOAT;
+                }
+                return new FloatingType(size);
+            }
+            case DOUBLE -> {
+                if (longCount > 1 || shortCount > 0) {
+                    throw new IllegalArgumentException("Wrong number of long/short specifiers for float");
+                }
+                if (sign.isPresent()) {
+                    throw new IllegalArgumentException("Can't specify double as signed or unsigned");
+                }
+
+                return new FloatingType(FloatingType.Width.DOUBLE);
+            }
+            case null, default -> {
+                if (longCount > 2 || shortCount > 1) {
+                    throw new IllegalArgumentException("Wrong number of long/short specifiers for int");
+                }
+                IntegerType.Width size;
+                if (longCount > 0) {
+                    size = IntegerType.Width.LONG;
+                } else if (shortCount > 0) {
+                    size = IntegerType.Width.SHORT;
+                } else {
+                    size = IntegerType.Width.INT;
+                }
+                return new IntegerType(size, isSigned.get());
+            }
         }
-        if (intFlag || noSpecifier) {
-            if (longCount > 2 || shortCount > 1) {
-                throw new IllegalArgumentException("Wrong number of long/short specifiers for int");
-            }
-            IntegerType it = new IntegerType();
-            it.setSigned(isSigned);
-            if (longCount > 0) {
-                it.setBits(BitsPerByte*Long.BYTES);
-            } else if (shortCount > 0) {
-                it.setBits(BitsPerByte*Short.BYTES);
-            } else {
-                it.setBits(BitsPerByte*Integer.BYTES);
-            }
-            return it;
-        }
-        if (floatFlag) {
-            if (longCount > 2 || shortCount > 0) {
-                throw new IllegalArgumentException("Wrong number of long/short specifiers for float");
-            }
-            FloatingType ft = new FloatingType();
-            ft.setSigned(isSigned);
-            if (longCount > 0) {
-                ft.setBits(BitsPerByte*Double.BYTES);
-            } else {
-                ft.setBits(BitsPerByte*Float.BYTES);
-            }
-            return ft;
-        }
-        throw new IllegalArgumentException("Could Not Resolve Type");
     }
 }

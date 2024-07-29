@@ -2,18 +2,20 @@ package ast.types;
 
 import java.util.Objects;
 
-public class DefinedType implements Type{
-    private String name; //name of the defined type
+public class DefinedType extends Type {
+    private final String name; //name of the defined type
 
     public DefinedType(String name) {
         this.name = name;
-
     }
 
     public String getName() {
         return name;
     }
 
+    public Type clone() {
+        return new DefinedType(name);
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -28,5 +30,10 @@ public class DefinedType implements Type{
     @Override
     public int hashCode() {
         return Objects.hash(name);
+    }
+
+    @Override
+    public String toString() {
+        throw new RuntimeException("Shouldn't be called");
     }
 }

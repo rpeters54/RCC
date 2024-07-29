@@ -4,8 +4,9 @@ import ast.declarations.Declaration;
 import ast.declarations.DeclarationSpecifier;
 import ast.declarations.FunctionDefinition;
 import codegen.BasicBlock;
-import codegen.values.Register;
-import semantics.TypeEnvironment;
+import ast.TypeEnvironment;
+import codegen.ControlFlowGraph;
+import codegen.TranslationUnit;
 
 import java.util.List;
 
@@ -56,9 +57,11 @@ public class CompoundStatement implements Statement {
     }
 
     @Override
-    public void codegen(List<BasicBlock> blocks, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+        BasicBlock current = block;
         for (Statement statement : statements) {
-            statement.codegen(blocks, globalEnv, localEnv);
+            current = statement.codegen(unit, cfg, current);
         }
+        return current;
     }
 }

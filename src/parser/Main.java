@@ -1,15 +1,12 @@
 package parser;
 
 import ast.Program;
-import ast.expr.Expression;
-import org.antlr.runtime.ANTLRInputStream;
+import codegen.TranslationUnit;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
@@ -21,8 +18,8 @@ public class Main {
     public static void main(String[] args) {
         Program program = parseProgram(args);
         program.verifySemantics();
-        program.shittyCodegen();
-        //System.out.println("Done");
+        TranslationUnit code = program.codegen();
+        code.printInstructions();
     }
 
     public static Program parseProgram(String[] args) {

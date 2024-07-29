@@ -3,7 +3,6 @@ package parser;
 
 import ast.Program;
 import ast.declarations.Declaration;
-import ast.declarations.DeclarationSpecifier;
 import ast.declarations.ExternalDeclaration;
 import ast.types.*;
 import org.junit.jupiter.api.DisplayName;
@@ -16,7 +15,7 @@ import java.util.List;
 
 public class ParseTest {
 
-    private static String testDir = "/Users/rileypeters/ANSIParser/src/parser/tests/";
+    private static final String testDir = "/Users/rileypeters/ANSIParser/src/parser/tests/parseTests/";
 
     @Test
     @DisplayName("Simple Variable Declarations")
@@ -25,18 +24,18 @@ public class ParseTest {
         Program program = Main.parseProgram(testPath);
         List<Declaration> declarations = toDeclarationList(program.getDeclarations());
 
-        numberDeclarationTest(declarations.get(0), "main", IntegerType.class, Integer.BYTES, true,
-                DeclarationSpecifier.StorageClass.NONE,DeclarationSpecifier.TypeQualifier.NONE);
-        numberDeclarationTest(declarations.get(1), "vroom", IntegerType.class, Character.BYTES, true,
-                DeclarationSpecifier.StorageClass.NONE,DeclarationSpecifier.TypeQualifier.NONE);
-        numberDeclarationTest(declarations.get(2), "mini", IntegerType.class, Short.BYTES, true,
-                DeclarationSpecifier.StorageClass.NONE,DeclarationSpecifier.TypeQualifier.NONE);
-        numberDeclarationTest(declarations.get(3), "length", IntegerType.class, Long.BYTES, true,
-                DeclarationSpecifier.StorageClass.NONE,DeclarationSpecifier.TypeQualifier.NONE);
-        numberDeclarationTest(declarations.get(4), "flying", FloatingType.class, Float.BYTES, true,
-                DeclarationSpecifier.StorageClass.NONE,DeclarationSpecifier.TypeQualifier.NONE);
-        numberDeclarationTest(declarations.get(5), "two", FloatingType.class, Double.BYTES, true,
-                DeclarationSpecifier.StorageClass.NONE,DeclarationSpecifier.TypeQualifier.NONE);
+        integerDeclarationTest(declarations.get(0), "main", IntegerType.Width.INT, true,
+                Type.StorageClass.NONE, Type.TypeQualifier.NONE);
+        integerDeclarationTest(declarations.get(1), "vroom", IntegerType.Width.CHAR, true,
+                Type.StorageClass.NONE, Type.TypeQualifier.NONE);
+        integerDeclarationTest(declarations.get(2), "mini", IntegerType.Width.SHORT, true,
+                Type.StorageClass.NONE, Type.TypeQualifier.NONE);
+        integerDeclarationTest(declarations.get(3), "length", IntegerType.Width.LONG, true,
+                Type.StorageClass.NONE, Type.TypeQualifier.NONE);
+        floatingDeclarationTest(declarations.get(4), "flying", FloatingType.Width.FLOAT,
+                Type.StorageClass.NONE, Type.TypeQualifier.NONE);
+        floatingDeclarationTest(declarations.get(5), "two", FloatingType.Width.DOUBLE,
+                Type.StorageClass.NONE, Type.TypeQualifier.NONE);
     }
 
 
@@ -47,20 +46,20 @@ public class ParseTest {
         Program program = Main.parseProgram(testPath);
         List<Declaration> declarations = toDeclarationList(program.getDeclarations());
 
-        numberDeclarationTest(declarations.get(0), "shortMan", IntegerType.class, Short.BYTES, true,
-                DeclarationSpecifier.StorageClass.NONE,DeclarationSpecifier.TypeQualifier.NONE);
-        numberDeclarationTest(declarations.get(1), "tallMan", IntegerType.class, Long.BYTES, true,
-                DeclarationSpecifier.StorageClass.NONE,DeclarationSpecifier.TypeQualifier.NONE);
-        numberDeclarationTest(declarations.get(2), "tallInt", IntegerType.class, Long.BYTES, true,
-                DeclarationSpecifier.StorageClass.NONE,DeclarationSpecifier.TypeQualifier.NONE);
-        numberDeclarationTest(declarations.get(3), "man", IntegerType.class, Long.BYTES, true,
-                DeclarationSpecifier.StorageClass.NONE,DeclarationSpecifier.TypeQualifier.NONE);
-        numberDeclarationTest(declarations.get(4), "superFloat", FloatingType.class, Double.BYTES, true,
-                DeclarationSpecifier.StorageClass.NONE,DeclarationSpecifier.TypeQualifier.NONE);
-        numberDeclarationTest(declarations.get(5), "floatie", FloatingType.class, Double.BYTES, true,
-                DeclarationSpecifier.StorageClass.NONE,DeclarationSpecifier.TypeQualifier.NONE);
-        numberDeclarationTest(declarations.get(6), "signless", IntegerType.class, Integer.BYTES, false,
-                DeclarationSpecifier.StorageClass.NONE,DeclarationSpecifier.TypeQualifier.NONE);
+        integerDeclarationTest(declarations.get(0), "shortMan", IntegerType.Width.SHORT, true,
+                Type.StorageClass.NONE, Type.TypeQualifier.NONE);
+        integerDeclarationTest(declarations.get(1), "tallMan", IntegerType.Width.LONG, true,
+                Type.StorageClass.NONE, Type.TypeQualifier.NONE);
+        integerDeclarationTest(declarations.get(2), "tallInt", IntegerType.Width.LONG, true,
+                Type.StorageClass.NONE, Type.TypeQualifier.NONE);
+        integerDeclarationTest(declarations.get(3), "man", IntegerType.Width.LONG, true,
+                Type.StorageClass.NONE, Type.TypeQualifier.NONE);
+        floatingDeclarationTest(declarations.get(4), "superFloat", FloatingType.Width.DOUBLE,
+                Type.StorageClass.NONE, Type.TypeQualifier.NONE);
+        floatingDeclarationTest(declarations.get(5), "floatie", FloatingType.Width.DOUBLE,
+                Type.StorageClass.NONE, Type.TypeQualifier.NONE);
+        integerDeclarationTest(declarations.get(6), "signless", IntegerType.Width.INT, false,
+                Type.StorageClass.NONE, Type.TypeQualifier.NONE);
     }
 
 
@@ -71,14 +70,14 @@ public class ParseTest {
         Program program = Main.parseProgram(testPath);
         List<Declaration> declarations = toDeclarationList(program.getDeclarations());
 
-        numberDeclarationTest(declarations.get(0), "shortMan", IntegerType.class, Short.BYTES, true,
-                DeclarationSpecifier.StorageClass.AUTO,DeclarationSpecifier.TypeQualifier.NONE);
-        numberDeclarationTest(declarations.get(1), "tallMan", IntegerType.class, Long.BYTES, true,
-                DeclarationSpecifier.StorageClass.STATIC,DeclarationSpecifier.TypeQualifier.NONE);
-        numberDeclarationTest(declarations.get(2), "tallInt", IntegerType.class, Long.BYTES, false,
-                DeclarationSpecifier.StorageClass.EXTERN,DeclarationSpecifier.TypeQualifier.NONE);
-        numberDeclarationTest(declarations.get(3), "regMan", IntegerType.class, Long.BYTES, true,
-                DeclarationSpecifier.StorageClass.REGISTER,DeclarationSpecifier.TypeQualifier.NONE);
+        integerDeclarationTest(declarations.get(0), "shortMan", IntegerType.Width.SHORT, true,
+                Type.StorageClass.AUTO, Type.TypeQualifier.NONE);
+        integerDeclarationTest(declarations.get(1), "tallMan", IntegerType.Width.LONG, true,
+                Type.StorageClass.STATIC, Type.TypeQualifier.NONE);
+        integerDeclarationTest(declarations.get(2), "tallInt", IntegerType.Width.LONG, false,
+                Type.StorageClass.EXTERN, Type.TypeQualifier.NONE);
+        integerDeclarationTest(declarations.get(3), "regMan", IntegerType.Width.LONG, true,
+                Type.StorageClass.REGISTER, Type.TypeQualifier.NONE);
     }
 
 
@@ -89,14 +88,14 @@ public class ParseTest {
         Program program = Main.parseProgram(testPath);
         List<Declaration> declarations = toDeclarationList(program.getDeclarations());
 
-        numberDeclarationTest(declarations.get(0), "shortMan", IntegerType.class, Short.BYTES, true,
-                DeclarationSpecifier.StorageClass.AUTO,DeclarationSpecifier.TypeQualifier.VOLATILE);
-        numberDeclarationTest(declarations.get(1), "tallMan", IntegerType.class, Long.BYTES, true,
-                DeclarationSpecifier.StorageClass.STATIC,DeclarationSpecifier.TypeQualifier.CONST);
-        numberDeclarationTest(declarations.get(2), "tallInt", IntegerType.class, Long.BYTES, true,
-                DeclarationSpecifier.StorageClass.EXTERN,DeclarationSpecifier.TypeQualifier.VOLATILE);
-        numberDeclarationTest(declarations.get(3), "regMan", IntegerType.class, Long.BYTES, false,
-                DeclarationSpecifier.StorageClass.REGISTER,DeclarationSpecifier.TypeQualifier.BOTH);
+        integerDeclarationTest(declarations.get(0), "shortMan", IntegerType.Width.SHORT, true,
+                Type.StorageClass.AUTO, Type.TypeQualifier.VOLATILE);
+        integerDeclarationTest(declarations.get(1), "tallMan", IntegerType.Width.LONG, true,
+                Type.StorageClass.STATIC, Type.TypeQualifier.CONST);
+        integerDeclarationTest(declarations.get(2), "tallInt", IntegerType.Width.LONG, true,
+                Type.StorageClass.EXTERN, Type.TypeQualifier.VOLATILE);
+        integerDeclarationTest(declarations.get(3), "regMan", IntegerType.Width.LONG, false,
+                Type.StorageClass.REGISTER, Type.TypeQualifier.BOTH);
     }
 
     @Test
@@ -111,10 +110,10 @@ public class ParseTest {
         List<Declaration> members = type.getMembers();
         Assertions.assertEquals("goated", anonStruct.getName());
         Assertions.assertNull(type.getName());
-        numberDeclarationTest(members.get(0), "name", IntegerType.class, Character.BYTES, true,
-                DeclarationSpecifier.StorageClass.NONE, DeclarationSpecifier.TypeQualifier.NONE);
-        numberDeclarationTest(members.get(1), "game", IntegerType.class, Integer.BYTES, true,
-                DeclarationSpecifier.StorageClass.NONE, DeclarationSpecifier.TypeQualifier.NONE);
+        integerDeclarationTest(members.get(0), "name", IntegerType.Width.CHAR, true,
+                Type.StorageClass.NONE, Type.TypeQualifier.NONE);
+        integerDeclarationTest(members.get(1), "game", IntegerType.Width.INT, true,
+                Type.StorageClass.NONE, Type.TypeQualifier.NONE);
 
         Declaration truck = declarations.get(1);
         type = (StructType) truck.getDeclSpec().getType();
@@ -122,11 +121,11 @@ public class ParseTest {
         Assertions.assertNull(truck.getName());
         Assertions.assertEquals("truck", type.getName());
 
-        Declaration arr = members.get(0);
+        Declaration arr = members.getFirst();
         Assertions.assertEquals("arr", arr.getName());
         ArrayType arrType = (ArrayType) arr.getDeclSpec().getType();
         Assertions.assertInstanceOf(IntegerType.class, arrType.getBase());
-        Assertions.assertFalse(((NumberType) arrType.getBase()).isSigned());
+        Assertions.assertFalse(((IntegerType) arrType.getBase()).signed());
 
         Declaration malloc = members.get(1);
         Assertions.assertEquals("malloc", malloc.getName());
@@ -136,8 +135,8 @@ public class ParseTest {
         Type retType = ((PointerType) mallocType.getReturnType()).getBase();
         Assertions.assertInstanceOf(VoidType.class, retType);
 
-        numberDeclarationTest(mallocType.getInputTypes().get(0), "size", IntegerType.class, Integer.BYTES,
-                true, DeclarationSpecifier.StorageClass.NONE, DeclarationSpecifier.TypeQualifier.NONE);
+        integerDeclarationTest(mallocType.getInputTypes().getFirst(), "size", IntegerType.Width.INT,
+                true, Type.StorageClass.NONE, Type.TypeQualifier.NONE);
 
         Declaration compare = members.get(2);
         Assertions.assertEquals("compare", compare.getName());
@@ -164,8 +163,8 @@ public class ParseTest {
         Assertions.assertNull(innerStruct.getName());
         Assertions.assertNull(innerType.getName());
 
-        numberDeclarationTest(innerType.getMembers().get(0), "man", IntegerType.class, Long.BYTES,
-                true, DeclarationSpecifier.StorageClass.NONE, DeclarationSpecifier.TypeQualifier.NONE);
+        integerDeclarationTest(innerType.getMembers().get(0), "man", IntegerType.Width.LONG,
+                true, Type.StorageClass.NONE, Type.TypeQualifier.NONE);
 
         Type member2Type = innerType.getMembers().get(1).getDeclSpec().getType();
         Assertions.assertInstanceOf(PointerType.class, member2Type);
@@ -189,8 +188,8 @@ public class ParseTest {
         int i = 0;
         String[] names = {"hey", "frey", "bingo"};
         for (; i < 3; i++) {
-            numberDeclarationTest(declarations.get(i), names[i], IntegerType.class, Long.BYTES, true,
-                    DeclarationSpecifier.StorageClass.NONE, DeclarationSpecifier.TypeQualifier.NONE);
+            integerDeclarationTest(declarations.get(i), names[i], IntegerType.Width.LONG, true,
+                    Type.StorageClass.NONE, Type.TypeQualifier.NONE);
         }
 
 
@@ -204,8 +203,10 @@ public class ParseTest {
             Assertions.assertEquals(ptrNames[i-3], declarations.get(i).getName());
             Assertions.assertInstanceOf(IntegerType.class, type);
         }
-
     }
+
+
+
 
 
     List<Declaration> toDeclarationList(List<ExternalDeclaration> externalDeclarations) {
@@ -217,16 +218,31 @@ public class ParseTest {
         return declarations;
     }
 
-    void numberDeclarationTest(Declaration item, String name, Class<?> expectedType, int bytes, boolean sign,
-                               DeclarationSpecifier.StorageClass storage, DeclarationSpecifier.TypeQualifier qualifier) {
+    void integerDeclarationTest(Declaration item, String name, IntegerType.Width size,
+                               boolean sign, Type.StorageClass storage, Type.TypeQualifier qualifier) {
         Assertions.assertEquals(name, item.getName());
-        Assertions.assertInstanceOf(expectedType, item.getDeclSpec().getType());
-        NumberType type = (NumberType) item.getDeclSpec().getType();
-        Assertions.assertEquals(bytes*8, type.getBits());
-        Assertions.assertEquals(sign, type.isSigned());
+        switch (item.getDeclSpec().getType()) {
+            case IntegerType it -> {
+                Assertions.assertEquals(size, it.size());
+                Assertions.assertEquals(sign, it.signed());
+            }
+            case null, default -> Assertions.fail();
+        }
         Assertions.assertEquals(storage, item.getDeclSpec().getStorage());
         Assertions.assertEquals(qualifier, item.getDeclSpec().getQualifier());
     }
 
+    void floatingDeclarationTest(Declaration item, String name, FloatingType.Width size,
+                                 Type.StorageClass storage, Type.TypeQualifier qualifier) {
+        Assertions.assertEquals(name, item.getName());
+        switch (item.getDeclSpec().getType()) {
+            case FloatingType it -> {
+                Assertions.assertEquals(size, it.size());
+            }
+            case null, default -> Assertions.fail();
+        }
+        Assertions.assertEquals(storage, item.getDeclSpec().getStorage());
+        Assertions.assertEquals(qualifier, item.getDeclSpec().getQualifier());
+    }
 
 }

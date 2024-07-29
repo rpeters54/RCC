@@ -2,9 +2,12 @@ package ast.expr;
 
 import ast.declarations.DeclarationSpecifier;
 import codegen.BasicBlock;
+import codegen.ControlFlowGraph;
+import codegen.TranslationUnit;
 import codegen.values.Register;
 import codegen.values.Source;
-import semantics.TypeEnvironment;
+import ast.TypeEnvironment;
+import org.antlr.v4.runtime.misc.Pair;
 
 public class IdentifierExpression implements LValue {
     private final int lineNum;
@@ -31,8 +34,22 @@ public class IdentifierExpression implements LValue {
     }
 
     @Override
-    public Source codegen(BasicBlock block, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
-        return block.getBinding(id);
+    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+        Source value = block.getBinding(id);
+        if (value == null) {
+            Pair<String, Source> pair = cfg.findPreviousDefinitions(block, id);
+            if (pair != null) {
+                value = pair.b;
+            }
+        }
+        if (value == null) {
+            value = unit.getGlobalBlock().getBinding(id);
+        }
+        if (value == null) {
+            throw new RuntimeException(String.format("IdentifierExpression::codegen: " +
+                    "failed to find binding %s in any environment", id));
+        }
+        return value;
     }
 
     @Override

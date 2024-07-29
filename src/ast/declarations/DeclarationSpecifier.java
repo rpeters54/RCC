@@ -3,18 +3,26 @@ package ast.declarations;
 import ast.types.Type;
 import ast.types.VoidType;
 
+import java.util.Objects;
+
 public class DeclarationSpecifier {
     private Type type;
-    private StorageClass storage;
-    private TypeQualifier qualifier;
+    private Type.StorageClass storage;
+    private Type.TypeQualifier qualifier;
 
     public DeclarationSpecifier() {
         this.type = new VoidType();
-        this.storage = StorageClass.NONE;
-        this.qualifier = TypeQualifier.NONE;
+        this.storage = Type.StorageClass.NONE;
+        this.qualifier = Type.TypeQualifier.NONE;
     }
 
-    public DeclarationSpecifier(Type type, StorageClass storage, TypeQualifier qualifier) {
+    public DeclarationSpecifier(Type type) {
+        this.type = type;
+        this.storage = Type.StorageClass.NONE;
+        this.qualifier = Type.TypeQualifier.NONE;
+    }
+
+    public DeclarationSpecifier(Type type, Type.StorageClass storage, Type.TypeQualifier qualifier) {
         this.type = type;
         this.storage = storage;
         this.qualifier = qualifier;
@@ -24,11 +32,11 @@ public class DeclarationSpecifier {
         return type;
     }
 
-    public StorageClass getStorage() {
+    public Type.StorageClass getStorage() {
         return storage;
     }
 
-    public TypeQualifier getQualifier() {
+    public Type.TypeQualifier getQualifier() {
         return qualifier;
     }
 
@@ -36,8 +44,8 @@ public class DeclarationSpecifier {
         this.type = type;
     }
 
-    public void updateStorage(StorageClass sc) {
-        if (storage == StorageClass.NONE) {
+    public void updateStorage(Type.StorageClass sc) {
+        if (storage == Type.StorageClass.NONE) {
             storage = sc;
         } else {
             throw new RuntimeException("Can't have >1 storage class");
@@ -51,19 +59,19 @@ public class DeclarationSpecifier {
     }
 
 
-    public void updateQualifier(TypeQualifier tq) {
+    public void updateQualifier(Type.TypeQualifier tq) {
         switch (qualifier) {
             case NONE -> qualifier = tq;
             case CONST -> {
-                if (tq == TypeQualifier.VOLATILE) {
-                    qualifier = TypeQualifier.BOTH;
+                if (tq == Type.TypeQualifier.VOLATILE) {
+                    qualifier = Type.TypeQualifier.BOTH;
                 } else {
                     throw new RuntimeException("Can't specify same qualifier twice");
                 }
             }
             case VOLATILE -> {
-                if (tq == TypeQualifier.CONST) {
-                    qualifier = TypeQualifier.BOTH;
+                if (tq == Type.TypeQualifier.CONST) {
+                    qualifier = Type.TypeQualifier.BOTH;
                 } else {
                     throw new RuntimeException("Can't specify same qualifier twice");
                 }
@@ -74,11 +82,17 @@ public class DeclarationSpecifier {
         }
     }
 
-    public enum TypeQualifier {
-        CONST, VOLATILE, BOTH, NONE
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DeclarationSpecifier that = (DeclarationSpecifier) o;
+        return Objects.equals(type, that.type) && storage == that.storage && qualifier == that.qualifier;
     }
 
-    public enum StorageClass {
-        AUTO, STATIC, EXTERN, REGISTER, NONE
+    @Override
+    public int hashCode() {
+        return Objects.hash(type, storage, qualifier);
     }
+
 }

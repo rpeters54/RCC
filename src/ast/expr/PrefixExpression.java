@@ -3,9 +3,11 @@ package ast.expr;
 import ast.declarations.DeclarationSpecifier;
 import ast.types.*;
 import codegen.BasicBlock;
+import codegen.ControlFlowGraph;
+import codegen.TranslationUnit;
 import codegen.values.Register;
 import codegen.values.Source;
-import semantics.TypeEnvironment;
+import ast.TypeEnvironment;
 
 public class PrefixExpression implements LValue {
 
@@ -68,7 +70,7 @@ public class PrefixExpression implements LValue {
     }
 
     @Override
-    public Source codegen(BasicBlock block, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
         throw new RuntimeException("Not Implemented");
     }
 

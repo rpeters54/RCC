@@ -6,10 +6,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class FunctionType implements Type {
+public class FunctionType extends Type {
     private Type returnType;
-    private List<Declaration> inputTypes;
-    private boolean isVariadic;
+    private final List<Declaration> inputTypes;
+    private final boolean isVariadic;
 
     public FunctionType() {
         returnType = null;
@@ -40,6 +40,11 @@ public class FunctionType implements Type {
     }
 
     @Override
+    public Type clone() {
+        throw new RuntimeException("not implemented yet");
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
@@ -59,5 +64,16 @@ public class FunctionType implements Type {
     public int hashCode() {
         //TODO: This may cause problems, may want to change in the future
         return Objects.hash(returnType, inputTypes, isVariadic);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(returnType.toString()).append(" (");
+        for (Declaration input : inputTypes) {
+            sb.append(input.getDeclSpec().getType()).append(" ");
+        }
+        sb.append(")");
+        return sb.toString();
     }
 }

@@ -2,40 +2,34 @@ package ast.types;
 
 import java.util.Objects;
 
-public class FloatingType implements NumberType {
-    private String value;
-    private int bitsPrecision;
-    private boolean signed;
+public class FloatingType extends NumberType {
+    private final Width size;
 
     public FloatingType() {
-        this.value = null;
-        this.bitsPrecision = Float.BYTES*8;
-        this.signed = true;
-
+        this.size = Width.FLOAT;
     }
 
-    public FloatingType(String value, int bitsPrecision, boolean signed) {
-        this.value = value;
-        this.bitsPrecision = bitsPrecision;
-        this.signed = signed;
+    public FloatingType(Width size) {
+        this.size = size;
     }
 
-    public void setSigned(boolean signed) {
-        this.signed = signed;
+    public Width size() {
+        return size;
     }
 
-    public boolean isSigned() {
-        return signed;
+    public boolean isSameOrLarger(FloatingType other) {
+        return this.size == Width.DOUBLE
+                || this.size == Width.FLOAT && other.size == Width.FLOAT;
     }
 
-    public void setBits(int bitsPrecision) {
-        this.bitsPrecision = bitsPrecision;
+    @Override
+    public Type clone() {
+        return new FloatingType(size);
     }
 
-    public int getBits() {
-        return bitsPrecision;
+    public enum Width {
+        FLOAT, DOUBLE
     }
-
 
     @Override
     public boolean equals(Object o) {
@@ -44,12 +38,30 @@ public class FloatingType implements NumberType {
         if (o.getClass() == VoidType.class) return true;
         if (getClass() != o.getClass()) return false;
         FloatingType that = (FloatingType) o;
-        return bitsPrecision == that.bitsPrecision && signed == that.signed;
+        return size == that.size;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(bitsPrecision, signed);
+        return Objects.hash(size);
+    }
+
+    @Override
+    public String toString() {
+        return switch (size) {
+            case FLOAT -> "float";
+            case DOUBLE -> "double";
+        };
+    }
+
+    public static FloatingType wider(FloatingType a, FloatingType b) {
+        Width size;
+        if (a.size == Width.DOUBLE || b.size == Width.DOUBLE) {
+            size = Width.DOUBLE;
+        } else {
+            size = Width.FLOAT;
+        }
+        return new FloatingType(size);
     }
 }
 

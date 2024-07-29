@@ -7,9 +7,9 @@ import java.util.List;
 
 public abstract class Instruction {
 
-    private Arch arch;
-    private List<Register> results;
-    private List<Source> sources;
+    private final Arch arch;
+    private final List<Register> results;
+    private final List<Source> sources;
 
     protected Instruction(Arch arch, List<Register> results, List<Source> sources) {
         this.arch = arch;
@@ -29,12 +29,20 @@ public abstract class Instruction {
         }
     }
 
+    public void addResult(Register result) {
+        results.add(result);
+    }
+
     public List<Source> getSources() {
         return sources;
     }
 
     public Source getSource(int i) {
         return sources.get(i);
+    }
+
+    public void addSource(Source source) {
+        sources.add(source);
     }
 
     protected enum Arch {

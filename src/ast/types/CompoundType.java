@@ -1,7 +1,8 @@
 package ast.types;
 
 
-public interface CompoundType extends PrimitiveType {
-    Type getBase();
-    void setBase(Type type);
+public abstract class CompoundType extends PrimitiveType {
+    public abstract Type getBase();
+    public abstract void setBase(Type type);
+    public abstract String typeString();
 }

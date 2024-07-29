@@ -1,3 +1,4 @@
 package ast.declarations;
 
-public interface ExternalDeclaration {}
+public interface ExternalDeclaration {
+}

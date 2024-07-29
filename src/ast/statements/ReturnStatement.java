@@ -5,7 +5,12 @@ import ast.declarations.FunctionDefinition;
 import ast.expr.Expression;
 import ast.types.FunctionType;
 import codegen.BasicBlock;
-import semantics.TypeEnvironment;
+import ast.TypeEnvironment;
+import codegen.ControlFlowGraph;
+import codegen.TranslationUnit;
+import codegen.instruction.llvm.ReturnInstruction;
+import codegen.instruction.llvm.UnconditionalBranchInstruction;
+import codegen.values.Source;
 
 import java.util.List;
 
@@ -43,7 +48,16 @@ public class ReturnStatement implements Statement {
     }
 
     @Override
-    public void codegen(List<BasicBlock> blocks, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
-        throw new RuntimeException("Not implemented yet");
+    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+        List<Source> values = retVal.stream()
+                .map(value -> value.codegen(unit, cfg, block))
+                .toList();
+
+        if (!values.isEmpty()) {
+            cfg.addReturnValue(block.getLabel(), values.getFirst());
+        }
+        block.addInstruction(new UnconditionalBranchInstruction(cfg.getReturnLabel()));
+        cfg.linkReturnBlock(block);
+        return block;
     }
 }

@@ -4,7 +4,9 @@ import ast.declarations.DeclarationSpecifier;
 import ast.declarations.FunctionDefinition;
 import ast.expr.Expression;
 import codegen.BasicBlock;
-import semantics.TypeEnvironment;
+import ast.TypeEnvironment;
+import codegen.ControlFlowGraph;
+import codegen.TranslationUnit;
 
 import java.util.List;
 
@@ -32,10 +34,10 @@ public class ExpressionStatement implements Statement {
     }
 
     @Override
-    public void codegen(List<BasicBlock> blocks, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
-        BasicBlock currentBlock = blocks.getLast();
+    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
         for (Expression exp : expressionList) {
-            exp.codegen(currentBlock, globalEnv, localEnv);
+            exp.codegen(unit, cfg, block);
         }
+        return block;
     }
 }

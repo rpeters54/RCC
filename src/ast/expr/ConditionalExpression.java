@@ -1,10 +1,13 @@
 package ast.expr;
 
 import ast.declarations.DeclarationSpecifier;
+import ast.types.NumberType;
 import ast.types.PrimitiveType;
 import codegen.BasicBlock;
+import codegen.ControlFlowGraph;
+import codegen.TranslationUnit;
 import codegen.values.Source;
-import semantics.TypeEnvironment;
+import ast.TypeEnvironment;
 
 public class ConditionalExpression implements Expression {
     private final int lineNum;
@@ -30,8 +33,11 @@ public class ConditionalExpression implements Expression {
             throw new RuntimeException("ConditionalExpression::verifySemantics: guard must be a primitive type");
 
         DeclarationSpecifier result = new DeclarationSpecifier();
-        if (thenSpec.getType() instanceof PrimitiveType || otherSpec.getType() instanceof PrimitiveType) {
-            result.setType(BinaryExpression.promoteType(thenSpec.getType(), otherSpec.getType()));
+        if (thenSpec.getType() instanceof NumberType || otherSpec.getType() instanceof NumberType) {
+            result.setType(PrimitiveType.implicitConversion(
+                    (NumberType) thenSpec.getType(),
+                    (NumberType) otherSpec.getType()
+            ));
             return result;
         } else if (thenSpec.getType().equals(otherSpec.getType())) {
             return thenSpec;
@@ -41,7 +47,7 @@ public class ConditionalExpression implements Expression {
     }
 
     @Override
-    public Source codegen(BasicBlock block, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
         throw new RuntimeException("Not Implemented");
     }
 }

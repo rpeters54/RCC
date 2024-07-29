@@ -12,8 +12,8 @@ import java.util.stream.Collectors;
 
 public class ASTStatementVisitor extends CBaseVisitor<Statement> {
 
-    private static ASTVisitor baseVisitor = new ASTVisitor();
-    private static ASTExpressionVisitor exprVisitor = new ASTExpressionVisitor();
+    private static final ASTVisitor baseVisitor = new ASTVisitor();
+    private static final ASTExpressionVisitor exprVisitor = new ASTExpressionVisitor();
 
     /*
      * Labeled Statements

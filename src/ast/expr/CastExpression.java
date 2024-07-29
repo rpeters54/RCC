@@ -3,8 +3,12 @@ package ast.expr;
 import ast.declarations.DeclarationSpecifier;
 import ast.types.Type;
 import codegen.BasicBlock;
+import codegen.ControlFlowGraph;
+import codegen.TranslationUnit;
+import codegen.instruction.llvm.BitcastInstruction;
+import codegen.values.Register;
 import codegen.values.Source;
-import semantics.TypeEnvironment;
+import ast.TypeEnvironment;
 
 public class CastExpression implements Expression {
 
@@ -21,12 +25,12 @@ public class CastExpression implements Expression {
     public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv) {
         casted.verifySemantics(globalEnv, localEnv);
         return new DeclarationSpecifier(type,
-                DeclarationSpecifier.StorageClass.NONE,
-                DeclarationSpecifier.TypeQualifier.NONE);
+                Type.StorageClass.NONE,
+                Type.TypeQualifier.NONE);
     }
 
     @Override
-    public Source codegen(BasicBlock block, TypeEnvironment globalEnv, TypeEnvironment localEnv) {
-        throw new RuntimeException("Not Implemented");
+    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+        throw new RuntimeException("not implemented yet");
     }
 }

@@ -45,4 +45,14 @@ public class Declaration implements ExternalDeclaration {
         this.name = name;
     }
 
+    @Override
+    public String toString() {
+        return "Declaration{" +
+                "declSpec=" + declSpec +
+                ", name='" + name + '\'' +
+                ", initialValue=" + initialValue +
+                '}';
+    }
+
+
 }
