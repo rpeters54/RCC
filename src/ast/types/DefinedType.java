@@ -18,10 +18,15 @@ public class DefinedType extends Type {
     }
 
     @Override
+    public long sizeof() {
+        throw new RuntimeException("DefinedType::sizeof: defined type has no size");
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
-        if (o.getClass() == VoidType.class) return true;
+//        if (o.getClass() == VoidType.class) return true;
         if (getClass() != o.getClass()) return false;
         DefinedType that = (DefinedType) o;
         return Objects.equals(name, that.name);

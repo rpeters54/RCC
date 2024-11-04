@@ -1,6 +1,5 @@
 package codegen.instruction.riscv;
 
-import ast.expr.BinaryExpression;
 import codegen.instruction.Instruction;
 import codegen.values.Literal;
 import codegen.values.Register;
@@ -15,6 +14,6 @@ public class LoadImmInstruction extends Instruction {
 
     @Override
     public String toString() {
-        return String.format("li %s, %s", getResult(), getSource(0));
+        return String.format("li %s, %s", result(), source(0));
     }
 }

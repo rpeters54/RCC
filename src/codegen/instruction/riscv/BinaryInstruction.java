@@ -29,6 +29,6 @@ public class BinaryInstruction extends Instruction {
             case SL -> "sll";
             default -> throw new RuntimeException("BinaryImmInstruction::toString: No Instruction exists with " + op);
         };
-        return String.format("%s %s, %s, %s", opString, getResult(), getSource(0), getSource(1));
+        return String.format("%s %s, %s, %s", opString, result(), source(0), source(1));
     }
 }

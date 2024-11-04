@@ -17,11 +17,11 @@ public abstract class Instruction {
         this.sources = sources;
     }
 
-    public List<Register> getResults() {
+    public List<Register> results() {
         return results;
     }
 
-    public Register getResult() {
+    public Register result() {
         if (!results.isEmpty()) {
             return results.getFirst();
         } else {
@@ -33,11 +33,11 @@ public abstract class Instruction {
         results.add(result);
     }
 
-    public List<Source> getSources() {
+    public List<Source> sources() {
         return sources;
     }
 
-    public Source getSource(int i) {
+    public Source source(int i) {
         return sources.get(i);
     }
 

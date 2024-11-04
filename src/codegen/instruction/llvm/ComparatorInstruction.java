@@ -4,7 +4,7 @@ import ast.expr.BinaryExpression;
 import ast.types.CompoundType;
 import ast.types.FloatingType;
 import ast.types.IntegerType;
-import ast.types.Type;
+import ast.types.PointerType;
 import codegen.instruction.Instruction;
 import codegen.values.Register;
 import codegen.values.Source;
@@ -26,7 +26,7 @@ public class ComparatorInstruction extends Instruction {
     public String toString() {
         String opcodeString;
         String operatorString;
-        switch (getSource(0).type()) {
+        switch (source(0).type()) {
             case IntegerType it -> {
                 opcodeString = "icmp";
                 if (it.signed()) {
@@ -66,7 +66,7 @@ public class ComparatorInstruction extends Instruction {
                             "Invalid Operator");
                 };
             }
-            case CompoundType ct -> {
+            case PointerType pt -> {
                 opcodeString = "icmp";
                 operatorString = switch (op) {
                     case LT -> "slt";
@@ -83,8 +83,8 @@ public class ComparatorInstruction extends Instruction {
                     "Invalid Type");
         }
 
-        return String.format("%s = %s %s %s %s, %s", getResult(),
-                opcodeString, operatorString, getSource(0).type(),
-                getSource(0), getSource(1));
+        return String.format("%s = %s %s %s %s, %s", result(),
+                opcodeString, operatorString, source(0).type(),
+                source(0), source(1));
     }
 }

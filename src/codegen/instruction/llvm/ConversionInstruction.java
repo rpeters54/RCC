@@ -67,9 +67,10 @@ public class ConversionInstruction extends Instruction {
                     case null, default -> throw new RuntimeException("ConversionInstruction::make operand must be a valid primitive type");
                 }
             }
-            case PointerType op -> {
+            case PointerType _ -> {
                 switch (target) {
-                    case IntegerType it -> type = ConversionType.PTRTOINT;
+                    case IntegerType _ -> type = ConversionType.PTRTOINT;
+                    case PointerType _ -> type = ConversionType.BITCAST;
                     case null, default -> throw new RuntimeException("ConversionInstruction::make operand must be a valid primitive type");
                 }
             }
@@ -94,12 +95,13 @@ public class ConversionInstruction extends Instruction {
             case FPTRUNC -> "fptrunc";
             case FPEXT -> "fpext";
             case PTRTOINT -> "ptrtoint";
+            case BITCAST -> "bitcast";
         };
-        return String.format("%s = %s %s %s to %s", this.getResult(), op, this.getSource(0).type(),
-                this.getSource(0), this.getResult().type());
+        return String.format("%s = %s %s %s to %s", this.result(), op, this.source(0).type(),
+                this.source(0), this.result().type());
     }
 
     public enum ConversionType {
-        TRUNC, ZEXT, SEXT, FPTRUNC, FPEXT, FPTOUI, FPTOSI, UITOFP, SITOFP, PTRTOINT, INTTOPTR,
+        TRUNC, ZEXT, SEXT, FPTRUNC, FPEXT, FPTOUI, FPTOSI, UITOFP, SITOFP, PTRTOINT, INTTOPTR, BITCAST
     }
 }

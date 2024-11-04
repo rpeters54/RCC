@@ -15,18 +15,16 @@ import codegen.values.Register;
 import codegen.values.Source;
 import ast.TypeEnvironment;
 
-public class CharExpression implements Expression{
-    private final int lineNum;
+public class CharExpression extends Expression{
     private final String id;
 
-    public CharExpression(int lineNum, String id)
-    {
-        this.lineNum = lineNum;
+    public CharExpression(int lineNum, String id) {
+        super(lineNum);
         this.id = id;
     }
 
     @Override
-    public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+    public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, TypeEnvironment.StorageLocation location) {
         return new DeclarationSpecifier(new IntegerType(IntegerType.Width.CHAR, true),
                 Type.StorageClass.NONE, Type.TypeQualifier.NONE);
     }

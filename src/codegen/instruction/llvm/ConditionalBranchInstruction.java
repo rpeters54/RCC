@@ -17,6 +17,6 @@ public class ConditionalBranchInstruction extends Instruction {
     }
 
     public String toString() {
-        return String.format("br i1 %s, label %%l%s, label %%l%s", getSource(0), ifTrue, ifFalse);
+        return String.format("br %s %s, label %%l%s, label %%l%s", source(0).type(), source(0), ifTrue, ifFalse);
     }
 }

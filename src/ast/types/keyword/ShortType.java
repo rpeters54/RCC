@@ -9,6 +9,11 @@ public class ShortType extends Type {
     }
 
     @Override
+    public long sizeof() {
+        return 0;
+    }
+
+    @Override
     public Type clone() {
         return new ShortType();
     }

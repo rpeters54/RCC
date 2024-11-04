@@ -6,11 +6,13 @@ import ast.statements.Statement;
 import ast.types.*;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
+import codegen.EscapeTuple;
 import codegen.TranslationUnit;
 import codegen.instruction.llvm.FunctionDeclaration;
+import codegen.instruction.llvm.GlobalVariableInstruction;
 import codegen.instruction.llvm.PhiInstruction;
+import codegen.instruction.llvm.UnconditionalBranchInstruction;
 import codegen.values.Register;
-import org.antlr.v4.runtime.misc.Pair;
 
 
 import java.util.*;
@@ -34,7 +36,6 @@ public class Program {
         return declarations;
     }
 
-
     /**
      * Verifies that the program is runnable (typechecking, scope, etc.)
      */
@@ -45,22 +46,42 @@ public class Program {
         for (ExternalDeclaration externalDeclaration : declarations) {
             // add all global variables to the global environment
             switch (externalDeclaration) {
-                case Declaration declaration -> globalEnv.update(declaration);
-                case TypeDeclaration declaration -> globalEnv.addType(declaration);
+                case Declaration declaration -> {
+                    switch (declaration.declSpec().getType()) {
+                        case StructType struct -> {
+                            if (!struct.members().isEmpty())
+                                globalEnv.addClass(declaration.declSpec());
+                        }
+                        case UnionType union -> {
+                            if (!union.members().isEmpty())
+                                globalEnv.addClass(declaration.declSpec());
+                        }
+                        case EnumType enumeration -> {
+                            if (!enumeration.getEnumerators().isEmpty())
+                                globalEnv.addClass(declaration.declSpec());
+                        }
+                        default -> {}
+                    }
+                    DeclarationSpecifier expandedSpecifier = globalEnv.expandDeclaration(declaration);
+                    if (declaration.name() != null)
+                        globalEnv.addBinding(declaration.name(), expandedSpecifier);
+                }
+                case TypeDeclaration declaration -> globalEnv.addTypeDef(declaration);
                 case FunctionDefinition definition -> {
-                    TypeEnvironment localEnv = definition.getLocalEnv();
+                    TypeEnvironment localEnv = definition.localEnv();
                     localEnv.clear();
-                    Declaration stub = definition.getDeclaration();
-                    Statement stmt = definition.getBody();
+                    Declaration stub = definition.declaration();
+                    Statement stmt = definition.body();
 
                     // add function definition to the environment
-                    globalEnv.addDefinition(stub.getName(), definition);
+                    globalEnv.addDefinition(stub.name(), definition);
 
                     // ensure that the function has function type and add its args to the local env
-                    if (!(stub.getDeclSpec().getType() instanceof FunctionType func))
+                    if (!(stub.declSpec().getType() instanceof FunctionType func))
                         throw new RuntimeException("Program: Function Definition with Non-Function Declaration");
-                    for (Declaration param : func.getInputTypes()) {
-                        localEnv.update(param);
+                    for (Declaration param : func.inputTypes()) {
+                        DeclarationSpecifier paramSpecifier = globalEnv.expandDeclaration(param);
+                        localEnv.addBinding(param.name(), paramSpecifier);
                     }
 
                     // by standard, functions must have a compound statement as their body
@@ -70,9 +91,9 @@ public class Program {
                     // recurse on the compound statement to verify it
                     stmt.verifySemantics(globalEnv, localEnv, definition);
 
-                    if (!(func.getReturnType() instanceof VoidType) && !stmt.alwaysReturns()) {
+                    if (!(func.returnType() instanceof VoidType) && !stmt.alwaysReturns()) {
                         throw new RuntimeException("Program::verifySemantics: Non-Void Function " +
-                                definition.getDeclaration().getName() +
+                                definition.declaration().name() +
                                 " Does Not Return for All Paths");
                     }
 
@@ -87,54 +108,73 @@ public class Program {
         }
     }
 
-
+    /**
+     * Given a properly typechecked C program, construct a control flow graph
+     * for each function containing llvm ir
+     * @return TranslationUnit object that contains the global environment and
+     * a list of control flow graphs that contain the compiled intermediate representation
+     */
     public TranslationUnit codegen() {
         TranslationUnit unit = new TranslationUnit(globalEnv.duplicate());
         int j = 0;
-        for (int i = 0; i < declarations.size(); i++) {
-            ExternalDeclaration externalDeclaration = declarations.get(i);
+        for (ExternalDeclaration externalDeclaration : declarations) {
             switch (externalDeclaration) {
                 case FunctionDefinition definition -> {
                     // get type environment
                     TypeEnvironment localEnv = localEnvs.get(j++).duplicate();
+
                     // construct a new cfg for the function
                     ControlFlowGraph graph = new ControlFlowGraph(localEnv, definition);
                     BasicBlock prologue = new BasicBlock();
                     graph.addBlock(prologue);
-                    // add all parameter registers
-                    for (Pair<String, Type> paramPair : definition.getParameters()) {
-                        Register param = Register.LLVM_Register(paramPair.b);
-                        prologue.addBinding(paramPair.a, param);
-                        graph.addParameter(param.clone());
-                    }
-                    // generate a new register for the return value and
-                    definition.getBody().codegen(unit, graph, prologue);
 
-                    BasicBlock epilogue = new BasicBlock();
+                    // add all parameter registers
+                    definition.parameters().forEach(declaration ->
+                            localEnv.AddParamDeclarations(declaration, graph, prologue)
+                    );
+
+                    // generate all code for the function body
+                    BasicBlock last = definition.body().codegen(unit, graph, prologue, new EscapeTuple());
+
                     Optional<PhiInstruction> returnPhi = graph.getReturnPhi();
                     if (returnPhi.isPresent()) {
-                        Register returnRegister = Register.LLVM_Register(definition.getReturnType());
+                        Register returnRegister = Register.LLVM_Register(definition.returnType());
                         graph.declareReturnRegister(returnRegister);
-                        epilogue.addInstruction(returnPhi.get());
                     }
 
+                    // if the final block was not linked to the epilogue by default, link them manually
+                    // (this happens with void functions that do not end with a return)
+                    if (!last.endsWithJump()) {
+                        last.addInstruction(new UnconditionalBranchInstruction(graph.getReturnLabel()));
+                        graph.linkReturnBlock(last);
+                    }
+
+                    // place the epilogue block and add the cfg to the program
                     graph.placeReturnBlock();
                     unit.addControlFlowGraph(graph);
                 }
                 case Declaration declaration -> {
-                    if (declaration.getDeclSpec().getType() instanceof FunctionType func) {
-                        FunctionDeclaration decl = new FunctionDeclaration(declaration.getName(), func);
-                        unit.getGlobalBlock().addInstruction(decl);
-                    } else {
-                        throw new RuntimeException("Program::shittyCodegen: Other decls not implemented");
+                    if (declaration.name() != null) {
+                        switch (declaration.declSpec().getType()) {
+                            case FunctionType function -> {
+                                FunctionDeclaration decl = new FunctionDeclaration(declaration.name(), function);
+                                unit.getGlobalBlock().addInstruction(decl);
+                            }
+                            case null -> throw new RuntimeException("Program::codegen: null declaration");
+                            default -> {
+                                unit.getGlobalTypeEnvironment().addGlobalDeclarations(declaration, unit.getGlobalBlock());
+                            }
+                        }
                     }
                 }
+                case TypeDeclaration _ -> {}
                 case null, default -> {
-                    throw new RuntimeException("Program::shittyCodegen: Not Implemented");
+                    throw new RuntimeException("Program::codegen: Not Implemented");
                 }
             }
         }
 
         return unit;
     }
+
 }

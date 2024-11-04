@@ -9,25 +9,24 @@ import codegen.TranslationUnit;
 import codegen.values.Source;
 import ast.TypeEnvironment;
 
-public class ConditionalExpression implements Expression {
-    private final int lineNum;
+public class ConditionalExpression extends Expression {
     private final Expression guard;
     private final Expression then;
     private final Expression other;
 
     public ConditionalExpression(int lineNum, Expression guard,
                                   Expression then, Expression other) {
-        this.lineNum = lineNum;
+        super(lineNum);
         this.guard = guard;
         this.then = then;
         this.other = other;
     }
 
     @Override
-    public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv) {
-        DeclarationSpecifier guardSpec = guard.verifySemantics(globalEnv, localEnv);
-        DeclarationSpecifier thenSpec = then.verifySemantics(globalEnv, localEnv);
-        DeclarationSpecifier otherSpec = other.verifySemantics(globalEnv, localEnv);
+    public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, TypeEnvironment.StorageLocation location) {
+        DeclarationSpecifier guardSpec = guard.verifySemantics(globalEnv, localEnv, TypeEnvironment.StorageLocation.REGISTER);
+        DeclarationSpecifier thenSpec = then.verifySemantics(globalEnv, localEnv, TypeEnvironment.StorageLocation.REGISTER);
+        DeclarationSpecifier otherSpec = other.verifySemantics(globalEnv, localEnv, TypeEnvironment.StorageLocation.REGISTER);
 
         if (!(guardSpec.getType() instanceof PrimitiveType))
             throw new RuntimeException("ConditionalExpression::verifySemantics: guard must be a primitive type");

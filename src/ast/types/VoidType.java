@@ -7,13 +7,18 @@ public class VoidType extends Type {
     public static final int HASH = Objects.hash("void");
 
     @Override
+    public long sizeof() {
+        return 0;
+    }
+
+    @Override
     public Type clone() {
         return new VoidType();
     }
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof Type;
+        return obj instanceof VoidType;
     }
 
     @Override
@@ -23,6 +28,6 @@ public class VoidType extends Type {
 
     @Override
     public String toString() {
-        return "i8";
+        return "void";
     }
 }

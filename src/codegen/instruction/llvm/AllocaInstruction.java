@@ -1,6 +1,7 @@
 package codegen.instruction.llvm;
 
 import ast.types.CompoundType;
+import ast.types.PointerType;
 import codegen.instruction.Instruction;
 import codegen.values.Register;
 
@@ -15,11 +16,11 @@ public class AllocaInstruction extends Instruction {
     @Override
     public String toString() {
 
-        String deref = switch (getResult().type()) {
-            case CompoundType compound -> compound.getBase().toString();
+        String deref = switch (result().type()) {
+            case PointerType pt -> pt.base().toString();
             case null, default -> throw new RuntimeException("AllocaInstruction::toString: invalid location, must be CompoundType");
         };
 
-        return String.format("%s = alloca %s", getResult(), deref);
+        return String.format("%s = alloca %s", result(), deref);
     }
 }

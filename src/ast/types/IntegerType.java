@@ -16,6 +16,11 @@ public class IntegerType extends NumberType {
         this.signed = signed;
     }
 
+    @Override
+    public long sizeof() {
+        return size.value / 8;
+    }
+
     public Width size() {
         return size;
     }
@@ -31,13 +36,13 @@ public class IntegerType extends NumberType {
         INT(32),
         LONG(64);
 
-        private final int value;
+        private final long value;
 
         Width(int value) {
             this.value = value;
         }
 
-        public int value() {
+        public long value() {
             return value;
         }
     }
@@ -51,7 +56,7 @@ public class IntegerType extends NumberType {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
-        if (o.getClass() == VoidType.class) return true;
+//        if (o.getClass() == VoidType.class) return true;
         if (getClass() != o.getClass()) return false;
         IntegerType that = (IntegerType) o;
         return size == that.size && signed == that.signed;

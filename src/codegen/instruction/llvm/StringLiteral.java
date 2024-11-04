@@ -2,7 +2,6 @@ package codegen.instruction.llvm;
 
 import codegen.instruction.Instruction;
 import codegen.values.Register;
-import codegen.values.Source;
 import org.antlr.v4.runtime.misc.Pair;
 
 import java.util.Arrays;
@@ -20,7 +19,7 @@ public class StringLiteral extends Instruction {
     public String toString() {
         Pair<String, Integer> filteredString = filterEscapes(value);
         return String.format("%s = private unnamed_addr constant [%d x i8] c%s",
-                getResult(), filteredString.b, filteredString.a);
+                result(), filteredString.b, filteredString.a);
     }
 
 

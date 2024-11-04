@@ -16,17 +16,16 @@ import codegen.values.Register;
 import codegen.values.Source;
 import ast.TypeEnvironment;
 
-public class FloatExpression implements Expression {
-    private final int lineNum;
-    private final String value;
+public class FloatExpression extends Expression {
+    private final double value;
 
-    public FloatExpression(int lineNum, String value) {
-        this.lineNum = lineNum;
+    public FloatExpression(int lineNum, double value) {
+        super(lineNum);
         this.value = value;
     }
 
     @Override
-    public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+    public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, TypeEnvironment.StorageLocation location) {
         return new DeclarationSpecifier(new FloatingType(), Type.StorageClass.NONE, Type.TypeQualifier.NONE);
     }
 
@@ -34,7 +33,7 @@ public class FloatExpression implements Expression {
     public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
         Register allocaResult = Register.LLVM_Register(new PointerType(new FloatingType()));
         Register loadResult = Register.LLVM_Register(new FloatingType());
-        Literal floatValue =  new Literal(value, new FloatingType());
+        Literal floatValue =  new Literal(Double.toString(value), new FloatingType());
 
         block.addInstruction(new AllocaInstruction(allocaResult));
         block.addInstruction(new StoreInstruction(floatValue, allocaResult.clone()));

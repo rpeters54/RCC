@@ -28,6 +28,12 @@ public class DeclarationSpecifier {
         this.qualifier = qualifier;
     }
 
+    public DeclarationSpecifier(DeclarationSpecifier other) {
+        this.type = other.type.clone();
+        this.storage = other.storage;
+        this.qualifier = other.qualifier;
+    }
+
     public Type getType() {
         return type;
     }

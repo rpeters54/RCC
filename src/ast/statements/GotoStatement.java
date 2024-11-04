@@ -5,14 +5,14 @@ import ast.declarations.FunctionDefinition;
 import codegen.BasicBlock;
 import ast.TypeEnvironment;
 import codegen.ControlFlowGraph;
+import codegen.EscapeTuple;
 import codegen.TranslationUnit;
 
-public class GotoStatement implements Statement {
-    private final int lineNum;
+public class GotoStatement extends Statement {
     private final String label;
 
     public GotoStatement(int lineNum, String label) {
-        this.lineNum = lineNum;
+        super(lineNum);
         this.label = label;
     }
 
@@ -27,7 +27,7 @@ public class GotoStatement implements Statement {
     }
 
     @Override
-    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, EscapeTuple esc) {
         throw new RuntimeException("Not implemented yet");
     }
 }

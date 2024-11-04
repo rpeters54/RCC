@@ -12,18 +12,16 @@ import codegen.values.Register;
 import codegen.values.Source;
 import ast.TypeEnvironment;
 
-public class LiteralExpression implements Expression{
-    private final int lineNum;
+public class LiteralExpression extends Expression {
     private final String id;
 
-    public LiteralExpression(int lineNum, String id)
-    {
-        this.lineNum = lineNum;
+    public LiteralExpression(int lineNum, String id) {
+        super(lineNum);
         this.id = id.replace("\"", "");
     }
 
     @Override
-    public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv) {
+    public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, TypeEnvironment.StorageLocation location) {
         return new DeclarationSpecifier(new PointerType(new IntegerType(IntegerType.Width.CHAR, true)),
                 Type.StorageClass.NONE, Type.TypeQualifier.NONE);
     }

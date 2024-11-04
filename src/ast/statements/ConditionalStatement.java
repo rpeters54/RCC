@@ -2,27 +2,31 @@ package ast.statements;
 
 import ast.declarations.DeclarationSpecifier;
 import ast.declarations.FunctionDefinition;
+import ast.expr.BinaryExpression;
 import ast.expr.Expression;
+import ast.types.IntegerType;
 import ast.types.PrimitiveType;
 import codegen.BasicBlock;
 import ast.TypeEnvironment;
 import codegen.ControlFlowGraph;
+import codegen.EscapeTuple;
 import codegen.TranslationUnit;
+import codegen.instruction.llvm.ComparatorInstruction;
 import codegen.instruction.llvm.ConditionalBranchInstruction;
-import codegen.instruction.llvm.PhiInstruction;
 import codegen.instruction.llvm.UnconditionalBranchInstruction;
+import codegen.values.Literal;
+import codegen.values.Register;
 import codegen.values.Source;
 
 import java.util.List;
 
-public class ConditionalStatement implements Statement {
-    private final int lineNum;
+public class ConditionalStatement extends Statement {
     private final List<Expression> guardList;
     private final Statement thenCase;
     private final Statement elseCase;
 
     public ConditionalStatement(int lineNum, List<Expression> guardList, Statement thenCase, Statement elseCase) {
-        this.lineNum = lineNum;
+        super(lineNum);
         this.guardList = guardList;
         this.thenCase = thenCase;
         this.elseCase = elseCase;
@@ -32,10 +36,12 @@ public class ConditionalStatement implements Statement {
     public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, FunctionDefinition function) {
         DeclarationSpecifier specifier = new DeclarationSpecifier();
         for (Expression guard : guardList) {
-            specifier = guard.verifySemantics(globalEnv, localEnv);
+            specifier = guard.verifySemantics(globalEnv, localEnv, TypeEnvironment.StorageLocation.REGISTER);
         }
         if (!(specifier.getType() instanceof PrimitiveType))
-            throw new RuntimeException("ConditionalStatement::verifySemantics: Final expression in guardList is not a valid type");
+            throw new RuntimeException(String.format(
+                    "ConditionalStatement::verifySemantics: On line %d, Final expression in guardList is not a valid type", lineNum()
+            ));
 
         specifier = thenCase.verifySemantics(globalEnv, localEnv, function);
         if (elseCase != null)
@@ -55,10 +61,10 @@ public class ConditionalStatement implements Statement {
     }
 
     @Override
-    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, EscapeTuple esc) {
         // construct all blocks
-        BasicBlock thenBlock = new BasicBlock();
-        BasicBlock elseBlock = new BasicBlock();
+        BasicBlock thenBlock = new BasicBlock(block);
+        BasicBlock elseBlock = new BasicBlock(block);
 
         // add all blocks to the cfg
         cfg.addBlock(thenBlock);
@@ -74,40 +80,60 @@ public class ConditionalStatement implements Statement {
                 .map(guard -> guard.codegen(unit, cfg, block))
                 .toList();
 
+        Literal zero = new Literal("0", new IntegerType());
+        Register result = Register.LLVM_Register(new IntegerType(IntegerType.Width.BOOL, true));
+        ComparatorInstruction comp = new ComparatorInstruction(result.clone(), BinaryExpression.Operator.NE,
+                guards.getLast(), zero);
+        block.addInstruction(comp);
+
         // add conditional branch instruction
         block.addInstruction(new ConditionalBranchInstruction(
-                guards.getFirst(),
+                result,
                 thenBlock.getLabel(),
                 elseBlock.getLabel()
         ));
 
         // traverse the branches
-        BasicBlock endOfThenBlock = thenCase.codegen(unit, cfg, thenBlock);
+        BasicBlock endOfThenBlock = thenCase.codegen(unit, cfg, thenBlock, esc);
         BasicBlock endOfElseBlock;
         if (elseCase != null) {
-            endOfElseBlock = elseCase.codegen(unit, cfg, elseBlock);
+            endOfElseBlock = elseCase.codegen(unit, cfg, elseBlock, esc);
         } else {
             endOfElseBlock = elseBlock;
         }
 
-        if (!endOfThenBlock.endsWithJump() || !endOfElseBlock.endsWithJump()) {
+        if (!endOfThenBlock.endsWithJump() && !endOfElseBlock.endsWithJump()) {
             // build the after if statement block
             BasicBlock afterBlock = new BasicBlock();
             cfg.addBlock(afterBlock);
             cfg.addEdge(endOfThenBlock, afterBlock);
             cfg.addEdge(endOfElseBlock, afterBlock);
 
-            if (!endOfThenBlock.endsWithJump())
-                endOfThenBlock.addInstruction(new UnconditionalBranchInstruction(afterBlock.getLabel()));
-            if (!endOfElseBlock.endsWithJump())
-                endOfElseBlock.addInstruction(new UnconditionalBranchInstruction(afterBlock.getLabel()));
+            endOfThenBlock.addInstruction(new UnconditionalBranchInstruction(afterBlock.getLabel()));
+            endOfElseBlock.addInstruction(new UnconditionalBranchInstruction(afterBlock.getLabel()));
 
             // add phi instructions
             cfg.generatePhis(afterBlock);
 
             return afterBlock;
-        }
+        } else if (!endOfThenBlock.endsWithJump() && endOfElseBlock.endsWithJump()) {
+            BasicBlock afterBlock = new BasicBlock(endOfThenBlock);
+            cfg.addBlock(afterBlock);
 
-        return endOfThenBlock;
+            cfg.addEdge(endOfThenBlock, afterBlock);
+            endOfThenBlock.addInstruction(new UnconditionalBranchInstruction(afterBlock.getLabel()));
+
+            return afterBlock;
+        } else if (endOfThenBlock.endsWithJump() && !endOfElseBlock.endsWithJump()) {
+            BasicBlock afterBlock = new BasicBlock(endOfElseBlock);
+            cfg.addBlock(afterBlock);
+
+            cfg.addEdge(endOfElseBlock, afterBlock);
+            endOfElseBlock.addInstruction(new UnconditionalBranchInstruction(afterBlock.getLabel()));
+
+            return afterBlock;
+        } else {
+            return endOfThenBlock;
+        }
     }
 }

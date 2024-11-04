@@ -16,9 +16,9 @@ public class ReturnInstruction extends Instruction {
     }
 
     public String toString() {
-        if (getSources().isEmpty()) {
-            return "ret";
+        if (sources().isEmpty()) {
+            return "ret void";
         }
-        return String.format("ret %s %s", getSource(0).type(), getSource(0));
+        return String.format("ret %s %s", source(0).type(), source(0));
     }
 }

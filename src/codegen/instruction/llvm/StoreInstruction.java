@@ -14,7 +14,7 @@ public class StoreInstruction extends Instruction {
     @Override
     public String toString() {
         return String.format("store %s %s, %s %s",
-                getSource(0).type(), getSource(0),
-                getSource(1).type(), getSource(1));
+                source(0).type(), source(0),
+                source(1).type(), source(1));
     }
 }

@@ -1,4 +1,4 @@
-// Generated from C.g4 by ANTLR 4.13.1
+// Generated from C.g4 by ANTLR 4.13.2
 package parser;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -313,6 +313,12 @@ public interface CVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitCompoundStatement(CParser.CompoundStatementContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link CParser#declStatement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDeclStatement(CParser.DeclStatementContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code IfSolo}
 	 * labeled alternative in {@link CParser#selectionStatement}.
 	 * @param ctx the parse tree
@@ -457,6 +463,13 @@ public interface CVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitPrefixExpr(CParser.PrefixExprContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code NullExpr}
+	 * labeled alternative in {@link CParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitNullExpr(CParser.NullExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code CharExpr}
 	 * labeled alternative in {@link CParser#expression}.

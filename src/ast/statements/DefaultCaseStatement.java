@@ -6,15 +6,15 @@ import ast.declarations.FunctionDefinition;
 import codegen.BasicBlock;
 import ast.TypeEnvironment;
 import codegen.ControlFlowGraph;
+import codegen.EscapeTuple;
 import codegen.TranslationUnit;
 
-public class DefaultCaseStatement implements Statement {
+public class DefaultCaseStatement extends Statement {
 
-    private int lineNum;
-    private Statement body;
+    private final Statement body;
 
     public DefaultCaseStatement(int lineNum, Statement body) {
-        this.lineNum = lineNum;
+        super(lineNum);
         this.body = body;
     }
 
@@ -29,7 +29,7 @@ public class DefaultCaseStatement implements Statement {
     }
 
     @Override
-    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, EscapeTuple esc) {
         throw new RuntimeException("Not implemented yet");
     }
 }

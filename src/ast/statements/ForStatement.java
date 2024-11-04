@@ -3,56 +3,39 @@ package ast.statements;
 import ast.declarations.DeclarationSpecifier;
 import ast.declarations.FunctionDefinition;
 import ast.expr.Expression;
-import ast.types.PrimitiveType;
 import codegen.BasicBlock;
 import ast.TypeEnvironment;
 import codegen.ControlFlowGraph;
+import codegen.EscapeTuple;
 import codegen.TranslationUnit;
 
-import java.util.List;
+import java.util.*;
 
-public class ForStatement implements Statement {
-    private final int lineNum;
+public class ForStatement extends LoopStatement {
+
     private final List<Expression> initList;
-    private final List<Expression> guardList;
     private final List<Expression> stepList;
-    private final Statement body;
 
     public ForStatement(int lineNum, List<Expression> initList, List<Expression> guardList,
                         List<Expression> stepList, Statement body) {
-        this.lineNum = lineNum;
+        super(lineNum, guardList, body);
         this.initList = initList;
-        this.guardList = guardList;
         this.stepList = stepList;
-        this.body = body;
     }
 
     public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, FunctionDefinition function) {
         for (Expression init : initList) {
-            init.verifySemantics(globalEnv, localEnv);
+            init.verifySemantics(globalEnv, localEnv, TypeEnvironment.StorageLocation.REGISTER);
         }
-
-        DeclarationSpecifier specifier = new DeclarationSpecifier();
-        for (Expression guard : guardList) {
-            specifier = guard.verifySemantics(globalEnv, localEnv);
-        }
-        if (!(specifier.getType() instanceof PrimitiveType))
-            throw new RuntimeException("ForStatement::verifySemantics: Final expression in guardList is not a valid type");
-
         for (Expression step : stepList) {
-            step.verifySemantics(globalEnv, localEnv);
+            step.verifySemantics(globalEnv, localEnv, TypeEnvironment.StorageLocation.REGISTER);
         }
 
-        return body.verifySemantics(globalEnv, localEnv, function);
+        return super.verifySemantics(globalEnv, localEnv, function);
     }
 
     @Override
-    public boolean alwaysReturns() {
-        return body.alwaysReturns();
-    }
-
-    @Override
-    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
-        throw new RuntimeException("Not implemented yet");
+    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, EscapeTuple esc) {
+        return generateLoop(unit, cfg, block, Optional.of(initList), Optional.of(stepList), false);
     }
 }

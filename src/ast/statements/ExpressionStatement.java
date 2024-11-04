@@ -6,16 +6,16 @@ import ast.expr.Expression;
 import codegen.BasicBlock;
 import ast.TypeEnvironment;
 import codegen.ControlFlowGraph;
+import codegen.EscapeTuple;
 import codegen.TranslationUnit;
 
 import java.util.List;
 
-public class ExpressionStatement implements Statement {
-    private final int lineNum;
+public class ExpressionStatement extends Statement {
     private final List<Expression> expressionList;
 
     public ExpressionStatement(int lineNum, List<Expression> expressionList) {
-        this.lineNum = lineNum;
+        super(lineNum);
         this.expressionList = expressionList;
     }
 
@@ -23,7 +23,7 @@ public class ExpressionStatement implements Statement {
     public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, FunctionDefinition function) {
         DeclarationSpecifier specifier = new DeclarationSpecifier();
         for (Expression exp : expressionList) {
-            specifier = exp.verifySemantics(globalEnv, localEnv);
+            specifier = exp.verifySemantics(globalEnv, localEnv, TypeEnvironment.StorageLocation.REGISTER);
         }
         return specifier;
     }
@@ -34,7 +34,7 @@ public class ExpressionStatement implements Statement {
     }
 
     @Override
-    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, EscapeTuple esc) {
         for (Expression exp : expressionList) {
             exp.codegen(unit, cfg, block);
         }

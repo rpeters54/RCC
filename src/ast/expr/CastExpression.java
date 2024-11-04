@@ -1,29 +1,35 @@
 package ast.expr;
 
 import ast.declarations.DeclarationSpecifier;
+import ast.types.PrimitiveType;
 import ast.types.Type;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
-import codegen.instruction.llvm.BitcastInstruction;
+import codegen.instruction.llvm.ConversionInstruction;
 import codegen.values.Register;
 import codegen.values.Source;
 import ast.TypeEnvironment;
 
-public class CastExpression implements Expression {
+public class CastExpression extends Expression {
 
-    private Type type;
-    private Expression casted;
+    private final Type type;
+    private final Expression casted;
 
-    public CastExpression(Type type, Expression casted) {
+    public CastExpression(int lineNum, Type type, Expression casted) {
+        super(lineNum);
         this.type = type;
         this.casted = casted;
     }
 
 
     @Override
-    public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv) {
-        casted.verifySemantics(globalEnv, localEnv);
+    public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, TypeEnvironment.StorageLocation location) {
+        casted.verifySemantics(globalEnv, localEnv, TypeEnvironment.StorageLocation.REGISTER);
+        if (!(type instanceof PrimitiveType)) {
+            throw new RuntimeException("Cast expression expects a primitive type");
+        }
+
         return new DeclarationSpecifier(type,
                 Type.StorageClass.NONE,
                 Type.TypeQualifier.NONE);
@@ -31,6 +37,10 @@ public class CastExpression implements Expression {
 
     @Override
     public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
-        throw new RuntimeException("not implemented yet");
+        Source castedSource = casted.codegen(unit, cfg, block);
+        assert type instanceof PrimitiveType;
+        ConversionInstruction conv = ConversionInstruction.make(castedSource, (PrimitiveType) type);
+        block.addInstruction(conv);
+        return conv.result().clone();
     }
 }

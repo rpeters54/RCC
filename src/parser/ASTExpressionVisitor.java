@@ -10,9 +10,11 @@ import java.util.List;
 
 public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
 
-    private static final ASTVisitor topVisitor = new ASTVisitor();
+    private final ASTVisitor baseVisitor;
 
-    public ASTExpressionVisitor() {}
+    public ASTExpressionVisitor(ASTVisitor baseVisitor) {
+        this.baseVisitor = baseVisitor;
+    }
 
     @Override
     public Expression visitIndexExpr(CParser.IndexExprContext ctx) {
@@ -88,29 +90,33 @@ public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
 
     @Override
     public Expression visitSizeofTypeExpr(CParser.SizeofTypeExprContext ctx) {
-        Object obj = topVisitor.visit(ctx.typeName());
+        Object obj = baseVisitor.visit(ctx.typeName());
         if (!(obj instanceof DeclarationSpecifier)) {
             throw new RuntimeException("visitSizeofTypeExpr: typename should refer to a Declaration Specifier");
         }
-        return new SizeofTypeExpression(((DeclarationSpecifier) obj).getType());
+        return new SizeofTypeExpression(
+                ctx.start.getLine(),
+                ((DeclarationSpecifier) obj).getType()
+        );
     }
 
     @Override
     public Expression visitSizeofExprExpr(CParser.SizeofExprExprContext ctx) {
         return new SizeofExprExpression(
-            visit(ctx.operand)
+                ctx.start.getLine(),
+                visit(ctx.operand)
         );
     }
 
     @Override
     public Expression visitCastExpr(CParser.CastExprContext ctx) {
-        Object obj = topVisitor.visit(ctx.typeName());
+        Object obj = baseVisitor.visit(ctx.typeName());
         if (!(obj instanceof DeclarationSpecifier)) {
             throw new RuntimeException("visitCastExpr: typename should refer to a Declaration Specifier");
         }
         Type type = ((DeclarationSpecifier) obj).getType();
         Expression operand = visit(ctx.operand);
-        return new CastExpression(type, operand);
+        return new CastExpression(ctx.start.getLine(), type, operand);
     }
 
     @Override
@@ -167,10 +173,29 @@ public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
     }
 
     @Override
+    public Expression visitNullExpr(CParser.NullExprContext ctx) {
+        return new NullExpression(ctx.start.getLine());
+    }
+
+    @Override
     public Expression visitIntegerExpr(CParser.IntegerExprContext ctx) {
+        String valueStr = ctx.getText().trim().replaceAll("[Ll]$", "");
+
+        long value;
+        if (valueStr.startsWith("0x") || valueStr.startsWith("0X")) {
+            // Hexadecimal format (base 16)
+            value = Long.parseLong(valueStr.substring(2), 16);
+        } else if (valueStr.startsWith("0") && valueStr.length() > 1) {
+            // Octal format (base 8)
+            value = Long.parseLong(valueStr.substring(1), 8);
+        } else {
+            // Decimal format (base 10)
+            value = Long.parseLong(valueStr, 10);
+        }
+
         return new IntegerExpression(
                 ctx.start.getLine(),
-                ctx.getText()
+                value
         );
     }
 
@@ -178,7 +203,7 @@ public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
     public Expression visitFloatExpr(CParser.FloatExprContext ctx) {
         return new FloatExpression(
                 ctx.start.getLine(),
-                ctx.getText()
+                Double.parseDouble(ctx.getText())
         );
     }
 

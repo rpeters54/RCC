@@ -5,20 +5,40 @@ import ast.Program;
 import ast.expr.Expression;
 import ast.statements.Statement;
 import ast.types.*;
+import ast.types.Enumeration;
 import ast.types.keyword.*;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public class ASTVisitor extends CBaseVisitor<Object> {
 
-    private static final ASTExpressionVisitor expVisitor = new ASTExpressionVisitor();
-    private static final ASTStatementVisitor stmtVisitor = new ASTStatementVisitor();
+    private final ASTExpressionVisitor expVisitor;
+    private final ASTStatementVisitor stmtVisitor;
+
+    private int anon_struct_counter = 0;
+    private int anon_union_counter = 0;
+
+    protected final Set<String> typeNames = new HashSet<>();
+    protected final Set<String> structNames = new HashSet<>();
+    protected final Set<String> unionNames = new HashSet<>();
+
+    public ASTVisitor() {
+        expVisitor = new ASTExpressionVisitor(this);
+        stmtVisitor = new ASTStatementVisitor(this, expVisitor);
+    }
+
+    private String anonStructName() {
+        return String.format("anon.%s", anon_struct_counter++);
+    }
+
+    private String anonUnionName() {
+        return String.format("anon.%s", anon_union_counter++);
+    }
+
 
     /*
      ====================================================================================================
@@ -115,14 +135,14 @@ public class ASTVisitor extends CBaseVisitor<Object> {
             // for oldstyle declarations, the parameters are untyped names
             // I have to get a bit hacky to fix this since my code parses those names as defined types
             // this is why I'm doing some nonsense with defined types below
-            FunctionType type = (FunctionType) functionDeclaration.getDeclSpec().getType();
-            List<Declaration> untypedParams = type.getInputTypes();
+            FunctionType type = (FunctionType) functionDeclaration.declSpec().getType();
+            List<Declaration> untypedParams = type.inputTypes();
             List<String> untypedNames = new ArrayList<>();
             for (Declaration decl : untypedParams) {
-                if (!(decl.getDeclSpec().getType() instanceof DefinedType)) {
+                if (!(decl.declSpec().getType() instanceof DefinedType)) {
                     throw new RuntimeException("visitFunctionDefinition: failed to parse names from parameter list");
                 }
-                untypedNames.add(((DefinedType)decl.getDeclSpec().getType()).getName());
+                untypedNames.add(((DefinedType)decl.declSpec().getType()).getName());
             }
             if (untypedParams.size() != oldStyleArgList.size()) {
                 throw new RuntimeException("visitFunctionDefinition: different number of oldstyle args and parameters");
@@ -131,17 +151,28 @@ public class ASTVisitor extends CBaseVisitor<Object> {
             for (int i = 0; i < untypedNames.size(); i++) {
                 String untypedName = untypedNames.get(i);
                 Declaration modifier = oldStyleArgList.get(i);
-                if (!untypedName.equals(modifier.getName())) {
+                if (!untypedName.equals(modifier.name())) {
                     throw new RuntimeException("visitFunctionDefintion: parameter and corresponding " +
                             "oldstyle declration have mismatched names");
                 }
                 untypedParams.get(i).setName(untypedName);
-                untypedParams.get(i).setDeclSpec(modifier.getDeclSpec());
+                untypedParams.get(i).setDeclSpec(modifier.declSpec());
             }
         }
 
         Statement body = stmtVisitor.visit(ctx.body);
         return new FunctionDefinition(functionDeclaration, body);
+    }
+
+    @Override
+    public Object visitDeclStatement(CParser.DeclStatementContext ctx) {
+        if (ctx.declaration() != null) {
+            return visit(ctx.declaration());
+        }
+        if (ctx.statement() != null) {
+            return stmtVisitor.visit(ctx.statement());
+        }
+        throw new RuntimeException("visitDeclStatement: Encountered an Improperly Formatted Decl Statement");
     }
 
 
@@ -210,6 +241,8 @@ public class ASTVisitor extends CBaseVisitor<Object> {
                 throw new RuntimeException("visitTypeDeclaration: unresolved specifier qualifier");
             }
         }
+        // Add type to the global context, (used to disambiguate statements and declarations in compound statement)
+        typeNames.add(ctx.Identifier().getText());
         return new TypeDeclaration(ctx.Identifier().getText(), specifier);
     }
 
@@ -237,12 +270,12 @@ public class ASTVisitor extends CBaseVisitor<Object> {
 
         if (ctx.abstractDeclarator() != null) {
             Object obj = visit(ctx.abstractDeclarator());
-            if (!(obj instanceof DeclarationSpecifier))
+            if (!(obj instanceof Declaration))
                 throw new RuntimeException("visitTypeName: Encountered Malformed AbstractDeclarator");
-            Type finalType = updateType(((DeclarationSpecifier) obj).getType(), specifier.getType());
+            Type finalType = updateType(((Declaration) obj).declSpec().getType(), specifier.getType());
             specifier.setType(finalType);
-            specifier.updateQualifier(((DeclarationSpecifier) obj).getQualifier());
-            specifier.updateStorage(((DeclarationSpecifier) obj).getStorage());
+            specifier.updateQualifier(((Declaration) obj).declSpec().getQualifier());
+            specifier.updateStorage(((Declaration) obj).declSpec().getStorage());
         }
         return specifier;
     }
@@ -330,25 +363,31 @@ public class ASTVisitor extends CBaseVisitor<Object> {
     @Override
     public Object visitStructOrUnionSpecifier(CParser.StructOrUnionSpecifierContext ctx) {
         String structOrUnion = ctx.structOrUnion().getText();
-        String name = null;
-        if (ctx.Identifier() != null)
-            name = ctx.Identifier().getText();
 
         List<Declaration> members = new ArrayList<>();
-        for (CParser.StructDeclarationContext sdctx : ctx.structDeclarationList().structDeclaration()) {
-            Object obj = visit(sdctx);
-            if (!(obj instanceof List)) {
-                throw new RuntimeException("visitStructOrUnionSpecifier: tried to visit member, didn't get declaration list");
-            }
-            if (!(!((List<?>) obj).isEmpty() && ((List<?>) obj).getFirst() instanceof Declaration)) {
-                throw new RuntimeException("visitStructOrUnionSpecifier: tried to visit member, didn't get declaration list");
-            }
+        if (ctx.structDeclarationList() != null) {
+            for (CParser.StructDeclarationContext sdctx : ctx.structDeclarationList().structDeclaration()) {
+                Object obj = visit(sdctx);
+                if (!(obj instanceof List)) {
+                    throw new RuntimeException("visitStructOrUnionSpecifier: tried to visit member, didn't get declaration list");
+                }
+                if (!(!((List<?>) obj).isEmpty() && ((List<?>) obj).getFirst() instanceof Declaration)) {
+                    throw new RuntimeException("visitStructOrUnionSpecifier: tried to visit member, didn't get declaration list");
+                }
 
-            members.addAll((List<Declaration>) obj);
+                members.addAll((List<Declaration>) obj);
+            }
         }
+
         switch (structOrUnion) {
-            case "struct" -> {return new StructType(name, members);}
-            case "union" -> {return new UnionType(name, members);}
+            case "struct" -> {
+                String name = ctx.Identifier() != null ? ctx.Identifier().getText() : anonStructName();
+                return new StructType(name, members);
+            }
+            case "union" -> {
+                String name = ctx.Identifier() != null ? ctx.Identifier().getText() : anonUnionName();
+                return new UnionType(name, members);
+            }
             default -> throw new RuntimeException("visitStructOrUnionSpecifier: visited structOrUnion but failed to" +
                     "get a struct or union");
         }
@@ -362,7 +401,7 @@ public class ASTVisitor extends CBaseVisitor<Object> {
         }
         Declaration enumDeclaration = new Declaration();
         enumDeclaration.setName(ctx.Identifier().getText());
-        enumDeclaration.getDeclSpec().setType(new EnumType(ctx.Identifier().getText(),enums));
+        enumDeclaration.declSpec().setType(new EnumType(ctx.Identifier().getText(),enums));
         return enumDeclaration;
     }
 
@@ -550,7 +589,7 @@ public class ASTVisitor extends CBaseVisitor<Object> {
         // add array type to declarator
         ArrayType arr = new ArrayType();
         if (ctx.constantExpressionList() != null) {
-            arr.setSizeExpression(expVisitor.parseExpressionList(ctx.constantExpressionList().expressionList()));
+            arr.deriveSize(expVisitor.parseExpressionList(ctx.constantExpressionList().expressionList()));
         }
 
         DeclarationSpecifier arraySpecifier = new DeclarationSpecifier();
@@ -670,9 +709,9 @@ public class ASTVisitor extends CBaseVisitor<Object> {
         if (ctx.constantExpressionList() != null) {
             List<Expression> expList = expVisitor.parseExpressionList(ctx.constantExpressionList().expressionList());
             ArrayType arr = new ArrayType();
-            arr.setSizeExpression(expList);
+            arr.deriveSize(expList);
             arr.setBase(type);
-            self.getDeclSpec().setType(arr);
+            self.declSpec().setType(arr);
             return self;
         }
 
@@ -682,7 +721,7 @@ public class ASTVisitor extends CBaseVisitor<Object> {
                 throw new RuntimeException("visitDirectAbstractDeclarator: " +
                         "visitParameterTypeList returned non-FunctionType");
             }
-            self.getDeclSpec().setType((FunctionType)obj);
+            self.declSpec().setType((FunctionType)obj);
             return self;
         }
 
@@ -692,13 +731,13 @@ public class ASTVisitor extends CBaseVisitor<Object> {
                 throw new RuntimeException("visitDirectAbstractDeclarator: " +
                         "visitAbstractDeclarator returned non-Declaration");
             if (type != null) {
-                Type absType = abstractDecl.getDeclSpec().getType();
+                Type absType = abstractDecl.declSpec().getType();
                 if (type instanceof CompoundType && absType instanceof CompoundType) {
                     CompoundType base = getNestedBase((CompoundType) absType);
                     base.setBase(type);
                 } else if (type instanceof FunctionType) {
                     ((FunctionType) type).setReturnType(absType);
-                    abstractDecl.getDeclSpec().setType(type);
+                    abstractDecl.declSpec().setType(type);
                 } else {
                     throw new RuntimeException("visitAbstractDeclarator: encountered unexpected tail type");
                 }
@@ -714,7 +753,7 @@ public class ASTVisitor extends CBaseVisitor<Object> {
         if (ctx.constantExpressionList() != null) {
             List<Expression> expList = expVisitor.parseExpressionList(ctx.constantExpressionList().expressionList());
             ArrayType arr = new ArrayType();
-            arr.setSizeExpression(expList);
+            arr.deriveSize(expList);
             return arr;
         }
 
@@ -738,17 +777,17 @@ public class ASTVisitor extends CBaseVisitor<Object> {
      * @return
      */
     public Declaration addPointerToDeclarator(DeclarationSpecifier pointerSpecifier, Declaration base) {
-        base.getDeclSpec().updateQualifier(pointerSpecifier.getQualifier());
-        base.getDeclSpec().updateStorage(pointerSpecifier.getStorage());
+        base.declSpec().updateQualifier(pointerSpecifier.getQualifier());
+        base.declSpec().updateStorage(pointerSpecifier.getStorage());
         if (!(pointerSpecifier.getType() instanceof PointerType)) {
             throw new IllegalArgumentException("Pointer Declaration Specifier with Non-Pointer Type");
         }
 
 
-        Type declarationType = base.getDeclSpec().getType();
+        Type declarationType = base.declSpec().getType();
         Type pointerType = pointerSpecifier.getType();
         Type newType = updateType(declarationType, pointerType);
-        base.getDeclSpec().setType(newType);
+        base.declSpec().setType(newType);
 
         return base;
     }
@@ -814,12 +853,12 @@ public class ASTVisitor extends CBaseVisitor<Object> {
     public Declaration updateDeclaration(Declaration decl, DeclarationSpecifier specifier) {
         // if the declaration is a compound type (pointer or array)
         // extract the base type contained in the array/pointer
-        Type type = decl.getDeclSpec().getType();
+        Type type = decl.declSpec().getType();
         Type newType = updateType(type, specifier.getType());
-        decl.getDeclSpec().setType(newType);
+        decl.declSpec().setType(newType);
         // update the declaration to have the proper storage class and type qualifiers
-        decl.getDeclSpec().updateStorage(specifier.getStorage());
-        decl.getDeclSpec().updateQualifier(specifier.getQualifier());
+        decl.declSpec().updateStorage(specifier.getStorage());
+        decl.declSpec().updateQualifier(specifier.getQualifier());
 
         return decl;
     }
@@ -828,13 +867,13 @@ public class ASTVisitor extends CBaseVisitor<Object> {
         switch (outer) {
             case CompoundType compound -> {
                 CompoundType inner = getNestedBase(compound);
-                Type innerBase = inner.getBase();
+                Type innerBase = inner.base();
                 Type newInnerBase = updateType(innerBase, base);
                 inner.setBase(newInnerBase);
                 return outer;
             }
             case FunctionType function -> {
-                Type returnType = function.getReturnType();
+                Type returnType = function.returnType();
                 Type newReturnType = updateType(returnType, base);
                 function.setReturnType(newReturnType);
                 return function;
@@ -847,23 +886,23 @@ public class ASTVisitor extends CBaseVisitor<Object> {
 
     // Gets base type from a nested set of compound types (arrays and pointers)
     public CompoundType getNestedBase(CompoundType outer) {
-        while(outer.getBase() instanceof CompoundType) {
-            outer = (CompoundType) outer.getBase();
+        while(outer.base() instanceof CompoundType) {
+            outer = (CompoundType) outer.base();
         }
         return outer;
     }
 
     public Type nestTypes(CompoundType outer, Type inner) {
         CompoundType temp = outer;
-        while(temp.getBase() != null) {
-            Type inter = temp.getBase();
+        while(temp.base() != null) {
+            Type inter = temp.base();
             if (!(inter instanceof CompoundType)) {
                 throw new RuntimeException("Tried to nest Non-Compound Type");
             }
             temp = (CompoundType) inter;
         }
         temp.setBase(inner);
-        return outer;
+        return (Type) outer;
     }
 
     /**
@@ -982,6 +1021,10 @@ public class ASTVisitor extends CBaseVisitor<Object> {
                 case null, default:
                     throw new RuntimeException("ASTVisitor::buildBaseType: failed to resolve type");
             }
+        }
+
+        if (primType.isEmpty()) {
+            primType = Optional.of(Type.Specifier.INT);
         }
 
         // check to make sure that long and short keywords were specified at the same time

@@ -2,15 +2,12 @@ package codegen;
 
 import codegen.instruction.Instruction;
 import codegen.instruction.llvm.ConditionalBranchInstruction;
+import codegen.instruction.llvm.PhiInstruction;
 import codegen.instruction.llvm.ReturnInstruction;
 import codegen.instruction.llvm.UnconditionalBranchInstruction;
 import codegen.values.Register;
 import codegen.values.Source;
 
-import java.io.BufferedWriter;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.util.*;
 
 public class BasicBlock {
@@ -27,9 +24,19 @@ public class BasicBlock {
         this.label = ""+BASIC_BLOCK_COUNT++;
     }
 
+    public BasicBlock(BasicBlock parent) {
+        this.instructions = new LinkedList<>();
+        this.blockEnv = new HashMap<>(parent.blockEnv);
+        this.label = ""+BASIC_BLOCK_COUNT++;
+    }
+
     /*
     Getters and Setters
      */
+
+    public static void ResetCount() {
+        BASIC_BLOCK_COUNT = 0;
+    }
 
     public void addBinding(String name, Source source) {
         blockEnv.put(name, source);
@@ -37,6 +44,10 @@ public class BasicBlock {
 
     public Source getBinding(String name) {
          return blockEnv.get(name);
+    }
+
+    public void dropBinding(String name) {
+        blockEnv.remove(name);
     }
 
     public Map<String, Source> getBindings() {
@@ -55,6 +66,10 @@ public class BasicBlock {
         return Collections.unmodifiableList(instructions);
     }
 
+    public List<Instruction> getMutableInstructions() {
+        return instructions;
+    }
+
     public String getLabel() {
         return label;
     }
@@ -64,32 +79,21 @@ public class BasicBlock {
                 (instructions.getLast() instanceof ReturnInstruction
                 || instructions.getLast() instanceof UnconditionalBranchInstruction
                 || instructions.getLast() instanceof ConditionalBranchInstruction);
-
     }
 
     /*
     Output Functions
      */
 
-    public void printGlobalData() {
+
+    public List<String> sprintInstructions() {
+        List<String> lines = new ArrayList<>();
+        lines.add("l"+label+":");
         for (Instruction instruction : instructions) {
-            System.out.println(instruction);
+            lines.add("    "+instruction);
         }
+        return lines;
     }
-
-    public void printInstructions() {
-        System.out.println("l"+label+":");
-        for (Instruction instruction : instructions) {
-            System.out.println("    "+instruction);
-        }
-    }
-
-    public void generateDotFile(BufferedWriter bw) throws IOException {
-        try(BufferedWriter out=new BufferedWriter(new OutputStreamWriter(new FileOutputStream("g.dot")))){
-
-        }
-    }
-
 
     public Set<Register> liveout(Map<BasicBlock, Set<Register>> livemap, Set<BasicBlock> children) {
 
@@ -107,15 +111,13 @@ public class BasicBlock {
 
             //TODO: Add check for globals when implemented
             for (Instruction inst : child.instructions) {
-                for (Source source : inst.getSources()) {
+                for (Source source : inst.sources()) {
                     // if the source is a register and not in the killset, add it
                     if (source instanceof Register && !killSet.contains(source))
                         genSet.add((Register) source);
                 }
                 // if the result register is not stored by default, add it to the kill set
-                for (Register result : inst.getResults()) {
-                    killSet.add(result);
-                }
+                killSet.addAll(inst.results());
             }
 
             outSet.removeAll(killSet);

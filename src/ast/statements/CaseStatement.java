@@ -7,17 +7,17 @@ import ast.types.IntegerType;
 import codegen.BasicBlock;
 import ast.TypeEnvironment;
 import codegen.ControlFlowGraph;
+import codegen.EscapeTuple;
 import codegen.TranslationUnit;
 
 import java.util.List;
 
-public class CaseStatement implements Statement {
-    private final int lineNum;
+public class CaseStatement extends Statement {
     private final List<Expression> expressionList;
     private final Statement statement;
 
     public CaseStatement(int lineNum, List<Expression> expressionList, Statement statement) {
-        this.lineNum = lineNum;
+        super(lineNum);
         this.expressionList = expressionList;
         this.statement = statement;
     }
@@ -26,10 +26,12 @@ public class CaseStatement implements Statement {
     public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, FunctionDefinition function) {
         DeclarationSpecifier specifier = new DeclarationSpecifier();
         for (Expression exp : expressionList) {
-            specifier = exp.verifySemantics(globalEnv, localEnv);
+            specifier = exp.verifySemantics(globalEnv, localEnv, TypeEnvironment.StorageLocation.REGISTER);
         }
         if (!(specifier.getType() instanceof IntegerType))
-            throw new RuntimeException("CaseStatement::verifySemantics: Case must be of IntegerType");
+            throw new RuntimeException(String.format(
+                    "CaseStatement::verifySemantics: Case on line %d must be of IntegerType", lineNum()
+            ));
 
         return statement.verifySemantics(globalEnv, localEnv, function);
     }
@@ -40,7 +42,7 @@ public class CaseStatement implements Statement {
     }
 
     @Override
-    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, EscapeTuple esc) {
         throw new RuntimeException("Not implemented yet");
     }
 }

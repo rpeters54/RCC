@@ -15,7 +15,7 @@ public class BitcastInstruction extends Instruction {
     @Override
     public String toString() {
         return String.format("%s = bitcast %s %s to %s",
-                getResult(), getSource(0).type(),
-                getSource(0), getResult().type());
+                result(), source(0).type(),
+                source(0), result().type());
     }
 }

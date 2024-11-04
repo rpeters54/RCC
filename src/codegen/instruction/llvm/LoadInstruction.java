@@ -15,7 +15,7 @@ public class LoadInstruction extends Instruction {
     @Override
     public String toString() {
         return String.format("%s = load %s, %s %s",
-                getResult(), getResult().type(),
-                getSource(0).type(), getSource(0));
+                result(), result().type(),
+                source(0).type(), source(0));
     }
 }

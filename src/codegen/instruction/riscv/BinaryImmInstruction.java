@@ -26,7 +26,7 @@ public class BinaryImmInstruction extends Instruction {
             case SL -> "slli";
             default -> throw new RuntimeException("BinaryImmInstruction::toString: No Instruction exists with " + op);
         };
-        return String.format("%s %s, %s, %s", opString, getResult(), getSource(0), getSource(1));
+        return String.format("%s %s, %s, %s", opString, result(), source(0), source(1));
     }
 
     public static boolean validOp(BinaryExpression.Operator op) {

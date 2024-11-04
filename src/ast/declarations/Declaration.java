@@ -1,10 +1,9 @@
 package ast.declarations;
 
 import ast.expr.Expression;
-import ast.types.Type;
-import ast.types.VoidType;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -22,10 +21,16 @@ public class Declaration implements ExternalDeclaration {
     public Declaration(String name) {
         this.declSpec = new DeclarationSpecifier();
         this.name = name;
-        this.initialValue = null;
+        this.initialValue = new ArrayList<>();
     }
 
-    public DeclarationSpecifier getDeclSpec() {
+    public Declaration(String name, DeclarationSpecifier declSpec) {
+        this.declSpec = declSpec;
+        this.name = name;
+        this.initialValue = new ArrayList<>();
+    }
+
+    public DeclarationSpecifier declSpec() {
         return declSpec;
     }
 
@@ -37,8 +42,12 @@ public class Declaration implements ExternalDeclaration {
         this.initialValue = initialValue;
     }
 
-    public String getName() {
+    public String name() {
         return name;
+    }
+
+    public List<Expression> initialValue() {
+        return Collections.unmodifiableList(initialValue);
     }
 
     public void setName(String name) {
@@ -47,11 +56,13 @@ public class Declaration implements ExternalDeclaration {
 
     @Override
     public String toString() {
-        return "Declaration{" +
-                "declSpec=" + declSpec +
-                ", name='" + name + '\'' +
-                ", initialValue=" + initialValue +
-                '}';
+        return "Declaration{\n"
+                + "    name=" + name + ",\n"
+                + "    type=" + declSpec.getType() + ",\n"
+                + "    qualifier=" + declSpec.getQualifier() + ",\n"
+                + "    storage=" + declSpec.getStorage() + ",\n"
+                + "    initialValue=" + initialValue + ",\n"
+                + "}";
     }
 
 

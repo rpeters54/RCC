@@ -5,17 +5,15 @@ import ast.types.PrimitiveType;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
-import codegen.values.Register;
 import codegen.values.Source;
 import ast.TypeEnvironment;
 
-public class IncDecExpression implements LValue {
-    private final int lineNum;
+public class IncDecExpression extends LValue {
     private final Operator operator;
     private final Expression operand;
 
     private IncDecExpression(int lineNum, Operator operator, Expression operand) {
-        this.lineNum = lineNum;
+        super(lineNum);
         this.operator = operator;
         this.operand = operand;
     }
@@ -46,8 +44,8 @@ public class IncDecExpression implements LValue {
     }
 
     @Override
-    public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv) {
-        DeclarationSpecifier opDeclSpec = operand.verifySemantics(globalEnv,localEnv);
+    public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, TypeEnvironment.StorageLocation location) {
+        DeclarationSpecifier opDeclSpec = operand.verifySemantics(globalEnv,localEnv, TypeEnvironment.StorageLocation.REGISTER);
         switch (operator) {
             case PRE_INC, PRE_DEC, POST_INC, POST_DEC -> {
                 if (!(opDeclSpec.getType() instanceof PrimitiveType))
@@ -64,7 +62,7 @@ public class IncDecExpression implements LValue {
     }
 
     @Override
-    public Register getLValue(BasicBlock block) {
+    public Source processLValue(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, Source right) {
         throw new RuntimeException("Not Implemented");
     }
 }

@@ -9,16 +9,17 @@ import codegen.TranslationUnit;
 import codegen.values.Source;
 import ast.TypeEnvironment;
 
-public class SizeofExprExpression implements Expression {
+public class SizeofExprExpression extends Expression {
     private final Expression operand;
 
-    public SizeofExprExpression(Expression operand) {
+    public SizeofExprExpression(int lineNum, Expression operand) {
+        super(lineNum);
         this.operand = operand;
     }
 
     @Override
-    public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv) {
-        operand.verifySemantics(globalEnv, localEnv);
+    public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, TypeEnvironment.StorageLocation location) {
+        operand.verifySemantics(globalEnv, localEnv, TypeEnvironment.StorageLocation.REGISTER);
         return new DeclarationSpecifier(new IntegerType(),
                 Type.StorageClass.NONE,
                 Type.TypeQualifier.NONE);

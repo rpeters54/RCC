@@ -1,10 +1,16 @@
 package ast.expr;
 
 import codegen.BasicBlock;
+import codegen.ControlFlowGraph;
+import codegen.TranslationUnit;
 import codegen.values.Register;
+import codegen.values.Source;
 
-import java.util.Optional;
+public abstract class LValue extends Expression {
 
-public interface LValue extends Expression {
-    Register getLValue(BasicBlock block);
+    public LValue(int lineNum) {
+        super(lineNum);
+    }
+
+    public abstract Source processLValue(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, Source right);
 }

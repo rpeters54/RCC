@@ -1,7 +1,5 @@
 package codegen.instruction.llvm;
 
-import ast.types.CompoundType;
-import ast.types.Type;
 import codegen.instruction.Instruction;
 import codegen.values.Register;
 import codegen.values.Source;
@@ -18,14 +16,23 @@ public class CallInstruction extends Instruction {
         this.name = name;
     }
 
+    public CallInstruction(List<Source> arguments, String name) {
+        super(Arch.LLVM, Arrays.asList(), arguments);
+        this.name = name;
+    }
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        builder.append(String.format("%s = call %s @%s(", getResult(), getResult().type(), name));
-        for (Source source : getSources()) {
+        if (results().isEmpty()) {
+            builder.append(String.format("call void @%s(", name));
+        } else {
+            builder.append(String.format("%s = call %s @%s(", result(), result().type(), name));
+        }
+        for (Source source : sources()) {
             builder.append(String.format("%s %s, ", source.type(), source));
         }
-        if (!getSources().isEmpty()) {
+        if (!sources().isEmpty()) {
             builder.delete(builder.length() - 2, builder.length());
         }
         builder.append(")");

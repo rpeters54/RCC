@@ -1,46 +1,22 @@
 package ast.statements;
 
-import ast.declarations.DeclarationSpecifier;
-import ast.declarations.FunctionDefinition;
 import ast.expr.Expression;
-import ast.types.PrimitiveType;
 import codegen.BasicBlock;
-import ast.TypeEnvironment;
 import codegen.ControlFlowGraph;
+import codegen.EscapeTuple;
 import codegen.TranslationUnit;
 
 import java.util.List;
+import java.util.Optional;
 
-public class DoStatement implements Statement {
-    private final int lineNum;
-    private final List<Expression> guardList;
-    private final Statement body;
+public class DoStatement extends LoopStatement {
 
     public DoStatement(int lineNum, List<Expression> guardList, Statement body) {
-        this.lineNum = lineNum;
-        this.guardList = guardList;
-        this.body = body;
+        super(lineNum, guardList, body);
     }
 
     @Override
-    public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, FunctionDefinition function) {
-        DeclarationSpecifier specifier = new DeclarationSpecifier();
-        for (Expression guard : guardList) {
-            specifier = guard.verifySemantics(globalEnv, localEnv);
-        }
-        if (!(specifier.getType() instanceof PrimitiveType))
-            throw new RuntimeException("DoStatement::verifySemantics: Final expression in guardList is not a valid type");
-
-        return body.verifySemantics(globalEnv, localEnv, function);
-    }
-
-    @Override
-    public boolean alwaysReturns() {
-        return body.alwaysReturns();
-    }
-
-    @Override
-    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
-        throw new RuntimeException("Not implemented yet");
+    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, EscapeTuple esc) {
+        return generateLoop(unit, cfg, block, Optional.empty(), Optional.empty(), true);
     }
 }

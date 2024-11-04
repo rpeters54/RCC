@@ -23,6 +23,14 @@ public class FloatingType extends NumberType {
     }
 
     @Override
+    public long sizeof() {
+        return switch(size) {
+            case FLOAT -> 4;
+            case DOUBLE -> 8;
+        };
+    }
+
+    @Override
     public Type clone() {
         return new FloatingType(size);
     }
@@ -35,7 +43,7 @@ public class FloatingType extends NumberType {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
-        if (o.getClass() == VoidType.class) return true;
+//        if (o.getClass() == VoidType.class) return true;
         if (getClass() != o.getClass()) return false;
         FloatingType that = (FloatingType) o;
         return size == that.size;

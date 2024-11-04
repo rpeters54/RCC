@@ -1,19 +1,18 @@
 package ast.types;
 
 import ast.expr.Expression;
+import ast.expr.IntegerExpression;
 
 import java.util.List;
 import java.util.Objects;
 
-public class ArrayType extends CompoundType {
+public class ArrayType extends Type implements CompoundType {
     private Type base;
     private long size;
-    private List<Expression> sizeExpression;
 
     public ArrayType(Type base, long size) {
         this.base = base;
         this.size = size;
-        this.sizeExpression = null;
     }
 
     public ArrayType() {
@@ -21,7 +20,7 @@ public class ArrayType extends CompoundType {
         this.size = 0;
     }
 
-    public Type getBase() {
+    public Type base() {
         return base;
     }
 
@@ -33,8 +32,17 @@ public class ArrayType extends CompoundType {
         this.size = size;
     }
 
-    public void setSizeExpression(List<Expression> sizeExpression) {
-        this.sizeExpression = sizeExpression;
+    public void deriveSize(List<Expression> sizeExpression) {
+        Expression first = sizeExpression.getLast();
+        if (!(first instanceof IntegerExpression ie)) {
+            throw new RuntimeException("ArrayType requires an integer expression");
+        }
+        size = ie.getValue();
+    }
+
+    @Override
+    public long sizeof() {
+        return size * base.sizeof();
     }
 
     //TODO, fix so it works with the constant size expression
@@ -47,7 +55,7 @@ public class ArrayType extends CompoundType {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
-        if (o.getClass() == VoidType.class) return true;
+//        if (o.getClass() == VoidType.class) return true;
         if (getClass() != o.getClass()) return false;
 
         ArrayType arrayType = (ArrayType) o;
@@ -60,11 +68,11 @@ public class ArrayType extends CompoundType {
     }
 
     public String typeString() {
-        return String.format("[%d x %s]", size, base.toString());
+        return toString();
     }
 
     @Override
     public String toString() {
-        return "ptr";
+        return String.format("[%d x %s]", size, base.toString());
     }
 }

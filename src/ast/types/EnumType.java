@@ -5,7 +5,7 @@ import ast.expr.Expression;
 import java.util.List;
 import java.util.Objects;
 
-public class EnumType extends Type {
+public class EnumType extends ObjectType {
 
     private final String name;
     private final List<Enumeration> enumerators;
@@ -28,10 +28,15 @@ public class EnumType extends Type {
     }
 
     @Override
+    public long sizeof() {
+        return (new IntegerType()).sizeof();
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
-        if (o.getClass() == VoidType.class) return true;
+//        if (o.getClass() == VoidType.class) return true;
         if (getClass() != o.getClass()) return false;
         EnumType enumType = (EnumType) o;
         return Objects.equals(name, enumType.name);

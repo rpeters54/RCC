@@ -4,16 +4,28 @@ import ast.declarations.Declaration;
 import ast.declarations.DeclarationSpecifier;
 import ast.expr.Expression;
 import ast.statements.*;
+import ast.types.DefinedType;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.tree.ParseTree;
 
 import javax.swing.plaf.nimbus.State;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ASTStatementVisitor extends CBaseVisitor<Statement> {
 
-    private static final ASTVisitor baseVisitor = new ASTVisitor();
-    private static final ASTExpressionVisitor exprVisitor = new ASTExpressionVisitor();
+    private final ASTVisitor baseVisitor;
+    private final ASTExpressionVisitor exprVisitor;
+
+    public ASTStatementVisitor(ASTVisitor baseVisitor, ASTExpressionVisitor exprVisitor) {
+        this.baseVisitor = baseVisitor;
+        this.exprVisitor = exprVisitor;
+    }
 
     /*
      * Labeled Statements
@@ -63,23 +75,70 @@ public class ASTStatementVisitor extends CBaseVisitor<Statement> {
     public Statement visitCompoundStatement(CParser.CompoundStatementContext ctx) {
         List<Declaration> declList = new ArrayList<>();
         List<Statement> statementList = new ArrayList<>();
-        for (CParser.DeclarationContext dlctx : ctx.declaration()) {
-            Object obj = baseVisitor.visitDeclaration(dlctx);
-            if (!(obj instanceof List)) {
-                throw new RuntimeException("visitSpecifierQualifierList: Expected Declaration Specifier List");
-            }
-            if (((List<?>) obj).size() > 0) {
-                if (!(((List<?>) obj).get(0) instanceof Declaration)) {
-                    throw new RuntimeException("visitSpecifierQualifierList: Expected Declaration Specifier List");
+        boolean barrier = false;
+
+
+        for (CParser.DeclStatementContext dlctx : ctx.declStatement()) {
+            Object obj = baseVisitor.visitDeclStatement(dlctx);
+
+            switch (obj) {
+                case List<?> items -> {
+                    if (!items.isEmpty()
+                            && items.getFirst() instanceof Declaration) {
+                        List<Declaration> decls = (List<Declaration>) items;
+                        if (decls.getFirst().declSpec().getType() instanceof DefinedType dt) {
+                            if (!baseVisitor.typeNames.contains(dt.getName())) {
+                                String datum = dlctx.getText();
+                                CLexer lexer = new CLexer(CharStreams.fromString(datum));
+                                CParser parser = new CParser(new CommonTokenStream(lexer));
+                                CParser.StatementContext stmtctx = parser.statement();
+                                Statement stmt = visitStatement(stmtctx);
+                                statementList.add(stmt);
+                                barrier = true;
+                                continue;
+                            }
+                        }
+
+                        if (!barrier) {
+                            declList.addAll(decls);
+                        } else {
+                            throw new RuntimeException("ASTStatementVisitor::visitCompoundStatement: " +
+                                    "mixed declaration at: " + dlctx.getStart().getLine());
+                        }
+
+                    } else {
+                        throw new RuntimeException("ASTStatementVisitor::visitCompoundStatement: " +
+                                "malformed declaration list at: " + dlctx.getStart().getLine());
+                    }
+                }
+                case Statement stmt -> {
+                    barrier = true;
+                    statementList.add(stmt);
+                }
+                case null, default -> {
+                    throw new RuntimeException("ASTStatementVisitor::visitCompoundStatement: malformed statement " +
+                            "or declaration at: " + dlctx.getStart().getLine());
                 }
             }
-            List<Declaration> innerList = (List<Declaration>) obj;
-            declList.addAll(innerList);
+
         }
-        for (CParser.StatementContext stctx : ctx.statement()) {
-            Statement stmt = visit(stctx);
-            statementList.add(stmt);
-        }
+//        for (CParser.DeclarationContext dlctx : ctx.declaration()) {
+//            Object obj = baseVisitor.visitDeclaration(dlctx);
+//            if (!(obj instanceof List)) {
+//                throw new RuntimeException("visitSpecifierQualifierList: Expected Declaration Specifier List");
+//            }
+//            if (((List<?>) obj).size() > 0) {
+//                if (!(((List<?>) obj).get(0) instanceof Declaration)) {
+//                    throw new RuntimeException("visitSpecifierQualifierList: Expected Declaration Specifier List");
+//                }
+//            }
+//            List<Declaration> innerList = (List<Declaration>) obj;
+//            declList.addAll(innerList);
+//        }
+//        for (CParser.StatementContext stctx : ctx.statement()) {
+//            Statement stmt = visit(stctx);
+//            statementList.add(stmt);
+//        }
         return new CompoundStatement(ctx.start.getLine(), declList, statementList);
     }
 
@@ -157,7 +216,12 @@ public class ASTStatementVisitor extends CBaseVisitor<Statement> {
 
     @Override
     public Statement visitReturn(CParser.ReturnContext ctx) {
-        List<Expression> retList = exprVisitor.parseExpressionList(ctx.expressionList());
+        List<Expression> retList;
+        if (ctx.expressionList() != null) {
+            retList = exprVisitor.parseExpressionList(ctx.expressionList());
+        } else {
+            retList = new ArrayList<>();
+        }
         return new ReturnStatement(ctx.start.getLine(), retList);
     }
 

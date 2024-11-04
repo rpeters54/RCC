@@ -4,21 +4,25 @@ CPE Senior Project - Spring/Fall 2024
 
 ## Timeline:
 
-### Parsing: [Status - Working/Testing]
+### Parsing: [Status - Working]
 
 - Created a parser using ANTLR that can parse a valid C-Program
 - Implemented a Visitor that walks the resulting parse tree and generates an AST of the program
-### Static Analysis: [Status - Working/Testing]
+- 
+### Static Analysis: [Status - Working]
 
 - Created a function that walks through the AST to ensure that the C program is compilable as written.
 - Created a function that traverses the statements of each function to ensure that a non-void function
   always ends in a return statement. Since arbitrary jumps make this process overly complicated, the function ignores Goto statements.
 
-### Simple Codegen (Expressions): [Status - In Progress]
+### IR Codegen: [Status - Working]
 
-- To get something simple running ASAP, I am going to start by writing a simple routine that walks expressions and
-  directly generates valid RISC-V code.
-- I will start with the integer math instructions and move to the floating point instructions when possible.
+- Generates a well-formatted LLVM IR that can be assembled with clang/llc to create a working executable
+
+### RISC-V Codegen: [Status - In-Progress]
+
+- Translates the LLVM instructions into their RISC-V equivalents
+- Properly builds the stack and register allocates
 
 ## Running
 

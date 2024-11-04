@@ -11,8 +11,8 @@ import java.util.List;
 
 public class FunctionDeclaration extends Instruction {
 
-    private String name;
-    private FunctionType type;
+    private final String name;
+    private final FunctionType type;
 
     public FunctionDeclaration(String name, FunctionType type) {
         super(Arch.LLVM, Arrays.asList(), Arrays.asList());
@@ -20,11 +20,15 @@ public class FunctionDeclaration extends Instruction {
         this.type = type;
     }
 
+    public String name() {
+        return this.name;
+    }
+
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("declare %s @%s(", type.getReturnType(), name));
-        List<Type> inputTypes = type.getInputTypes().stream()
-                .map(Declaration::getDeclSpec)
+        sb.append(String.format("declare %s @%s(", type.returnType(), name));
+        List<Type> inputTypes = type.inputTypes().stream()
+                .map(Declaration::declSpec)
                 .map(DeclarationSpecifier::getType)
                 .toList();
         for (Type inputType : inputTypes) {

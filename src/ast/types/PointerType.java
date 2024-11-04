@@ -2,19 +2,24 @@ package ast.types;
 
 import java.util.Objects;
 
-public class PointerType extends CompoundType {
+public class PointerType extends PrimitiveType implements CompoundType {
     private Type base;
 
     public PointerType(Type base) {
         this.base = base;
     }
 
-    public Type getBase() {
+    public Type base() {
         return base;
     }
 
     public void setBase(Type base) {
         this.base = base;
+    }
+
+    @Override
+    public long sizeof() {
+        return 8;
     }
 
     @Override
@@ -26,7 +31,7 @@ public class PointerType extends CompoundType {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
-        if (o.getClass() == VoidType.class) return true;
+//        if (o.getClass() == VoidType.class) return true;
         if (getClass() != o.getClass()) return false;
         PointerType that = (PointerType) o;
         return Objects.equals(base, that.base);

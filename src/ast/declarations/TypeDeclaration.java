@@ -1,21 +1,24 @@
 package ast.declarations;
 
-import ast.types.Type;
-
 public class TypeDeclaration implements ExternalDeclaration {
     String name;
     DeclarationSpecifier mapping;
 
+    /**
+     * AST node representing a TypeDeclaration, which aliases a name to an already defined type
+     * @param name The type alias being defined
+     * @param mapping A declaration specifier that the type alias refers to
+     */
     public TypeDeclaration(String name, DeclarationSpecifier mapping) {
         this.name = name;
         this.mapping = mapping;
     }
 
-    public String getName() {
+    public String name() {
         return name;
     }
 
-    public DeclarationSpecifier getMapping() {
+    public DeclarationSpecifier mapping() {
         return mapping;
     }
 

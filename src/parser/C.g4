@@ -222,7 +222,12 @@ expressionStatement
     ;
 
 compoundStatement
-    : '{' declaration* statement* '}'
+    : '{' declStatement* '}'
+    ;
+
+declStatement
+    : declaration
+    | statement
     ;
 
 selectionStatement
@@ -272,8 +277,9 @@ expression
     | left=expression op='|' right=expression                           #BinaryExpr
     | left=expression op='&&' right=expression                          #BinaryExpr
     | left=expression op='||' right=expression                          #BinaryExpr
-    | guard=expression op='?' then=expression ':' other=expression       #ConditionalExpr
+    | guard=expression op='?' then=expression ':' other=expression      #ConditionalExpr
     | left=expression op=('='|'*='|'/='|'%='|'+='|'-='|'<<='|'>>='|'&='|'^='|'|=') right=expression  #AssignmentExpr
+    | Null                                                              #NullExpr
     | Identifier                                                        #IdentifierExpr
     | IntegerConstant                                                   #IntegerExpr
     | FloatingConstant                                                  #FloatExpr
@@ -282,6 +288,10 @@ expression
     | StringLiteral                                                     #LiteralExpr
     | '(' expression ')'                                                #NestedExpr
     ;
+
+
+
+Null : 'NULL' ;
 
 
 /* Below is borrowed from ANTLR c99 grammar */

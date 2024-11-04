@@ -7,9 +7,10 @@ import ast.declarations.FunctionDefinition;
 import ast.types.FunctionType;
 import ast.types.Type;
 import codegen.instruction.Instruction;
+import codegen.instruction.llvm.BinaryInstruction;
 import codegen.instruction.llvm.PhiInstruction;
 import codegen.instruction.llvm.ReturnInstruction;
-import codegen.instruction.llvm.UnconditionalBranchInstruction;
+import codegen.instruction.riscv.BinaryImmInstruction;
 import codegen.values.Register;
 import codegen.values.Source;
 import org.antlr.v4.runtime.misc.Pair;
@@ -20,9 +21,7 @@ import org.jgrapht.graph.DefaultUndirectedGraph;
 
 
 import java.io.BufferedWriter;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,16 +31,26 @@ import java.util.stream.Collectors;
 
 public class ControlFlowGraph {
 
+    // Directed Graph representing the CFG
     private final Graph<BasicBlock, DefaultEdge> graph;
+    // List of the blocks within the CFG stored in topological order
     private final List<BasicBlock> topologicalList;
+    // Type environment populated during 'verifySemantics' that contains
+    // the type information for all locally defined values
     private final TypeEnvironment localEnvironment;
+
+    // function definition corresponding to the CFG
     private final FunctionDefinition definition;
+    // enum that tracks what type of instructions IR / RISC are contained
+    // inside the CFG
     private final Register.Arch arch;
 
+    // List of registers associated with the parameter variables
     private final List<Register> parameters;
 
+    // Data for handling return values if they exist
     private Optional<PhiInstruction> returnPhi;
-    private BasicBlock returnBlock;
+    private final BasicBlock returnBlock;
 
     public ControlFlowGraph(TypeEnvironment localEnvironment, FunctionDefinition definition) {
         this.graph = new DefaultDirectedGraph<>(DefaultEdge.class);
@@ -60,6 +69,18 @@ public class ControlFlowGraph {
     public boolean addBlock(BasicBlock basicBlock) {
         topologicalList.add(basicBlock);
         return graph.addVertex(basicBlock);
+    }
+
+    public boolean addBlockOutOfOrder(BasicBlock basicBlock) {
+        return graph.addVertex(basicBlock);
+    }
+
+    public boolean addBlockToTopologicalList(BasicBlock basicBlock) {
+        if (graph.containsVertex(basicBlock) && !topologicalList.contains(basicBlock)) {
+            topologicalList.add(basicBlock);
+            return true;
+        }
+        return false;
     }
 
     public boolean removeBlock(BasicBlock basicBlock) {
@@ -102,6 +123,10 @@ public class ControlFlowGraph {
 
     public TypeEnvironment getLocalEnvironment() {
         return localEnvironment;
+    }
+
+    public FunctionDefinition getDefinition() {
+        return definition;
     }
 
     /*
@@ -157,7 +182,7 @@ public class ControlFlowGraph {
         returnPhi.ifPresentOrElse(
                 phiInstruction -> {
                     returnBlock.addInstruction(phiInstruction);
-                    returnBlock.addInstruction(new ReturnInstruction(phiInstruction.getResult().clone()));
+                    returnBlock.addInstruction(new ReturnInstruction(phiInstruction.result().clone()));
                 },
                 () -> {
                     returnBlock.addInstruction(new ReturnInstruction());
@@ -169,8 +194,8 @@ public class ControlFlowGraph {
     Output Functions
      */
 
-    public void printInstructions() {
-        Type type = definition.getDeclaration().getDeclSpec().getType();
+    public List<String> sprintInstructions() {
+        Type type = definition.declaration().declSpec().getType();
         assert type instanceof FunctionType;
 
         String header = "N/A";
@@ -178,10 +203,10 @@ public class ControlFlowGraph {
         switch(arch) {
             case LLVM -> {
                 StringBuilder sb = new StringBuilder();
-                sb.append(String.format("define %s @%s(", ((FunctionType) type).getReturnType(),
-                        definition.getDeclaration().getName()));
-                List<Type> inputTypes = ((FunctionType) type).getInputTypes().stream()
-                        .map(Declaration::getDeclSpec)
+                sb.append(String.format("define %s @%s(", ((FunctionType) type).returnType(),
+                        definition.declaration().name()));
+                List<Type> inputTypes = ((FunctionType) type).inputTypes().stream()
+                        .map(Declaration::declSpec)
                         .map(DeclarationSpecifier::getType)
                         .toList();
                 for (Register param : parameters) {
@@ -200,22 +225,28 @@ public class ControlFlowGraph {
             }
         }
 
-        System.out.println(header);
+        List<String> lines = new ArrayList<>();
+        lines.add(header);
         for (BasicBlock block : topologicalList) {
-            block.printInstructions();
+            lines.addAll(block.sprintInstructions());
         }
-        System.out.println(close);
+        lines.add(close);
+        return lines;
     }
 
-    public void generateDotFile(String filePath) {
-        try(BufferedWriter out=new BufferedWriter(new OutputStreamWriter(new FileOutputStream("g.dot")))){
-
-            for (BasicBlock block : topologicalList) {
-                block.printInstructions();
+    public void generateDotFile(BufferedWriter writer) throws IOException {
+        for (BasicBlock block : topologicalList) {
+            List<String> lines = block.sprintInstructions();
+            writer.write("l"+block.getLabel()+" [label=\"");
+            for (String line : lines) {
+                writer.write(line+"\\l");
             }
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            writer.write("\\l\"]\n");
+        }
+        for (DefaultEdge edge : graph.edgeSet()) {
+            BasicBlock source = graph.getEdgeSource(edge);
+            BasicBlock target = graph.getEdgeTarget(edge);
+            writer.write(String.format("%s -> %s\n", "l"+source.getLabel(), "l"+target.getLabel()));
         }
     }
 
@@ -223,59 +254,204 @@ public class ControlFlowGraph {
     Basic Block Traversal
      */
 
+    /**
+     * Given a basic block with 1 or more predecessors, this function generates all necessary phi nodes
+     * and places them in the block.
+     * @param start The block whose phi nodes are being generated
+     */
     public void generatePhis(BasicBlock start) {
+        // ensure the block is part of the cfg
         if (!graph.containsVertex(start)) {
             throw new RuntimeException("ControlFlowGraph::generatePhis: called with a non existent block");
         }
 
-        Set<BasicBlock> predecessors = this.blockPredecessors(start).get();
+        // get the starting block's predecessors
+        Optional<Set<BasicBlock>> optPredecessors = this.blockPredecessors(start);
+        Set<BasicBlock> predecessors;
+        if (optPredecessors.isPresent()) {
+            predecessors = optPredecessors.get();
+        } else {
+            throw new RuntimeException("ControlFlowGraph::generatePhis: starting block has no predecessors");
+        }
+
+        // generate phis for each unique binding defined in a predecessor
         Set<String> keySet = new HashSet<>();
         for (BasicBlock predecessor : predecessors) {
             keySet.addAll(predecessor.getBindings().keySet());
         }
 
+
         List<String> keyList = new ArrayList<>(keySet);
+        List<String> regKeyList = new ArrayList<>();
         List<PhiInstruction> phis = new ArrayList<>();
         for (String key : keyList) {
-            List<String> labels = new ArrayList<>();
-            List<Source> sources = new ArrayList<>();
-            for (BasicBlock predecessor : predecessors) {
-                Pair<String, Source> pair = findPreviousDefinitions(predecessor, key);
-                labels.add(pair.a);
-                sources.add(pair.b);
-            }
-            Type regType = sources.getFirst().type();
-            Register result = Register.LLVM_Register(regType.clone());
-            phis.add(new PhiInstruction(result, labels, sources));
-        }
+            Pair<List<String>, List<Source>> definitions = findPreviousDefinitions(start, key);
+            TypeEnvironment.StorageLocation location = localEnvironment.getLocation(key);
+            assert location != null;
 
-        for (int i = 0; i < phis.size(); i++) {
-            PhiInstruction phi = phis.get(i);
-            String name = keyList.get(i);
-            start.addBinding(name, phi.getResult().clone());
-            start.addInstruction(phi);
-        }
-    }
-
-    public Pair<String, Source> findPreviousDefinitions(BasicBlock start, String name) {
-        if (!graph.containsVertex(start)) {
-            throw new RuntimeException("ControlFlowGraph::findPreviousDefinitions: called with a non existent block");
-        }
-
-        Source bound = start.getBinding(name);
-        if (bound == null) {
-            for (BasicBlock predecessor : this.blockPredecessors(start).get()) {
-                Pair<String, Source> pair = findPreviousDefinitions(predecessor, name);
-                if (pair != null) {
-                    bound = pair.b;
-                    break;
+            switch (location) {
+                case REGISTER -> {
+                    Type regType = definitions.b.getFirst().type();
+                    Register result = Register.LLVM_Register(regType.clone());
+                    phis.add(new PhiInstruction(result, definitions.a, definitions.b));
+                    regKeyList.add(key);
+                }
+                case STACK -> {
+                    Source value = definitions.b.getFirst().clone();
+                    start.addBinding(key, value);
                 }
             }
         }
 
-        return new Pair<>(start.getLabel(), bound);
+        for (int i = 0; i < phis.size(); i++) {
+            PhiInstruction phi = phis.get(i);
+            String name = regKeyList.get(i);
+            start.addBinding(name, phi.result().clone());
+            start.addInstruction(phi);
+        }
     }
 
+
+    /**
+     * Given a starting block and the name of a value, find all definitions of corresponding to that
+     * name the reach the starting block. This function is used by generatePhis to populate phi nodes
+     * @param start The starting basic block
+     * @param name The value whose reaching definitions are being searched for
+     * @return A tuple of lists, with the first containing all the basic block labels and the second containing
+     * all values.
+     */
+    public Pair<List<String>, List<Source>> findPreviousDefinitions(BasicBlock start, String name) {
+        Set<BasicBlock> visited = new HashSet<>();
+        return findPreviousDefinitionsHelper(start, name, visited);
+    }
+
+    public Pair<List<String>, List<Source>> findPreviousDefinitionsHelper(BasicBlock start, String name, Set<BasicBlock> visited) {
+
+        if (!graph.containsVertex(start)) {
+            throw new RuntimeException("ControlFlowGraph::findPreviousDefinitions: called with a non existent block");
+        }
+
+        // get the starting block's predecessors
+        Optional<Set<BasicBlock>> optPredecessors = this.blockPredecessors(start);
+        Set<BasicBlock> predecessors;
+        if (optPredecessors.isPresent()) {
+            predecessors = optPredecessors.get();
+        } else {
+            throw new RuntimeException("ControlFlowGraph::findPreviousDefinitions: starting block has no predecessors");
+        }
+
+        Pair<List<String>, List<Source>> result = new Pair<>(new ArrayList<>(), new ArrayList<>());
+        for (BasicBlock predecessor : predecessors) {
+            if (!visited.contains(predecessor)) {
+                visited.add(predecessor);
+                Source value = predecessor.getBinding(name);
+                if (value == null) {
+                    Pair<List<String>, List<Source>> inner = findPreviousDefinitionsHelper(predecessor, name, visited);
+                    for (int i = 0; i < inner.a.size(); i++) {
+                        result.a.add(predecessor.getLabel());
+                    }
+                    result.b.addAll(inner.b);
+                } else {
+                    result.a.add(predecessor.getLabel());
+                    result.b.add(value.clone());
+                }
+            }
+        }
+
+        return result;
+    }
+
+
+    public Map<Source, List<Instruction>> uses() {
+        Map<Source, List<Instruction>> uses = new HashMap<>();
+        for (BasicBlock block : topologicalList) {
+            for (Instruction inst : block.getAllInstructions()) {
+                inst.sources().stream()
+                        .filter(item -> item instanceof Register)
+                        .map(item -> (Register) item)
+                        .forEach( reg -> {
+                            if (!uses.containsKey(reg)) {
+                                uses.put(reg.clone(), new ArrayList<>());
+                            }
+                            uses.get(reg).add(inst);
+                        });
+            }
+        }
+        return uses;
+    }
+
+    public Map<Source, List<Instruction>> defs() {
+        Map<Source, List<Instruction>> defs = new HashMap<>();
+        for (BasicBlock block : topologicalList) {
+            for (Instruction inst : block.getAllInstructions()) {
+                for (Source source : inst.results()) {
+                    if (!defs.containsKey(source)) {
+                        defs.put(source.clone(), new ArrayList<>());
+                    }
+                    defs.get(source).add(inst);
+                }
+            }
+        }
+        return defs;
+    }
+
+    public void pruneRedundantPhis() {
+        Map<Source, List<Instruction>> uses = uses();
+
+        for (BasicBlock block : topologicalList) {
+            List<Instruction> removedPhis = new ArrayList<>();
+            for (Instruction inst : block.getAllInstructions()) {
+                switch (inst) {
+                    case PhiInstruction phi -> {
+                        Source singularity = phi.collapse();
+                        Register phiResult = phi.result();
+                        if (singularity != null) {
+                            removedPhis.add(phi);
+                            List<Instruction> usesOfPhiResult = uses.get(phiResult);
+                            if (usesOfPhiResult == null) {
+                                continue;
+                            }
+                            for (Instruction useOfPhiResult : usesOfPhiResult) {
+                                int index = useOfPhiResult.sources().indexOf(phiResult);
+                                useOfPhiResult.sources().set(index, singularity);
+                            }
+                        }
+                    }
+                    case null, default -> {}
+                }
+            }
+            block.getMutableInstructions().removeAll(removedPhis);
+        }
+    }
+
+    public void constantPropagation() {
+        Map<Source, List<Instruction>> uses = uses();
+
+        for (BasicBlock block : topologicalList) {
+            List<Instruction> removed = new ArrayList<>();
+            for (Instruction inst : block.getAllInstructions()) {
+                switch (inst) {
+                    case BinaryInstruction bin -> {
+                        Source singularity = bin.collapse();
+                        Register result = bin.result();
+                        if (singularity != null) {
+                            removed.add(bin);
+                            List<Instruction> usesOfResult = uses.get(result);
+                            if (usesOfResult == null) {
+                                continue;
+                            }
+                            for (Instruction useOfResult : usesOfResult) {
+                                int index = useOfResult.sources().indexOf(result);
+                                useOfResult.sources().set(index, singularity);
+                            }
+                        }
+                    }
+                    case null, default -> {}
+                }
+            }
+            block.getMutableInstructions().removeAll(removed);
+        }
+    }
 
     /*
     Register Allocation Functions
@@ -321,8 +497,8 @@ public class ControlFlowGraph {
                 Instruction instruction = block.getAllInstructions().get(i);
 
                 // collect the instruction's source and result registers
-                List<Register> results = instruction.getResults();
-                List<Register> sources = instruction.getSources().stream()
+                List<Register> results = instruction.results();
+                List<Register> sources = instruction.sources().stream()
                         .filter(item -> item instanceof Register)
                         .map(item -> (Register) item)
                         .toList();
@@ -344,5 +520,6 @@ public class ControlFlowGraph {
         }
         return iGraph;
     }
-
 }
+
+

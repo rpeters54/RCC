@@ -7,19 +7,18 @@ import ast.types.IntegerType;
 import codegen.BasicBlock;
 import ast.TypeEnvironment;
 import codegen.ControlFlowGraph;
+import codegen.EscapeTuple;
 import codegen.TranslationUnit;
 
 import java.util.List;
 
-public class SwitchStatement implements Statement {
-    private final int lineNum;
+public class SwitchStatement extends Statement {
+
     private final List<Expression> guardList;
     private final Statement body;
 
-    public SwitchStatement(int lineNum,
-                           List<Expression> guardList,
-                                Statement body) {
-        this.lineNum = lineNum;
+    public SwitchStatement(int lineNum, List<Expression> guardList, Statement body) {
+        super(lineNum);
         this.guardList = guardList;
         this.body = body;
     }
@@ -28,7 +27,7 @@ public class SwitchStatement implements Statement {
     public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, FunctionDefinition function) {
         DeclarationSpecifier specifier = new DeclarationSpecifier();
         for (Expression guard : guardList) {
-            specifier = guard.verifySemantics(globalEnv, localEnv);
+            specifier = guard.verifySemantics(globalEnv, localEnv, TypeEnvironment.StorageLocation.REGISTER);
         }
         if (!(specifier.getType() instanceof IntegerType))
             throw new RuntimeException("SwitchStatement::verifySemantics: Final expression in guardList is not a valid type");
@@ -51,7 +50,7 @@ public class SwitchStatement implements Statement {
     }
 
     @Override
-    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+    public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, EscapeTuple esc) {
         throw new RuntimeException("Not implemented yet");
     }
 }
