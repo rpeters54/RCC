@@ -167,7 +167,7 @@ public class Program {
                         }
                     }
                 }
-                case TypeDeclaration _ -> {}
+                case TypeDeclaration typedecl -> {}
                 case null, default -> {
                     throw new RuntimeException("Program::codegen: Not Implemented");
                 }

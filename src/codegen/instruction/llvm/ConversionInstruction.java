@@ -37,14 +37,14 @@ public class ConversionInstruction extends Instruction {
                             }
                         }
                     }
-                    case FloatingType _ -> {
+                    case FloatingType ft -> {
                         if (op.signed()) {
                             type = ConversionType.SITOFP;
                         } else {
                             type = ConversionType.UITOFP;
                         }
                     }
-                    case PointerType _ -> type = ConversionType.INTTOPTR;
+                    case PointerType pt -> type = ConversionType.INTTOPTR;
                     case null, default -> throw new RuntimeException("ConversionInstruction::make operand must be a valid primitive type");
                 }
             }
@@ -67,10 +67,10 @@ public class ConversionInstruction extends Instruction {
                     case null, default -> throw new RuntimeException("ConversionInstruction::make operand must be a valid primitive type");
                 }
             }
-            case PointerType _ -> {
+            case PointerType lpt -> {
                 switch (target) {
-                    case IntegerType _ -> type = ConversionType.PTRTOINT;
-                    case PointerType _ -> type = ConversionType.BITCAST;
+                    case IntegerType rit -> type = ConversionType.PTRTOINT;
+                    case PointerType rpt -> type = ConversionType.BITCAST;
                     case null, default -> throw new RuntimeException("ConversionInstruction::make operand must be a valid primitive type");
                 }
             }

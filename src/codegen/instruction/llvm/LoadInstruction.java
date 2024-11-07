@@ -6,7 +6,7 @@ import codegen.values.Source;
 
 import java.util.Arrays;
 
-public class LoadInstruction extends Instruction {
+public class LoadInstruction extends Instruction implements CriticalInstruction {
 
     public LoadInstruction(Register result, Source location) {
         super(Arch.LLVM, Arrays.asList(result), Arrays.asList(location));

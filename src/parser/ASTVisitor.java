@@ -965,61 +965,64 @@ public class ASTVisitor extends CBaseVisitor<Object> {
         int shortCount = 0;
         int longCount = 0;
 
-        switch (typeList.getFirst()) {
-            case DefinedType _:
-            case StructType _:
-            case UnionType _:
-            case EnumType _:
-            case VoidType _:
+        if (typeList.getFirst() instanceof DefinedType
+                || typeList.getFirst() instanceof StructType
+                || typeList.getFirst() instanceof DefinedType
+                || typeList.getFirst() instanceof EnumType
+                || typeList.getFirst() instanceof VoidType) {
                 if (typeList.size() > 1) {
                     throw new IllegalArgumentException("Can't specify other types with defined type");
                 }
                 return typeList.getFirst();
-            default:
-                break;
         }
 
         for (Type type : typeList) {
             switch (type) {
-                case SignedType _:
-                case UnsignedType _:
+                case SignedType st -> {
                     sign.ifPresent((obj) -> { throw new IllegalArgumentException(
                             "Can't have multiple signed/unsigned keywords in a declaration"
                     );});
                     sign = Optional.of(type);
-                    break;
-                case IntType _:
+                }
+                case UnsignedType ut -> {
+                    sign.ifPresent((obj) -> { throw new IllegalArgumentException(
+                            "Can't have multiple signed/unsigned keywords in a declaration"
+                    );});
+                    sign = Optional.of(type);
+                }
+                case IntType it -> {
                     primType.ifPresent((obj) -> { throw new IllegalArgumentException(
                             "Either specified int twice or float, char, or int at same time"
                     );});
                     primType = Optional.of(Type.Specifier.INT);
-                    break;
-                case DoubleType _:
+                }
+                case DoubleType dt -> {
                     primType.ifPresent((obj) -> { throw new IllegalArgumentException(
                             "Either specified int twice or float, char, or int at same time"
                     );});
                     primType = Optional.of(Type.Specifier.DOUBLE);
-                    break;
-                case FloatType _:
+                }
+                case FloatType ft -> {
                     primType.ifPresent((obj) -> { throw new IllegalArgumentException(
                             "Either specified int twice or float, char, or int at same time"
                     );});
                     primType = Optional.of(Type.Specifier.FLOAT);
-                    break;
-                case CharType _:
+                }
+                case CharType ct -> {
                     primType.ifPresent((obj) -> { throw new IllegalArgumentException(
                             "Either specified int twice or float, char, or int at same time"
                     );});
                     primType = Optional.of(Type.Specifier.CHAR);
-                    break;
-                case ShortType _:
+                }
+                case ShortType st -> {
                     shortCount++;
-                    break;
-                case LongType _:
+                }
+                case LongType lt -> {
                     longCount++;
-                    break;
-                case null, default:
+                }
+                case null, default -> {
                     throw new RuntimeException("ASTVisitor::buildBaseType: failed to resolve type");
+                }
             }
         }
 
@@ -1035,8 +1038,8 @@ public class ASTVisitor extends CBaseVisitor<Object> {
         sign.ifPresentOrElse(
                 (obj) -> {
                     switch (obj) {
-                        case SignedType _ -> isSigned.set(true);
-                        case UnsignedType _ -> isSigned.set(false);
+                        case SignedType st -> isSigned.set(true);
+                        case UnsignedType ut -> isSigned.set(false);
                         case null, default -> throw new RuntimeException("ASTVisitor::buildBaseType: Illegal object inside sign");
                     }
                 },
@@ -1080,7 +1083,7 @@ public class ASTVisitor extends CBaseVisitor<Object> {
 
                 return new FloatingType(FloatingType.Width.DOUBLE);
             }
-            case null, default -> {
+            default -> {
                 if (longCount > 2 || shortCount > 1) {
                     throw new IllegalArgumentException("Wrong number of long/short specifiers for int");
                 }

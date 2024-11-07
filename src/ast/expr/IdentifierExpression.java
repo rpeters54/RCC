@@ -82,10 +82,10 @@ public class IdentifierExpression extends LValue {
                     PointerType pt = (PointerType) value.type();
                     Type baseType = pt.base();
                     switch (baseType) {
-                        case ArrayType _, StructType _, UnionType _ -> {
-                            return value.clone();
-                        }
-                        case PrimitiveType _ -> {
+                        case ArrayType at -> { return value.clone(); }
+                        case StructType st -> { return value.clone(); }
+                        case UnionType ut -> { return value.clone(); }
+                        case PrimitiveType primt -> {
                             Register result = Register.LLVM_Register(baseType.clone());
                             LoadInstruction load = new LoadInstruction(result.clone(), value.clone());
                             block.addInstruction(load);

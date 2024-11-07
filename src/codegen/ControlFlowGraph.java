@@ -7,10 +7,7 @@ import ast.declarations.FunctionDefinition;
 import ast.types.FunctionType;
 import ast.types.Type;
 import codegen.instruction.Instruction;
-import codegen.instruction.llvm.BinaryInstruction;
-import codegen.instruction.llvm.PhiInstruction;
-import codegen.instruction.llvm.ReturnInstruction;
-import codegen.instruction.riscv.BinaryImmInstruction;
+import codegen.instruction.llvm.*;
 import codegen.values.Register;
 import codegen.values.Source;
 import org.antlr.v4.runtime.misc.Pair;
@@ -24,6 +21,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Represents the Control Flow Graph of a Function
@@ -84,35 +82,48 @@ public class ControlFlowGraph {
     }
 
     public boolean removeBlock(BasicBlock basicBlock) {
+//        System.out.println("Removed: " + basicBlock.getLabel());
         topologicalList.remove(basicBlock);
         return graph.removeVertex(basicBlock);
     }
 
-    public Optional<Set<BasicBlock>> blockSuccessors(BasicBlock basicBlock) {
+    public Set<BasicBlock> blockSuccessors(BasicBlock basicBlock) {
         if (!graph.containsVertex(basicBlock)) {
-            return Optional.empty();
+            return new HashSet<>();
         }
 
-        return Optional.of(
-                graph.outgoingEdgesOf(basicBlock).stream()
-                        .map(graph::getEdgeTarget)
-                        .collect(Collectors.toUnmodifiableSet())
-        );
+        return graph.outgoingEdgesOf(basicBlock).stream()
+                .map(graph::getEdgeTarget)
+                .collect(Collectors.toUnmodifiableSet());
+
     }
 
-    public Optional<Set<BasicBlock>> blockPredecessors(BasicBlock basicBlock) {
+    public void clearSuccessors(BasicBlock block) {
+        if (graph.containsVertex(block)) {
+            Set<DefaultEdge> edges = new HashSet<>(graph.outgoingEdgesOf(block));
+            edges.forEach(graph::removeEdge);
+        }
+    }
+
+    public Set<BasicBlock> blockPredecessors(BasicBlock basicBlock) {
         if (!graph.containsVertex(basicBlock)) {
-            return Optional.empty();
+            return new HashSet<>();
         }
 
-        return Optional.of(
-                graph.incomingEdgesOf(basicBlock).stream()
-                        .map(graph::getEdgeSource)
-                        .collect(Collectors.toUnmodifiableSet())
-        );
+        return graph.incomingEdgesOf(basicBlock).stream()
+                .map(graph::getEdgeSource)
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    public void clearPredecessors(BasicBlock block) {
+        if (graph.containsVertex(block)) {
+            Set<DefaultEdge> edges = new HashSet<>(graph.incomingEdgesOf(block));
+            edges.forEach(graph::removeEdge);
+        }
     }
 
     public boolean addEdge(BasicBlock from, BasicBlock to) {
+//        System.out.println("Adding edge: " + from.getLabel() + " -> " + to.getLabel());
         DefaultEdge e = graph.addEdge(from, to);
         return e != null;
     }
@@ -149,12 +160,10 @@ public class ControlFlowGraph {
     public void addReturnValue(String label, Source value) {
         if (returnPhi.isPresent()) {
             PhiInstruction instruction = returnPhi.get();
-            instruction.addSource(value);
-            instruction.addLabel(label);
+            instruction.addValue(label, value);
         } else {
             PhiInstruction instruction = new PhiInstruction();
-            instruction.addSource(value);
-            instruction.addLabel(label);
+            instruction.addValue(label, value);
             returnPhi = Optional.of(instruction);
         }
     }
@@ -266,13 +275,7 @@ public class ControlFlowGraph {
         }
 
         // get the starting block's predecessors
-        Optional<Set<BasicBlock>> optPredecessors = this.blockPredecessors(start);
-        Set<BasicBlock> predecessors;
-        if (optPredecessors.isPresent()) {
-            predecessors = optPredecessors.get();
-        } else {
-            throw new RuntimeException("ControlFlowGraph::generatePhis: starting block has no predecessors");
-        }
+        Set<BasicBlock> predecessors = blockPredecessors(start);
 
         // generate phis for each unique binding defined in a predecessor
         Set<String> keySet = new HashSet<>();
@@ -332,13 +335,7 @@ public class ControlFlowGraph {
         }
 
         // get the starting block's predecessors
-        Optional<Set<BasicBlock>> optPredecessors = this.blockPredecessors(start);
-        Set<BasicBlock> predecessors;
-        if (optPredecessors.isPresent()) {
-            predecessors = optPredecessors.get();
-        } else {
-            throw new RuntimeException("ControlFlowGraph::findPreviousDefinitions: starting block has no predecessors");
-        }
+        Set<BasicBlock> predecessors = blockPredecessors(start);
 
         Pair<List<String>, List<Source>> result = new Pair<>(new ArrayList<>(), new ArrayList<>());
         for (BasicBlock predecessor : predecessors) {
@@ -362,8 +359,8 @@ public class ControlFlowGraph {
     }
 
 
-    public Map<Source, List<Instruction>> uses() {
-        Map<Source, List<Instruction>> uses = new HashMap<>();
+    public Map<Register, List<Instruction>> uses() {
+        Map<Register, List<Instruction>> uses = new HashMap<>();
         for (BasicBlock block : topologicalList) {
             for (Instruction inst : block.getAllInstructions()) {
                 inst.sources().stream()
@@ -380,15 +377,12 @@ public class ControlFlowGraph {
         return uses;
     }
 
-    public Map<Source, List<Instruction>> defs() {
-        Map<Source, List<Instruction>> defs = new HashMap<>();
+    public Map<Register, Instruction> defs() {
+        Map<Register, Instruction> defs = new HashMap<>();
         for (BasicBlock block : topologicalList) {
             for (Instruction inst : block.getAllInstructions()) {
-                for (Source source : inst.results()) {
-                    if (!defs.containsKey(source)) {
-                        defs.put(source.clone(), new ArrayList<>());
-                    }
-                    defs.get(source).add(inst);
+                for (Register result : inst.results()) {
+                    defs.put(result, inst);
                 }
             }
         }
@@ -396,7 +390,7 @@ public class ControlFlowGraph {
     }
 
     public void pruneRedundantPhis() {
-        Map<Source, List<Instruction>> uses = uses();
+        Map<Register, List<Instruction>> uses = uses();
 
         for (BasicBlock block : topologicalList) {
             List<Instruction> removedPhis = new ArrayList<>();
@@ -413,7 +407,7 @@ public class ControlFlowGraph {
                             }
                             for (Instruction useOfPhiResult : usesOfPhiResult) {
                                 int index = useOfPhiResult.sources().indexOf(phiResult);
-                                useOfPhiResult.sources().set(index, singularity);
+                                useOfPhiResult.setSource(index, singularity);
                             }
                         }
                     }
@@ -425,7 +419,7 @@ public class ControlFlowGraph {
     }
 
     public void constantPropagation() {
-        Map<Source, List<Instruction>> uses = uses();
+        Map<Register, List<Instruction>> uses = uses();
 
         for (BasicBlock block : topologicalList) {
             List<Instruction> removed = new ArrayList<>();
@@ -453,6 +447,384 @@ public class ControlFlowGraph {
         }
     }
 
+
+    /**
+     * Eliminates instructions that are proven to have no effect on
+     * program state or the output
+     * Note: requires a call to pruneRedundantPhis beforehand for correctness
+     */
+    public void deadCodeElimination() {
+        // associations between labels and block pointers
+        Map<String, BasicBlock> labelToBlockMap = new HashMap<>();
+        for (BasicBlock block : topologicalList) {
+            labelToBlockMap.put(block.getLabel(), block);
+        }
+
+        // get all uses registers
+        Map<Register, Instruction> defs = defs();
+
+        Set<BasicBlock> liveBlocks = new HashSet<>();
+        Set<Instruction> criticalInst = new HashSet<>();
+        Set<Instruction> workset  = new HashSet<>();
+
+        // map instructions to blocks and blocks to jump instructions
+        Map<Instruction, BasicBlock> instBlockMap = new HashMap<>();
+        Map<BasicBlock, Instruction> blockJumpMap = new HashMap<>();
+        for (BasicBlock block : topologicalList) {
+            for (Instruction inst : block.getAllInstructions()) {
+                instBlockMap.put(inst, block);
+                if (inst instanceof JumpInstruction) {
+                    blockJumpMap.put(block, inst);
+                }
+                if (inst instanceof CriticalInstruction) {
+                    workset.add(inst);
+                }
+            }
+        }
+
+        // get the return instruction and add it to the workset
+        BasicBlock exitBlock = topologicalList.getLast();
+        List<ReturnInstruction> rets = exitBlock.getAllInstructions()
+                .stream()
+                .filter(item -> item instanceof ReturnInstruction)
+                .map(item -> (ReturnInstruction) item)
+                .toList();
+        workset.add(rets.getLast());
+
+
+        while (!workset.isEmpty()) {
+            // drop the value from the workset
+            Optional<Instruction> optNext = workset.stream().findFirst();
+            Instruction next = optNext.get();
+            workset.remove(next);
+            criticalInst.add(next);
+
+            // mark values used as sources for the critical instruction as critical
+            next.sources().stream()
+                    .filter(item -> item instanceof Register)
+                    .map(item -> (Register) item)
+                    .filter(defs::containsKey)
+                    .map(defs::get)
+                    .filter(inst -> !criticalInst.contains(inst))
+                    .filter(inst -> !workset.contains(inst))
+                    .forEach(workset::add);
+
+
+            // branches used by phi sources are marked critical
+            if (next instanceof PhiInstruction phi) {
+                phi.labels().stream()
+                        .map(labelToBlockMap::get)
+                        .map(BasicBlock::getAllInstructions)
+                        .map(List::getLast)
+                        .filter(inst -> inst instanceof JumpInstruction)
+                        .filter(inst -> !criticalInst.contains(inst))
+                        .filter(inst -> !workset.contains(inst))
+                        .forEach(workset::add);
+            }
+
+
+            // mark the current block critical if it hasn't been yet
+            BasicBlock currentBlock = instBlockMap.get(next);
+            liveBlocks.add(currentBlock);
+
+
+            // mark jump instructions from reverse dominance frontier critical
+            Set<BasicBlock> rdf = computeReverseDominanceFrontier(currentBlock);
+            // also mark jump instructions from the current block critical
+            rdf.add(currentBlock);
+            rdf.stream().filter(blockJumpMap::containsKey).forEach( block -> {
+                Instruction jmp = blockJumpMap.get(block);
+                blockJumpMap.remove(block);
+                workset.add(jmp);
+            });
+        }
+
+        // filter out dead instructions and prune jumps
+        for (BasicBlock block : topologicalList) {
+            List<Instruction> filteredInstructions = new ArrayList<>();
+            for (Instruction inst : block.getAllInstructions()) {
+                if (criticalInst.contains(inst)) {
+                    filteredInstructions.add(inst);
+                } else if (inst instanceof JumpInstruction) {
+                    BasicBlock jumpBlock = computeNearestPostDominator(block, liveBlocks);
+                    clearSuccessors(block);
+                    addEdge(block, jumpBlock);
+                    UnconditionalBranchInstruction uncond = new UnconditionalBranchInstruction(jumpBlock.getLabel());
+                    filteredInstructions.add(uncond);
+                }
+            }
+            block.getMutableInstructions().clear();
+            block.getMutableInstructions().addAll(filteredInstructions);
+        }
+
+    }
+
+    /**
+     * Cleans up the remaining branches after aggressive dead code elimination
+     */
+    public void hoistBranches() {
+        Map<String, BasicBlock> labelToBlockMap = new HashMap<>();
+        for (BasicBlock block : topologicalList) {
+            labelToBlockMap.put(block.getLabel(), block);
+        }
+
+        // clear out the dead blocks that aren't used as paths by live blocks
+        List<BasicBlock> allBlocks = new ArrayList<>(topologicalList);
+        for (BasicBlock block : allBlocks) {
+            List<Instruction> allInst = block.getMutableInstructions();
+            Instruction last = allInst.getLast();
+
+            switch(last) {
+                case ConditionalBranchInstruction cond -> {
+                    if (cond.ifTrue().equals(cond.ifFalse())) {
+                        allInst.removeLast();
+                        UnconditionalBranchInstruction uncond = new UnconditionalBranchInstruction(cond.ifTrue());
+                        hoistUnconditional(labelToBlockMap, block, uncond);
+                    }
+                }
+                case UnconditionalBranchInstruction uncond -> {
+                    allInst.removeLast();
+                    hoistUnconditional(labelToBlockMap, block, uncond);
+                }
+                case ReturnInstruction ret -> {}
+                case null, default -> throw new RuntimeException("ControlFlowGraph::hoistBranches: " +
+                        "block has invalid final instruction");
+            }
+        }
+    }
+
+    /**
+     * helper method for hoist branches that handles unconditional branches
+     * @param labelToBlockMap
+     * @param current
+     * @param uncond
+     */
+    private void hoistUnconditional(Map<String,BasicBlock> labelToBlockMap,
+                                   BasicBlock current,
+                                   UnconditionalBranchInstruction uncond) {
+        Set<BasicBlock> predecessors = blockPredecessors(current);
+        BasicBlock successor = labelToBlockMap.get(uncond.label());
+        assert successor != null;
+
+        if (current.getAllInstructions().isEmpty()) {
+            // check if any of the phi instructions reference any of the predecessor blocks
+            Set<String> predecessorLabelSet = predecessors.stream()
+                    .map(BasicBlock::getLabel)
+                    .collect(Collectors.toSet());
+            List<PhiInstruction> phis = successor.getAllInstructions().stream()
+                    .filter(item -> item instanceof PhiInstruction)
+                    .map(item -> (PhiInstruction) item)
+                    .toList();
+            Set<String> successorLabelSet = phis.stream()
+                    .map(PhiInstruction::labels)
+                    .flatMap(List::stream)
+                    .collect(Collectors.toSet());
+            successorLabelSet.retainAll(predecessorLabelSet);
+
+            // successor depends on parents of current, current may be vital
+            if (!successorLabelSet.isEmpty()) {
+                current.addInstruction(uncond);
+                return;
+            }
+
+            // reset all phi labels to include the updated predecessors
+            for (PhiInstruction phi : phis) {
+                List<PhiInstruction.PhiTuple> fixedPhis = phi.mutableValues().stream()
+                        .flatMap(item -> item.label().equals(current.getLabel())
+                                ? predecessorLabelSet.stream()
+                                .map(label -> new PhiInstruction.PhiTuple(label, item.source().clone()))
+                                : Stream.of(item)
+                        ).toList();
+                phi.mutableValues().clear();
+                phi.mutableValues().addAll(fixedPhis);
+            }
+
+            // prune the current block
+            clearPredecessors(current);
+            clearSuccessors(current);
+            removeBlock(current);
+
+            for (BasicBlock predecessor : predecessors) {
+                Instruction last = predecessor.getAllInstructions().getLast();
+                switch (last) {
+                    case ConditionalBranchInstruction c -> {
+                        if (c.ifTrue().equals(current.getLabel())) {
+                            c.setIfTrue(successor.getLabel());
+                        }
+                        if (c.ifFalse().equals(current.getLabel())) {
+                            c.setIfFalse(successor.getLabel());
+                        }
+                    }
+                    case UnconditionalBranchInstruction u -> {
+                        if (u.label().equals(current.getLabel())) {
+                            u.setLabel(successor.getLabel());
+                        }
+                    }
+                    case null, default -> {
+                        throw new RuntimeException("hoistUnconditional: block ends with non-jump");
+                    }
+                }
+                addEdge(predecessor, successor);
+            }
+
+        } else if (blockPredecessors(successor).size() == 1) {
+            // update the current block to contain all of the successor
+            List<Instruction> currentInst = current.getMutableInstructions();
+            clearSuccessors(current);
+            Set<BasicBlock> successorSuccessors = blockSuccessors(successor);
+            currentInst.addAll(successor.getAllInstructions());
+
+            // remove the successor
+            clearPredecessors(successor);
+            clearSuccessors(successor);
+            removeBlock(successor);
+
+            for (BasicBlock successorSuccessor : successorSuccessors) {
+                // add an edge between current and each of successor's successors
+                addEdge(current, successorSuccessor);
+                // update all phis to use the label of the current block
+                List<PhiInstruction> phis = successorSuccessor.getAllInstructions().stream()
+                        .filter(item -> item instanceof PhiInstruction)
+                        .map(item -> (PhiInstruction) item)
+                        .toList();
+                for (PhiInstruction phi : phis) {
+                    List<PhiInstruction.PhiTuple> fixedPhis = phi.mutableValues().stream()
+                            .map(item -> item.label().equals(successor.getLabel())
+                                    ? new PhiInstruction.PhiTuple(current.getLabel(), item.source().clone())
+                                    : item
+                            ).toList();
+                    phi.mutableValues().clear();
+                    phi.mutableValues().addAll(fixedPhis);
+                }
+            }
+        } else {
+            current.addInstruction(uncond);
+        }
+    }
+
+    /**
+     * compute the reverse dominance frontier of a given basic block
+     * returns a list of basic blocks that define it
+     */
+    public Set<BasicBlock> computeReverseDominanceFrontier(BasicBlock block) {
+        Set<BasicBlock> visitedSet = new HashSet<>();
+
+        Set<BasicBlock> frontier = new HashSet<>();
+
+        for (BasicBlock parent : blockPredecessors(block)) {
+            frontier.addAll(computeRDFHelper(parent, block, visitedSet));
+        }
+        return frontier;
+    }
+
+    public Set<BasicBlock> computeRDFHelper(BasicBlock start, BasicBlock guard, Set<BasicBlock> visitedSet) {
+        // create a new reverse dominance frontier list
+        Set<BasicBlock> frontier = new HashSet<>();
+
+        // check if already visited
+        // if not, mark as visited and continue
+        if (visitedSet.contains(start))
+            return frontier;
+        visitedSet.add(start);
+
+        // if the current block has a path to the end, it is a part of the frontier
+        // its parents will not be, just return it
+        if (pathToEnd(start, guard)) {
+            frontier.add(start);
+            return frontier;
+        }
+
+        // if the current block is not part of the frontier, its parents might be
+        // build the frontier list by recursing
+        for (BasicBlock parent : blockPredecessors(start)) {
+            frontier.addAll(computeRDFHelper(parent, guard, visitedSet));
+        }
+
+        return frontier;
+    }
+
+
+    /**
+     * Finds the nearest post-dominator to 'this'
+     */
+    private BasicBlock computeNearestPostDominator(BasicBlock block, Set<BasicBlock> liveBlocks) {
+
+        Set<BasicBlock> visitedSet = new HashSet<>();
+        Set<BasicBlock> successors = blockSuccessors(block);
+        Queue<BasicBlock> blockQueue = new ArrayDeque<>(successors);
+
+        // mark current block as visited
+        visitedSet.add(block);
+
+        while (!blockQueue.isEmpty()) {
+            BasicBlock current = blockQueue.poll();
+            // if the block has been visited, ignore it
+            if (visitedSet.contains(current))
+                continue;
+
+            // mark the block as visited
+            visitedSet.add(current);
+
+            // if 'this' has a path to the end that does not
+            // pass through block it is not post-dominated
+            boolean unobstructed = pathToEnd(block, current);
+            // if the block post-dominates 'this' and is
+            // not set to be removed, add it
+            if (!unobstructed && liveBlocks.contains(current)) {
+                return current;
+            }
+
+            // otherwise, add the block's children
+            blockQueue.addAll(blockSuccessors(current));
+        }
+        // ideally this should never be reached as the epilogue
+        // postdominates all blocks by default
+        throw new RuntimeException("Should have found post dominator");
+    }
+
+    /**
+     * Determines whether there exists a path to the epilogue
+     * from 'this' that does not contain 'guard'
+     * returns a boolean given this result
+     */
+    private boolean pathToEnd(BasicBlock start, BasicBlock guard) {
+        Set<BasicBlock> visitedSet = new HashSet<>();
+        Set<BasicBlock> successors = blockSuccessors(start);
+        boolean check = false;
+        for (BasicBlock child : successors) {
+            check |= pathToEndHelper(child, guard, visitedSet);
+        }
+        return check;
+    }
+
+    private boolean pathToEndHelper(BasicBlock start, BasicBlock guard, Set<BasicBlock> visitedSet) {
+        // avoid loops by checking if the block has been visited
+        if (visitedSet.contains(start))
+            return false;
+
+        // mark current block as visited
+        visitedSet.add(start);
+
+        // hit the guard, return false
+        if (start.equals(guard)) {
+            return false;
+        }
+
+        // reached the end, return true;
+        Set<BasicBlock> successors = blockSuccessors(start);
+        if (successors.isEmpty()) {
+            return true;
+        }
+
+        // if not at the end or the guard, recurse
+        boolean retVal = false;
+        for (BasicBlock child : successors) {
+            retVal |= pathToEndHelper(child, guard, visitedSet);
+        }
+        return retVal;
+    }
+
+
     /*
     Register Allocation Functions
      */
@@ -470,7 +842,7 @@ public class ControlFlowGraph {
             for (int i = topologicalList.size()-1; i >= 0; i--) {
                 BasicBlock current = topologicalList.get(i);
                 Set<Register> currentSet = liveOutMap.get(current);
-                Set<Register> newSet = current.liveout(liveOutMap, blockSuccessors(current).get());
+                Set<Register> newSet = current.liveout(liveOutMap, blockSuccessors(current));
                 if (!newSet.equals(currentSet)) {
                     liveOutMap.put(current, newSet);
                     changed = true;

@@ -5,14 +5,30 @@ import codegen.values.Source;
 
 import java.util.Arrays;
 
-public class ConditionalBranchInstruction extends Instruction {
+public class ConditionalBranchInstruction extends Instruction implements JumpInstruction {
 
-    private final String ifTrue;
-    private final String ifFalse;
+    private String ifTrue;
+    private String ifFalse;
 
     public ConditionalBranchInstruction(Source condition, String ifTrue, String ifFalse) {
         super(Arch.LLVM, Arrays.asList(), Arrays.asList(condition));
         this.ifTrue = ifTrue;
+        this.ifFalse = ifFalse;
+    }
+
+    public String ifTrue() {
+        return ifTrue;
+    }
+
+    public String ifFalse() {
+        return ifFalse;
+    }
+
+    public void setIfTrue(String ifTrue) {
+        this.ifTrue = ifTrue;
+    }
+
+    public void setIfFalse(String ifFalse) {
         this.ifFalse = ifFalse;
     }
 

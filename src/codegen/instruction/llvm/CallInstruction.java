@@ -7,7 +7,7 @@ import codegen.values.Source;
 import java.util.Arrays;
 import java.util.List;
 
-public class CallInstruction extends Instruction {
+public class CallInstruction extends Instruction implements CriticalInstruction {
 
     private final String name;
 

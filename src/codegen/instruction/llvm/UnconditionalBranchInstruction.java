@@ -6,11 +6,19 @@ import codegen.values.Source;
 
 import java.util.Arrays;
 
-public class UnconditionalBranchInstruction extends Instruction {
-    private final String label;
+public class UnconditionalBranchInstruction extends Instruction implements JumpInstruction {
+    private String label;
 
     public UnconditionalBranchInstruction(String label) {
         super(Instruction.Arch.LLVM, Arrays.asList(), Arrays.asList());
+        this.label = label;
+    }
+
+    public String label() {
+        return label;
+    }
+
+    public void setLabel(String label) {
         this.label = label;
     }
 

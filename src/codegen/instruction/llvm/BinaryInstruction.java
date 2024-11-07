@@ -68,7 +68,7 @@ public class BinaryInstruction extends Instruction {
 
         String result;
         switch (leftLiteral.type()) {
-            case IntegerType _ -> {
+            case IntegerType it -> {
                 long left = Long.parseLong(leftLiteral.toString());
                 long right = Long.parseLong(rightLiteral.toString());
                 switch (op) {
@@ -86,7 +86,7 @@ public class BinaryInstruction extends Instruction {
                             "Undefined Operand");
                 }
             }
-            case FloatingType _ -> {
+            case FloatingType ft -> {
                 double left = Double.parseDouble(leftLiteral.toString());
                 double right = Double.parseDouble(rightLiteral.toString());
                 switch (op) {

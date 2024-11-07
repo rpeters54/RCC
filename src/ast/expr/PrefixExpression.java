@@ -86,10 +86,10 @@ public class PrefixExpression extends LValue {
                 Type resultType = pt.base();
 
                 switch (resultType) {
-                    case ArrayType _, StructType _, UnionType _ -> {
-                        return operandSource;
-                    }
-                    case PrimitiveType _ -> {
+                    case ArrayType at -> { return operandSource; }
+                    case StructType st -> { return operandSource; }
+                    case UnionType ut -> { return operandSource; }
+                    case PrimitiveType primt -> {
                         Register result = Register.LLVM_Register(resultType.clone());
                         block.addInstruction(new LoadInstruction(result.clone(), operandSource));
                         return result;

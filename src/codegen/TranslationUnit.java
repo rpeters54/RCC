@@ -105,7 +105,14 @@ public class TranslationUnit {
 
     public void constantPropagation() {
         for (ControlFlowGraph cfg : controlFlowGraphs) {
+            cfg.constantPropagation();
+        }
+    }
 
+    public void deadCodeElimination() {
+        for (ControlFlowGraph cfg : controlFlowGraphs) {
+            cfg.deadCodeElimination();
+            cfg.hoistBranches();
         }
     }
 

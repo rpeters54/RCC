@@ -3,6 +3,7 @@ package codegen.instruction;
 import codegen.values.Register;
 import codegen.values.Source;
 
+import java.util.Collections;
 import java.util.List;
 
 public abstract class Instruction {
@@ -18,7 +19,7 @@ public abstract class Instruction {
     }
 
     public List<Register> results() {
-        return results;
+        return Collections.unmodifiableList(results);
     }
 
     public Register result() {
@@ -34,7 +35,7 @@ public abstract class Instruction {
     }
 
     public List<Source> sources() {
-        return sources;
+        return Collections.unmodifiableList(sources);
     }
 
     public Source source(int i) {
@@ -43,6 +44,10 @@ public abstract class Instruction {
 
     public void addSource(Source source) {
         sources.add(source);
+    }
+
+    public void setSource(int index, Source source) {
+        sources.set(index, source);
     }
 
     protected enum Arch {

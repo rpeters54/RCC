@@ -5,7 +5,7 @@ import codegen.values.Source;
 
 import java.util.Arrays;
 
-public class ReturnInstruction extends Instruction {
+public class ReturnInstruction extends Instruction implements CriticalInstruction {
 
     public ReturnInstruction() {
         super(Arch.LLVM, Arrays.asList(), Arrays.asList());

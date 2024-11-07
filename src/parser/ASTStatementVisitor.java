@@ -1,21 +1,15 @@
 package parser;
 
 import ast.declarations.Declaration;
-import ast.declarations.DeclarationSpecifier;
+
 import ast.expr.Expression;
 import ast.statements.*;
 import ast.types.DefinedType;
-import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.tree.ParseTree;
 
-import javax.swing.plaf.nimbus.State;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class ASTStatementVisitor extends CBaseVisitor<Statement> {
 

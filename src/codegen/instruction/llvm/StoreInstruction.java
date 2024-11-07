@@ -5,7 +5,7 @@ import codegen.values.Source;
 
 import java.util.Arrays;
 
-public class StoreInstruction extends Instruction {
+public class StoreInstruction extends Instruction implements CriticalInstruction {
 
     public StoreInstruction(Source value, Source dest) {
         super(Arch.LLVM, Arrays.asList(), Arrays.asList(value, dest));

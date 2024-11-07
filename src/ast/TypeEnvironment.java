@@ -204,8 +204,9 @@ public class TypeEnvironment {
             System.err.println("TypeEnvironment::addBinding: Malformed specifier declaration");
         }
         switch (specifier.getType()) {
-            case ArrayType _, StructType _, UnionType _ ->
-                    addVariable(name, specifier, StorageLocation.STACK);
+            case ArrayType at -> { addVariable(name, specifier, StorageLocation.STACK); }
+            case StructType st -> { addVariable(name, specifier, StorageLocation.STACK); }
+            case UnionType ut -> { addVariable(name, specifier, StorageLocation.STACK); }
             case null -> throw new RuntimeException("TypeEnvironment::addBinding: should never encounter a null type");
             default -> addVariable(name, specifier, StorageLocation.REGISTER);
         }

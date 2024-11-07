@@ -30,11 +30,11 @@ public class Main {
         Program program = parseProgram(args);
         program.verifySemantics();
         TranslationUnit code = program.codegen();
-        //code.pruneRedundantPhis();
+        code.pruneRedundantPhis();
+        code.deadCodeElimination();
         //code.constantPropagation();
         code.generateLLFile(args[1]);
-        //code.printInstructions();
-        //code.generateDotFile("test.dot");
+//        code.generateDotFile("clean.dot");
     }
 
     public static Program parseProgram(String[] args) {

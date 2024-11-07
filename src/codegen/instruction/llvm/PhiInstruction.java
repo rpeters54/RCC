@@ -8,21 +8,55 @@ import java.util.*;
 
 public class PhiInstruction extends Instruction {
 
-    private final List<String> labels;
+    public record PhiTuple(String label, Source source) {}
+
+    private final List<PhiTuple> values;
 
     public PhiInstruction() {
         super(Arch.LLVM, new ArrayList<>(), new ArrayList<>());
-        this.labels = new ArrayList<>();
+        this.values = new ArrayList<>();
     }
 
     public PhiInstruction(Register result, List<String> labels, List<Source> sources) {
-        super(Arch.LLVM, Arrays.asList(result), sources);
-        this.labels = labels;
+        super(Arch.LLVM, Arrays.asList(result), new ArrayList<>());
+        values = new ArrayList<>();
+        for (int i = 0; i < labels.size(); i++) {
+            values.add(new PhiTuple(labels.get(i),sources.get(i)));
+        }
     }
 
-    public void addLabel(String label) {
-        labels.add(label);
+    public List<PhiTuple> mutableValues() {
+        return values;
     }
+
+    public List<String> labels() {
+        return values.stream().map(PhiTuple::label).toList();
+    }
+
+    @Override
+    public List<Source> sources() {
+        return values.stream().map(PhiTuple::source).toList();
+    }
+
+    @Override
+    public Source source(int i) {
+        return values.get(i).source;
+    }
+
+    @Override
+    public void addSource(Source source) {
+        values.add(new PhiTuple("label",source));
+    }
+
+    @Override
+    public void setSource(int index, Source source) {
+        values.set(index, new PhiTuple(values.get(index).label ,source));
+    }
+
+    public void addValue(String label, Source source) {
+        values.add(new PhiTuple(label,source));
+    }
+
 
     /**
      * Clears and refills the labels and sources list of a phi node
@@ -31,11 +65,10 @@ public class PhiInstruction extends Instruction {
      * @param sources List of new sources
      */
     public void refresh(List<String> labels, List<Source> sources) {
-        this.labels.clear();
-        this.sources().clear();
-
-        this.labels.addAll(labels);
-        sources().addAll(sources);
+        values.clear();
+        for (int i = 0; i < labels.size(); i++) {
+            values.add(new PhiTuple(labels.get(i),sources.get(i)));
+        }
     }
 
     /**
@@ -43,20 +76,18 @@ public class PhiInstruction extends Instruction {
      * Used when pruning redundant phis
      */
     public Source collapse() {
-        Set<Source> sourceSet = new HashSet<>(sources());
-        if (sourceSet.size() == 1) {
-            Source first = sources().getFirst();
-            String label = labels.getFirst();
+        Set<PhiTuple> tupleSet = new HashSet<>(values);
+        if (tupleSet.size() == 1) {
+            PhiTuple tuple = values.getFirst();
 
             // clear the source and label list
-            sources().clear();
-            labels.clear();
+            values.clear();
 
             // add the remaining source and label
-            sources().add(first);
-            labels.add(label);
 
-            return first;
+            values.add(tuple);
+
+            return tuple.source;
         } else {
             return null;
         }
@@ -68,8 +99,8 @@ public class PhiInstruction extends Instruction {
         StringBuilder builder = new StringBuilder(start);
         for (int i = 0; i < sources().size(); i++) {
             String memberString = String.format("[%s, %%l%s], ",
-                    source(i),
-                    labels.get(i));
+                    values.get(i).source,
+                    values.get(i).label);
             builder.append(memberString);
         }
         builder.delete(builder.length()-2, builder.length());
