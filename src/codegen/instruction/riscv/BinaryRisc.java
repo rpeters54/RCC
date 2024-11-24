@@ -4,6 +4,7 @@ import ast.expr.BinaryExpression;
 import ast.types.FloatingType;
 import ast.types.IntegerType;
 import ast.types.PointerType;
+import ast.types.PrimitiveType;
 import codegen.instruction.Instruction;
 import codegen.values.Register;
 
@@ -13,9 +14,13 @@ import java.util.List;
 public class BinaryRisc extends RiscInstruction {
 
     private final BinaryExpression.Operator op;
+    private final PrimitiveType resultType;
 
     public BinaryRisc(Register result, BinaryExpression.Operator op, Register op1, Register op2) {
         super(Arrays.asList(result), Arrays.asList(op1, op2));
+
+        assert result.type() instanceof PrimitiveType;
+        this.resultType = (PrimitiveType) result.type();
         this.op = op;
     }
 
@@ -45,7 +50,7 @@ public class BinaryRisc extends RiscInstruction {
     @Override
     public String toString() {
         String opString;
-        switch (result().type()) {
+        switch (resultType) {
             case PointerType p -> {
                 opString = switch(op) {
                     case PLUS -> "add";
@@ -71,7 +76,7 @@ public class BinaryRisc extends RiscInstruction {
                     default -> throw new RuntimeException("BinaryInstruction::toString: No 64-bit Integer " +
                             "Instruction exists with " + op);
                 };
-                if (i.signed()) {
+                if (!i.signed()) {
                     switch (op) {
                         case DIVIDE, MODULO, LT -> opString += "u";
                         default -> {}

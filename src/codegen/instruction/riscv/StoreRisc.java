@@ -3,6 +3,7 @@ package codegen.instruction.riscv;
 import ast.expr.BinaryExpression;
 import ast.types.FloatingType;
 import ast.types.IntegerType;
+import ast.types.PrimitiveType;
 import codegen.instruction.Instruction;
 import codegen.values.Literal;
 import codegen.values.Register;
@@ -15,19 +16,26 @@ import java.util.List;
 public class StoreRisc extends RiscInstruction {
 
     private Literal offset;
+    private final PrimitiveType storeType;
 
     public StoreRisc(Register value, Register location, Literal offset) {
         super(new ArrayList<>(), Arrays.asList(value, location));
+        assert value.type() instanceof PrimitiveType;
+        this.storeType = (PrimitiveType) value.type();
         this.offset = offset;
     }
 
     public StoreRisc(Register value, Register location, long offset) {
         super(new ArrayList<>(), Arrays.asList(value, location));
+        assert value.type() instanceof PrimitiveType;
+        this.storeType = (PrimitiveType) value.type();
         this.offset = new Literal(Long.toString(offset), new IntegerType(IntegerType.Width.LONG, true));
     }
 
     public StoreRisc(Register value, Register location) {
         super(new ArrayList<>(), Arrays.asList(value, location));
+        assert value.type() instanceof PrimitiveType;
+        this.storeType = (PrimitiveType) value.type();
         this.offset = null;
     }
 
@@ -57,7 +65,7 @@ public class StoreRisc extends RiscInstruction {
     @Override
     public String toString() {
         String opString;
-        switch (rvalue(0).type()) {
+        switch (storeType) {
             case IntegerType i -> {
                 opString = switch (i.size()) {
                     case LONG -> "sd";

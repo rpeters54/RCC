@@ -1149,7 +1149,8 @@ public class ControlFlowGraph {
         // add associations between allocas and offsets to map
         for (AllocaLLVM alloc : allocas) {
             stackOffsets.put(alloc.result(), totalOffset);
-            totalOffset += alloc.result().type().sizeof();
+            assert alloc.result().type() instanceof PointerType;
+            totalOffset += ((PointerType)alloc.result().type()).base().sizeof();
         }
 
         // update all loads to use the stack offset
@@ -1218,7 +1219,7 @@ public class ControlFlowGraph {
         assert cfg.code instanceof RISC;
         RISC riscmetadata = (RISC) cfg.code;
         riscmetadata.stackOffset += riscmetadata.stackOffset % STACK_DIVISIBILITY;
-        riscmetadata.stackIncDec.getFirst().setImmAsLong(riscmetadata.stackOffset);
+        riscmetadata.stackIncDec.getFirst().setImmAsLong(-riscmetadata.stackOffset);
         riscmetadata.stackIncDec.getLast().setImmAsLong(riscmetadata.stackOffset);
     }
 

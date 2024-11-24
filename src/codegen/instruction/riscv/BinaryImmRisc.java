@@ -3,6 +3,7 @@ package codegen.instruction.riscv;
 import ast.expr.BinaryExpression;
 import ast.types.IntegerType;
 import ast.types.PointerType;
+import ast.types.PrimitiveType;
 import codegen.values.Literal;
 import codegen.values.Register;
 
@@ -14,15 +15,24 @@ public class BinaryImmRisc extends RiscInstruction {
 
     private final BinaryExpression.Operator op;
     private Literal imm;
+    private final PrimitiveType resultType;
 
     public BinaryImmRisc(Register result, BinaryExpression.Operator op, Register op1, Literal imm) {
         super(Arrays.asList(result), Arrays.asList(op1));
+
+        assert result.type() instanceof PrimitiveType;
+        this.resultType = (PrimitiveType) result.type();
+
         this.imm = imm;
         this.op = op;
     }
 
     public BinaryImmRisc(Register result, BinaryExpression.Operator op, Register op1, long imm) {
         super(Arrays.asList(result), Arrays.asList(op1));
+
+        assert result.type() instanceof PrimitiveType;
+        this.resultType = (PrimitiveType) result.type();
+
         this.op = op;
         this.imm = new Literal(Long.toString(imm), new IntegerType(IntegerType.Width.LONG, true));
     }
@@ -34,7 +44,7 @@ public class BinaryImmRisc extends RiscInstruction {
     @Override
     public String toString() {
         String opString;
-        switch (result().type()) {
+        switch (resultType) {
             case PointerType p -> {
                 opString = switch(op) {
                     case PLUS -> "addi";

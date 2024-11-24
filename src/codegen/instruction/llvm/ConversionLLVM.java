@@ -146,9 +146,10 @@ public class ConversionLLVM extends LLVMInstruction {
 
         Register interResult1 = Register.LLVM_Register(result.type());
 
+        long shift = Math.abs(IntegerType.sizeDiff(sourceIt, resultIt));
         instructions.add(new BinaryImmRisc(interResult1.clone(), BinaryExpression.Operator.SL,
-                operand.clone(), IntegerType.sizeDiff(sourceIt, resultIt)));
+                operand.clone(), shift));
         instructions.add(new BinaryImmRisc(result.clone(), shr_op,
-                interResult1, IntegerType.sizeDiff(sourceIt, resultIt)));
+                interResult1, shift));
     }
 }
