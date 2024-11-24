@@ -78,7 +78,7 @@ public class CompileTest {
 
         for (String name : names) {
             if (name.endsWith(".c")) {
-                Main.main(new String[]{name, tuple.testPath + "temp.ll"});
+                Main.main(new String[]{name, tuple.testPath + "temp.ll", tuple.testPath + "risc.s"});
                 Process llc = rt.exec(new String[]{"llc", tuple.testPath + "temp.ll", "-o", tuple.testPath + "temp.s"});
                 llc.waitFor();
                 Assertions.assertEquals(0, llc.exitValue());
@@ -166,7 +166,7 @@ public class CompileTest {
         Declaration variable = new Declaration("a", new DeclarationSpecifier(new DefinedType("Node")));
         env.addTypeDef(decl);
         env.addClass(struct.declSpec());
-        DeclarationSpecifier expandedSpecifier = env.expandDeclaration(variable);
+        DeclarationSpecifier expandedSpecifier = env.expandDeclaration(variable.declSpec());
         env.addBinding(variable.name(), expandedSpecifier);
 
         Assertions.assertInstanceOf(StructType.class, env.getBinding("a").getType());
@@ -184,7 +184,7 @@ public class CompileTest {
         Declaration variable = new Declaration("a", new DeclarationSpecifier(new DefinedType("Node")));
         env.addTypeDef(decl);
         env.addClass(struct.declSpec());
-        DeclarationSpecifier expandedSpecifier = env.expandDeclaration(variable);
+        DeclarationSpecifier expandedSpecifier = env.expandDeclaration(variable.declSpec());
         env.addBinding(variable.name(), expandedSpecifier);
 
         Assertions.assertInstanceOf(StructType.class, env.getBinding("a").getType());

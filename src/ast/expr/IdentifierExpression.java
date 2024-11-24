@@ -5,9 +5,9 @@ import ast.types.*;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
-import codegen.instruction.llvm.ConversionInstruction;
-import codegen.instruction.llvm.LoadInstruction;
-import codegen.instruction.llvm.StoreInstruction;
+import codegen.instruction.llvm.ConversionLLVM;
+import codegen.instruction.llvm.LoadLLVM;
+import codegen.instruction.llvm.StoreLLVM;
 import codegen.values.Register;
 import codegen.values.Source;
 import ast.TypeEnvironment;
@@ -47,17 +47,17 @@ public class IdentifierExpression extends LValue {
     }
 
     @Override
-    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+    public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
 
         DeclarationSpecifier specifier = cfg.getLocalEnvironment().getBinding(id);
         TypeEnvironment.StorageLocation location = cfg.getLocalEnvironment().getLocation(id);
         if (specifier != null) {
             assert location != null;
             // try to get value from block environment
-            Source value = block.getBinding(id);
+            Register value = block.getBinding(id);
             // if not in current block environment, look for previous definitions
             if (value == null) {
-                Pair<List<String>, List<Source>> pair = cfg.findPreviousDefinitions(block, id);
+                Pair<List<String>, List<Register>> pair = cfg.findPreviousDefinitions(block, id);
                 // if the value was defined but has multiple unique definitions, a phi block should have already been placed
                 // throw an error
                 if (!pair.a.isEmpty()) {
@@ -80,19 +80,20 @@ public class IdentifierExpression extends LValue {
                 case STACK -> {
                     assert value.type() instanceof PointerType;
                     PointerType pt = (PointerType) value.type();
-                    Type baseType = pt.base();
-                    switch (baseType) {
+                    Type expandedBaseType = unit.getGlobalTypeEnvironment()
+                            .expandDeclaration(new DeclarationSpecifier(pt.base())).getType();
+                    switch (expandedBaseType) {
                         case ArrayType at -> { return value.clone(); }
                         case StructType st -> { return value.clone(); }
                         case UnionType ut -> { return value.clone(); }
                         case PrimitiveType primt -> {
-                            Register result = Register.LLVM_Register(baseType.clone());
-                            LoadInstruction load = new LoadInstruction(result.clone(), value.clone());
+                            Register result = Register.LLVM_Register(expandedBaseType);
+                            LoadLLVM load = new LoadLLVM(result.clone(), value.clone());
                             block.addInstruction(load);
                             return result;
                         }
                         case null, default -> {
-                            throw new RuntimeException("IdentifierExpression::codegen: invalid type " + baseType);
+                            throw new RuntimeException("IdentifierExpression::codegen: invalid type " + expandedBaseType);
                         }
                     }
                 }
@@ -104,12 +105,14 @@ public class IdentifierExpression extends LValue {
         // if not locally defined, check global definitions
         specifier = unit.getGlobalTypeEnvironment().getBinding(id);
         if (specifier != null) {
-            Source address = unit.getGlobalBlock().getBinding(id);
+            Register address = unit.getGlobalBlock().getBinding(id);
             assert address != null;
             assert address.type() instanceof PointerType;
             PointerType pt = (PointerType) address.type();
-            Register result = Register.LLVM_Register(pt.base().clone());
-            LoadInstruction load = new LoadInstruction(result.clone(), address.clone());
+            Type expandedType = unit.getGlobalTypeEnvironment()
+                    .expandDeclaration(new DeclarationSpecifier(pt.base())).getType();
+            Register result = Register.LLVM_Register(expandedType);
+            LoadLLVM load = new LoadLLVM(result.clone(), address.clone());
             block.addInstruction(load);
             return result;
         }
@@ -117,7 +120,7 @@ public class IdentifierExpression extends LValue {
     }
 
     @Override
-    public Source processLValue(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, Source right) {
+    public Register processLValue(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, Register right) {
         // find where the value is specified
         DeclarationSpecifier specifier = cfg.getLocalEnvironment().getBinding(id);
         TypeEnvironment.StorageLocation location = cfg.getLocalEnvironment().getLocation(id);
@@ -127,7 +130,7 @@ public class IdentifierExpression extends LValue {
                 case REGISTER ->  {
                     // convert the value if necessary
                     if (!PrimitiveType.comparePrimitives((PrimitiveType) specifier.getType(), (PrimitiveType) right.type())) {
-                        ConversionInstruction implicitConv = ConversionInstruction.make(
+                        ConversionLLVM implicitConv = ConversionLLVM.make(
                                 right,
                                 (PrimitiveType) specifier.getType()
                         );
@@ -140,19 +143,19 @@ public class IdentifierExpression extends LValue {
                     }
                 }
                 case STACK -> {
-                    Source address = block.getBinding(id);
+                    Register address = block.getBinding(id);
                     assert address != null;
 
-                    Source result = right.clone();
+                    Register result = right.clone();
                     if (!PrimitiveType.comparePrimitives((PrimitiveType) specifier.getType(), (PrimitiveType) right.type())) {
-                        ConversionInstruction implicitConv = ConversionInstruction.make(
+                        ConversionLLVM implicitConv = ConversionLLVM.make(
                                 right,
                                 (PrimitiveType) specifier.getType()
                         );
                         block.addInstruction(implicitConv);
                         result = implicitConv.result().clone();
                     }
-                    StoreInstruction store = new StoreInstruction(result.clone(), address.clone());
+                    StoreLLVM store = new StoreLLVM(result.clone(), address.clone());
                     block.addInstruction(store);
                     return result;
                 }
@@ -160,26 +163,26 @@ public class IdentifierExpression extends LValue {
         }
         specifier = unit.getGlobalTypeEnvironment().getBinding(id);
         if (specifier != null) {
-            Source address = unit.getGlobalBlock().getBinding(id);
+            Register address = unit.getGlobalBlock().getBinding(id);
             assert address != null;
 
-            Source result = right.clone();
+            Register result = right.clone();
             if (!PrimitiveType.comparePrimitives((PrimitiveType) specifier.getType(), (PrimitiveType) right.type())) {
-                ConversionInstruction implicitConv = ConversionInstruction.make(
+                ConversionLLVM implicitConv = ConversionLLVM.make(
                         right,
                         (PrimitiveType) specifier.getType()
                 );
                 block.addInstruction(implicitConv);
                 result = implicitConv.result().clone();
             }
-            StoreInstruction store = new StoreInstruction(result.clone(), address.clone());
+            StoreLLVM store = new StoreLLVM(result.clone(), address.clone());
             block.addInstruction(store);
             return result;
         }
         throw new RuntimeException("IdentifierExpression::processLValue: Unbound Identifier " + id);
     }
 
-    public Source getAddress(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+    public Register getAddress(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
         // check the local env
         DeclarationSpecifier specifier = cfg.getLocalEnvironment().getBinding(id);
         TypeEnvironment.StorageLocation location = cfg.getLocalEnvironment().getLocation(id);
@@ -191,7 +194,7 @@ public class IdentifierExpression extends LValue {
                             "allocated value " + id);
                 }
                 case STACK -> {
-                    Source address = block.getBinding(id);
+                    Register address = block.getBinding(id);
                     assert address != null;
                     return address.clone();
                 }
@@ -201,7 +204,7 @@ public class IdentifierExpression extends LValue {
         // check the global env
         specifier = unit.getGlobalTypeEnvironment().getBinding(id);
         if (specifier != null) {
-            Source address = unit.getGlobalBlock().getBinding(id);
+            Register address = unit.getGlobalBlock().getBinding(id);
             if (address == null) {
                 System.out.println("Here");
             }

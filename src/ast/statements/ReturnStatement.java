@@ -3,7 +3,6 @@ package ast.statements;
 import ast.declarations.DeclarationSpecifier;
 import ast.declarations.FunctionDefinition;
 import ast.expr.Expression;
-import ast.types.ArrayType;
 import ast.types.FunctionType;
 import ast.types.PrimitiveType;
 import codegen.BasicBlock;
@@ -11,8 +10,9 @@ import ast.TypeEnvironment;
 import codegen.ControlFlowGraph;
 import codegen.EscapeTuple;
 import codegen.TranslationUnit;
-import codegen.instruction.llvm.ConversionInstruction;
-import codegen.instruction.llvm.UnconditionalBranchInstruction;
+import codegen.instruction.llvm.ConversionLLVM;
+import codegen.instruction.llvm.UnconditionalBranchLLVM;
+import codegen.values.Register;
 import codegen.values.Source;
 
 import java.util.List;
@@ -65,22 +65,22 @@ public class ReturnStatement extends Statement {
 
     @Override
     public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, EscapeTuple esc) {
-        List<Source> values = retVal.stream()
+        List<Register> values = retVal.stream()
                 .map(value -> value.codegen(unit, cfg, block))
                 .toList();
 
         if (!values.isEmpty()) {
-            Source retVal = values.getLast();
+            Register retVal = values.getLast();
             if (retVal.type() instanceof PrimitiveType pt && cfg.getDefinition().returnType() instanceof PrimitiveType rt) {
                 if (!PrimitiveType.comparePrimitives(pt, rt)) {
-                    ConversionInstruction conv = ConversionInstruction.make(retVal, rt);
+                    ConversionLLVM conv = ConversionLLVM.make(retVal, rt);
                     block.addInstruction(conv);
                     retVal = conv.result();
                 }
             }
             cfg.addReturnValue(block.getLabel(), retVal);
         }
-        block.addInstruction(new UnconditionalBranchInstruction(cfg.getReturnLabel()));
+        block.addInstruction(new UnconditionalBranchLLVM(cfg.getReturnLabel()));
         cfg.linkReturnBlock(block);
         return block;
     }

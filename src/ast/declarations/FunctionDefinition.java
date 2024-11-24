@@ -40,7 +40,7 @@ public class FunctionDefinition implements ExternalDeclaration {
     }
 
     public Type returnType() {
-        return ((FunctionType) declaration.declSpec().getType()).returnType().clone();
+        return ((FunctionType) declaration.declSpec().getType()).returnType();
     }
 
     public List<Declaration> parameters() {

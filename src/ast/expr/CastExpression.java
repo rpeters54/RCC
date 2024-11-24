@@ -6,7 +6,7 @@ import ast.types.Type;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
-import codegen.instruction.llvm.ConversionInstruction;
+import codegen.instruction.llvm.ConversionLLVM;
 import codegen.values.Register;
 import codegen.values.Source;
 import ast.TypeEnvironment;
@@ -36,10 +36,10 @@ public class CastExpression extends Expression {
     }
 
     @Override
-    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
-        Source castedSource = casted.codegen(unit, cfg, block);
+    public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+        Register castedReg = casted.codegen(unit, cfg, block);
         assert type instanceof PrimitiveType;
-        ConversionInstruction conv = ConversionInstruction.make(castedSource, (PrimitiveType) type);
+        ConversionLLVM conv = ConversionLLVM.make(castedReg, (PrimitiveType) type);
         block.addInstruction(conv);
         return conv.result().clone();
     }

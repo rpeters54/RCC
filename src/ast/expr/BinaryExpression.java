@@ -6,10 +6,10 @@ import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
 import codegen.instruction.Instruction;
-import codegen.instruction.llvm.BinaryInstruction;
-import codegen.instruction.llvm.ComparatorInstruction;
-import codegen.instruction.llvm.ConversionInstruction;
-import codegen.instruction.llvm.GetElemPtrInstruction;
+import codegen.instruction.llvm.BinaryLLVM;
+import codegen.instruction.llvm.ComparatorLLVM;
+import codegen.instruction.llvm.ConversionLLVM;
+import codegen.instruction.llvm.GetElemPtrLLVM;
 import codegen.values.Literal;
 import codegen.values.Register;
 import codegen.values.Source;
@@ -76,7 +76,8 @@ public class BinaryExpression extends Expression {
 
 
     public enum Operator {
-        TIMES, DIVIDE, MODULO, PLUS, MINUS, SL, SR, LT, GT, LE, GE, EQ, NE, B_AND, B_XOR, B_OR, L_AND, L_OR
+        TIMES, DIVIDE, MODULO, PLUS, MINUS, SL, SR, SR_A, LT,
+        GT, LE, GE, EQ, NE, B_AND, B_XOR, B_OR, L_AND, L_OR
     }
 
     @Override
@@ -149,88 +150,92 @@ public class BinaryExpression extends Expression {
 
 
     @Override
-    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
-        Source leftSource = left.codegen(unit, cfg, block);
-        Source rightSource = right.codegen(unit, cfg, block);
+    public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+        Register leftReg = left.codegen(unit, cfg, block);
+        Register rightReg = right.codegen(unit, cfg, block);
 
         Register result;
         switch (operator) {
             case PLUS -> {
-                if (leftSource.type() instanceof PointerType ^ rightSource.type() instanceof PointerType) {
-                    Source ptr = leftSource.type() instanceof PointerType ? leftSource : rightSource;
-                    Source operand = leftSource.type() instanceof PointerType ? rightSource : leftSource;
+                if (leftReg.type() instanceof PointerType ^ rightReg.type() instanceof PointerType) {
+                    Register ptr = leftReg.type() instanceof PointerType ? leftReg : rightReg;
+                    Register operand = leftReg.type() instanceof PointerType ? rightReg : leftReg;
                     switch (((PointerType) ptr.type()).base()) {
                         case ArrayType at -> {
-                            result = Register.LLVM_Register(new PointerType(at.base()));
-                            Source stepThrough = new Literal("0", new IntegerType());
-                            block.addInstruction(new GetElemPtrInstruction(result, Arrays.asList(ptr, stepThrough, operand)));
+                            Type expandedBase = unit.getGlobalTypeEnvironment()
+                                    .expandDeclaration(new DeclarationSpecifier(at.base())).getType();
+                            result = Register.LLVM_Register(new PointerType(expandedBase));
+                            Literal stepThrough = new Literal("0", new IntegerType());
+                            block.addInstruction(new GetElemPtrLLVM(result, Arrays.asList(ptr, stepThrough, operand)));
                         }
                         case null, default -> {
                             result = Register.LLVM_Register(ptr.type());
-                            block.addInstruction(new GetElemPtrInstruction(result, Arrays.asList(ptr, operand)));
+                            block.addInstruction(new GetElemPtrLLVM(result, Arrays.asList(ptr, operand)));
                         }
                     }
                 } else {
-                    SourceTuple tuple = addConversion(block, leftSource, rightSource);
-                    result = Register.LLVM_Register(tuple.left.type().clone());
-                    block.addInstruction(new BinaryInstruction(result, operator, tuple.left(), tuple.right()));
+                    RegTuple tuple = addConversion(block, leftReg, rightReg);
+                    result = Register.LLVM_Register(tuple.left.type());
+                    block.addInstruction(new BinaryLLVM(result, operator, tuple.left(), tuple.right()));
                 }
             }
             case MINUS -> {
-                if (leftSource.type() instanceof PointerType ^ rightSource.type() instanceof PointerType) {
-                    Source ptr = leftSource.type() instanceof PointerType ? leftSource : rightSource;
-                    Source operand = leftSource.type() instanceof PointerType ? rightSource : leftSource;
-                    Literal zero = new Literal("0", new IntegerType(IntegerType.Width.LONG, true));
+                if (leftReg.type() instanceof PointerType ^ rightReg.type() instanceof PointerType) {
+                    Register ptr = leftReg.type() instanceof PointerType ? leftReg : rightReg;
+                    Register operand = leftReg.type() instanceof PointerType ? rightReg : leftReg;
+                    Register zero = Literal.nill(new IntegerType(IntegerType.Width.LONG, true), unit,cfg,block);
                     Register sub = Register.LLVM_Register(new IntegerType(IntegerType.Width.LONG, true));
                     if (!PrimitiveType.comparePrimitives((PrimitiveType) operand.type(),(PrimitiveType) zero.type())) {
-                        ConversionInstruction conv = ConversionInstruction.make(operand, new IntegerType(IntegerType.Width.LONG, true));
+                        ConversionLLVM conv = ConversionLLVM.make(operand, new IntegerType(IntegerType.Width.LONG, true));
                         operand = conv.result().clone();
                         block.addInstruction(conv);
                     }
-                    BinaryInstruction minus = new BinaryInstruction(sub.clone(), Operator.MINUS, zero, operand);
+                    BinaryLLVM minus = new BinaryLLVM(sub.clone(), Operator.MINUS, zero, operand);
                     block.addInstruction(minus);
                     switch (((PointerType) ptr.type()).base()) {
                         case ArrayType at -> {
-                            result = Register.LLVM_Register(new PointerType(at.base()));
+                            Type expandedType = unit.getGlobalTypeEnvironment()
+                                    .expandDeclaration(new DeclarationSpecifier(at.base())).getType();
+                            result = Register.LLVM_Register(expandedType);
                             Source stepThrough = new Literal("0", new IntegerType());
-                            block.addInstruction(new GetElemPtrInstruction(result, Arrays.asList(ptr, stepThrough, sub)));
+                            block.addInstruction(new GetElemPtrLLVM(result, Arrays.asList(ptr, stepThrough, sub)));
                         }
                         case null, default -> {
                             result = Register.LLVM_Register(ptr.type());
-                            block.addInstruction(new GetElemPtrInstruction(result, Arrays.asList(ptr, sub)));
+                            block.addInstruction(new GetElemPtrLLVM(result, Arrays.asList(ptr, sub)));
                         }
                     }
                 } else{
-                    SourceTuple tuple = addConversion(block, leftSource, rightSource);
-                    result = Register.LLVM_Register(tuple.left.type().clone());
-                    block.addInstruction(new BinaryInstruction(result, operator, tuple.left(), tuple.right()));
+                    RegTuple tuple = addConversion(block, leftReg, rightReg);
+                    result = Register.LLVM_Register(tuple.left.type());
+                    block.addInstruction(new BinaryLLVM(result, operator, tuple.left(), tuple.right()));
                 }
             }
             case TIMES, DIVIDE, MODULO, SL, SR, B_AND, B_XOR, B_OR -> {
-                SourceTuple tuple = addConversion(block, leftSource, rightSource);
-                result = Register.LLVM_Register(tuple.left.type().clone());
-                block.addInstruction(new BinaryInstruction(result, operator, tuple.left(), tuple.right()));
+                RegTuple tuple = addConversion(block, leftReg, rightReg);
+                result = Register.LLVM_Register(tuple.left.type());
+                block.addInstruction(new BinaryLLVM(result, operator, tuple.left(), tuple.right()));
             }
             case LT, GT, LE, GE, EQ, NE -> {
-                SourceTuple tuple = addConversion(block, leftSource, rightSource);
+                RegTuple tuple = addConversion(block, leftReg, rightReg);
                 result = Register.LLVM_Register(new IntegerType(IntegerType.Width.BOOL, true));
-                block.addInstruction(new ComparatorInstruction(result, operator, tuple.left(), tuple.right()));
+                block.addInstruction(new ComparatorLLVM(result, operator, tuple.left(), tuple.right()));
             }
             case L_AND -> {
-                SourceTuple tuple = addConversion(block, leftSource, rightSource);
-                Register temp = Register.LLVM_Register(tuple.left.type().clone());
+                RegTuple tuple = addConversion(block, leftReg, rightReg);
+                Register temp = Register.LLVM_Register(tuple.left.type());
                 result = Register.LLVM_Register(new IntegerType(IntegerType.Width.BOOL, true));
-                block.addInstruction(new BinaryInstruction(temp.clone(), Operator.B_AND, tuple.left(), tuple.right()));
-                block.addInstruction(new ComparatorInstruction(result, Operator.NE, temp,
-                        new Literal("0", temp.type().clone())));
+                block.addInstruction(new BinaryLLVM(temp.clone(), Operator.B_AND, tuple.left(), tuple.right()));
+                block.addInstruction(new ComparatorLLVM(result, Operator.NE, temp,
+                        Literal.nill(temp.type(), unit, cfg, block)));
             }
             case L_OR -> {
-                SourceTuple tuple = addConversion(block, leftSource, rightSource);
-                Register temp = Register.LLVM_Register(tuple.left.type().clone());
+                RegTuple tuple = addConversion(block, leftReg, rightReg);
+                Register temp = Register.LLVM_Register(tuple.left.type());
                 result = Register.LLVM_Register(new IntegerType(IntegerType.Width.BOOL, true));
-                block.addInstruction(new BinaryInstruction(temp.clone(), Operator.B_OR, tuple.left(), tuple.right()));
-                block.addInstruction(new ComparatorInstruction(result, Operator.NE, temp,
-                        new Literal("0", temp.type().clone())));
+                block.addInstruction(new BinaryLLVM(temp.clone(), Operator.B_OR, tuple.left(), tuple.right()));
+                block.addInstruction(new ComparatorLLVM(result, Operator.NE, temp,
+                        Literal.nill(temp.type(), unit, cfg, block)));
             }
             default -> throw new RuntimeException("BinaryExpression::codegen: undefined operator");
         }
@@ -239,27 +244,27 @@ public class BinaryExpression extends Expression {
     }
 
 
-    private record SourceTuple(Source left, Source right) {}
-    private static SourceTuple addConversion(BasicBlock block, Source leftSource, Source rightSource) {
+    private record RegTuple(Register left, Register right) {}
+    private static RegTuple addConversion(BasicBlock block, Register leftReg, Register rightReg) {
         // add implicit conversion if necessary
         PrimitiveType conversion = PrimitiveType.implicitConversion(
-                (PrimitiveType) leftSource.type(),
-                (PrimitiveType) rightSource.type()
+                (PrimitiveType) leftReg.type(),
+                (PrimitiveType) rightReg.type()
         );
 
-        if (!PrimitiveType.comparePrimitives(conversion, (PrimitiveType) leftSource.type())) {
-            Instruction converter = ConversionInstruction.make(leftSource, conversion);
+        if (!PrimitiveType.comparePrimitives(conversion, (PrimitiveType) leftReg.type())) {
+            Instruction converter = ConversionLLVM.make(leftReg, conversion);
             block.addInstruction(converter);
-            leftSource = converter.result().clone();
+            leftReg = converter.result().clone();
         }
 
-        if (!PrimitiveType.comparePrimitives(conversion, (PrimitiveType) rightSource.type())) {
-            Instruction converter = ConversionInstruction.make(rightSource, conversion);
+        if (!PrimitiveType.comparePrimitives(conversion, (PrimitiveType) rightReg.type())) {
+            Instruction converter = ConversionLLVM.make(rightReg, conversion);
             block.addInstruction(converter);
-            rightSource = converter.result().clone();
+            rightReg = converter.result().clone();
         }
 
-        return new SourceTuple(leftSource, rightSource);
+        return new RegTuple(leftReg, rightReg);
     }
 
 

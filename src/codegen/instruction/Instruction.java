@@ -1,21 +1,19 @@
 package codegen.instruction;
 
 import codegen.values.Register;
-import codegen.values.Source;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public abstract class Instruction {
 
-    private final Arch arch;
     private final List<Register> results;
-    private final List<Source> sources;
+    private final List<Register> rvalues;
 
-    protected Instruction(Arch arch, List<Register> results, List<Source> sources) {
-        this.arch = arch;
+    protected Instruction(List<Register> results, List<Register> rvalues) {
         this.results = results;
-        this.sources = sources;
+        this.rvalues = rvalues;
     }
 
     public List<Register> results() {
@@ -30,24 +28,28 @@ public abstract class Instruction {
         }
     }
 
+    public void setResult(int index, Register result) {
+        results.set(index, result);
+    }
+
     public void addResult(Register result) {
         results.add(result);
     }
 
-    public List<Source> sources() {
-        return Collections.unmodifiableList(sources);
+    public List<Register> rvalues() {
+        return Collections.unmodifiableList(rvalues);
     }
 
-    public Source source(int i) {
-        return sources.get(i);
+    public Register rvalue(int i) {
+        return rvalues.get(i);
     }
 
-    public void addSource(Source source) {
-        sources.add(source);
+    public void addRValue(Register register) {
+        rvalues.add(register);
     }
 
-    public void setSource(int index, Source source) {
-        sources.set(index, source);
+    public void setRvalue(int index, Register register) {
+        rvalues.set(index, register);
     }
 
     protected enum Arch {

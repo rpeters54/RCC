@@ -2,26 +2,25 @@ package codegen.instruction.llvm;
 
 import codegen.instruction.Instruction;
 import codegen.values.Register;
-import codegen.values.Source;
 
 import java.util.*;
 
-public class PhiInstruction extends Instruction {
+public class PhiLLVM extends LLVMInstruction {
 
-    public record PhiTuple(String label, Source source) {}
+    public record PhiTuple(String label, Register register) {}
 
     private final List<PhiTuple> values;
 
-    public PhiInstruction() {
-        super(Arch.LLVM, new ArrayList<>(), new ArrayList<>());
+    public PhiLLVM() {
+        super(new ArrayList<>(), new ArrayList<>());
         this.values = new ArrayList<>();
     }
 
-    public PhiInstruction(Register result, List<String> labels, List<Source> sources) {
-        super(Arch.LLVM, Arrays.asList(result), new ArrayList<>());
+    public PhiLLVM(Register result, List<String> labels, List<Register> registers) {
+        super(Arrays.asList(result), new ArrayList<>());
         values = new ArrayList<>();
         for (int i = 0; i < labels.size(); i++) {
-            values.add(new PhiTuple(labels.get(i),sources.get(i)));
+            values.add(new PhiTuple(labels.get(i), registers.get(i)));
         }
     }
 
@@ -34,27 +33,27 @@ public class PhiInstruction extends Instruction {
     }
 
     @Override
-    public List<Source> sources() {
-        return values.stream().map(PhiTuple::source).toList();
+    public List<Register> rvalues() {
+        return values.stream().map(PhiTuple::register).toList();
     }
 
     @Override
-    public Source source(int i) {
-        return values.get(i).source;
+    public Register rvalue(int i) {
+        return values.get(i).register;
     }
 
     @Override
-    public void addSource(Source source) {
-        values.add(new PhiTuple("label",source));
+    public void addRValue(Register register) {
+        values.add(new PhiTuple("label", register));
     }
 
     @Override
-    public void setSource(int index, Source source) {
-        values.set(index, new PhiTuple(values.get(index).label ,source));
+    public void setRvalue(int index, Register register) {
+        values.set(index, new PhiTuple(values.get(index).label,register ));
     }
 
-    public void addValue(String label, Source source) {
-        values.add(new PhiTuple(label,source));
+    public void addValue(String label, Register register) {
+        values.add(new PhiTuple(label, register));
     }
 
 
@@ -62,12 +61,12 @@ public class PhiInstruction extends Instruction {
      * Clears and refills the labels and sources list of a phi node
      * Used to mend temporary phis that were placed at the start of an unsealed block.
      * @param labels List of new block labels
-     * @param sources List of new sources
+     * @param registers List of new registers
      */
-    public void refresh(List<String> labels, List<Source> sources) {
+    public void refresh(List<String> labels, List<Register> registers) {
         values.clear();
         for (int i = 0; i < labels.size(); i++) {
-            values.add(new PhiTuple(labels.get(i),sources.get(i)));
+            values.add(new PhiTuple(labels.get(i),registers.get(i)));
         }
     }
 
@@ -75,7 +74,7 @@ public class PhiInstruction extends Instruction {
      * If all sources are the same, collapse the node to one source
      * Used when pruning redundant phis
      */
-    public Source collapse() {
+    public Register collapse() {
         Set<PhiTuple> tupleSet = new HashSet<>(values);
         if (tupleSet.size() == 1) {
             PhiTuple tuple = values.getFirst();
@@ -87,7 +86,7 @@ public class PhiInstruction extends Instruction {
 
             values.add(tuple);
 
-            return tuple.source;
+            return tuple.register;
         } else {
             return null;
         }
@@ -97,13 +96,18 @@ public class PhiInstruction extends Instruction {
     public String toString() {
         String start = String.format("%s = phi %s ", result(), result().type());
         StringBuilder builder = new StringBuilder(start);
-        for (int i = 0; i < sources().size(); i++) {
+        for (int i = 0; i < rvalues().size(); i++) {
             String memberString = String.format("[%s, %%l%s], ",
-                    values.get(i).source,
+                    values.get(i).register,
                     values.get(i).label);
             builder.append(memberString);
         }
         builder.delete(builder.length()-2, builder.length());
         return builder.toString();
+    }
+
+    @Override
+    public List<Instruction> toRisc(List<Register> localResults, List<Register> localRvalues) {
+        return List.of(this);
     }
 }

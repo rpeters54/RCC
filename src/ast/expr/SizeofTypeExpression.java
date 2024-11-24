@@ -1,16 +1,17 @@
 package ast.expr;
 
+import ast.declarations.Declaration;
 import ast.declarations.DeclarationSpecifier;
 import ast.types.*;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
 import codegen.values.Literal;
-import codegen.values.Source;
+import codegen.values.Register;
 import ast.TypeEnvironment;
 
 public class SizeofTypeExpression extends Expression {
-    private final Type type;
+    private Type type;
 
     public SizeofTypeExpression(int lineNum, Type type) {
         super(lineNum);
@@ -19,13 +20,14 @@ public class SizeofTypeExpression extends Expression {
 
     @Override
     public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, TypeEnvironment.StorageLocation location) {
+        type = globalEnv.expandDeclaration(new DeclarationSpecifier(type)).getType();
         return new DeclarationSpecifier(new IntegerType(),
                 Type.StorageClass.NONE,
                 Type.TypeQualifier.NONE);
     }
 
     @Override
-    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+    public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
         long size = type.sizeof();
         if (size <= 0) {
             switch (type) {
@@ -41,6 +43,6 @@ public class SizeofTypeExpression extends Expression {
                 }
             }
         }
-        return new Literal(Long.toString(size), new IntegerType(IntegerType.Width.LONG, true));
+        return new IntegerExpression(this.lineNum(), size).codegen(unit, cfg, block);
     }
 }

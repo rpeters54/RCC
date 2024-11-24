@@ -8,13 +8,12 @@ import ast.types.*;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
-import codegen.instruction.llvm.AllocaInstruction;
-import codegen.instruction.llvm.ConversionInstruction;
-import codegen.instruction.llvm.GlobalVariableInstruction;
-import codegen.instruction.llvm.StoreInstruction;
+import codegen.instruction.llvm.AllocaLLVM;
+import codegen.instruction.llvm.ConversionLLVM;
+import codegen.instruction.llvm.GlobalVariableLLVM;
+import codegen.instruction.llvm.StoreLLVM;
 import codegen.values.Literal;
 import codegen.values.Register;
-import codegen.values.Source;
 
 import java.util.HashMap;
 import java.util.List;
@@ -157,39 +156,48 @@ public class TypeEnvironment {
 
     /**
      * cleans up a declaration, expanding any type aliases and replacing placeholders
-     * @param declaration the declaration that defines an object in the environment
+     *
+     * @param specifier the declaration that defines an object in the environment
      */
-    public DeclarationSpecifier expandDeclaration(Declaration declaration) {
+    public DeclarationSpecifier expandDeclaration(DeclarationSpecifier specifier) {
+        DeclarationSpecifier cleanSpecifier = stripDefinedTypes(specifier);
+        return expandDeclarationHelper(cleanSpecifier);
+    }
+
+    public DeclarationSpecifier expandDeclarationHelper(DeclarationSpecifier specifier) {
         // can't expand an unnamed variable
-        if (declaration.name() == null) {
-            return null;
-        }
-        DeclarationSpecifier cleanSpecifier = stripDefinedTypes(declaration.declSpec());
-        switch (cleanSpecifier.getType()) {
+//        if (declaration.name() == null) {
+//            return null;
+//        }
+        switch (specifier.getType()) {
+            case CompoundType c -> {
+                c.setBase(expandDeclarationHelper(new DeclarationSpecifier(c.base())).getType());
+                return specifier;
+            }
             case StructType s -> {
                 StructType struct = getStruct(s.name());
                 return new DeclarationSpecifier(struct,
-                        cleanSpecifier.getStorage(),
-                        cleanSpecifier.getQualifier());
+                        specifier.getStorage(),
+                        specifier.getQualifier());
             }
             case UnionType u -> {
                 UnionType union = getUnion(u.name());
                 return new DeclarationSpecifier(union,
-                        cleanSpecifier.getStorage(),
-                        cleanSpecifier.getQualifier());
+                        specifier.getStorage(),
+                        specifier.getQualifier());
             }
             case EnumType e -> {
                 EnumType enumeration = getEnum(e.getName());
                 return new DeclarationSpecifier(enumeration,
-                        cleanSpecifier.getStorage(),
-                        cleanSpecifier.getQualifier());
+                        specifier.getStorage(),
+                        specifier.getQualifier());
             }
             case FunctionType f -> {
-                return new DeclarationSpecifier(new PointerType(f.clone()),
-                        cleanSpecifier.getStorage(),
-                        cleanSpecifier.getQualifier());
+                return new DeclarationSpecifier(new PointerType(f),
+                        specifier.getStorage(),
+                        specifier.getQualifier());
             }
-            default -> {return cleanSpecifier;}
+            default -> {return specifier;}
         }
 
     }
@@ -272,28 +280,28 @@ public class TypeEnvironment {
         Type paramType = getBinding(name).getType();
         switch (getLocation(name)) {
             case REGISTER -> {
-                Register pReg = Register.LLVM_Register(paramType.clone());
+                Register pReg = Register.LLVM_Register(paramType);
                 block.addBinding(name, pReg.clone());
                 graph.addParameter(pReg);
             }
             case STACK -> {
-                Register pTemp = Register.LLVM_Register(paramType.clone());
-                Register pReg = Register.LLVM_Register(new PointerType(paramType.clone()));
-                AllocaInstruction alloca = new AllocaInstruction(pReg.clone());
-                StoreInstruction store = new StoreInstruction(pTemp.clone(), pReg.clone());
+                Register pTemp = Register.LLVM_Register(paramType);
+                Register pReg = Register.LLVM_Register(new PointerType(paramType));
+                AllocaLLVM alloca = new AllocaLLVM(pReg.clone());
+                StoreLLVM store = new StoreLLVM(pTemp.clone(), pReg.clone());
                 block.addInstruction(alloca);
                 block.addInstruction(store);
                 block.addBinding(name, pReg.clone());
                 graph.addParameter(pTemp);
             }
-            case null, default -> {}
+            case null, default -> throw new IllegalStateException("Invalid Location");
         }
     }
 
     public void addGlobalDeclarations(Declaration declaration, BasicBlock globalBlock) {
         Type t = declaration.declSpec().getType();
-        Register globalReg = Register.Global(new PointerType(t.clone()));
-        GlobalVariableInstruction var = new GlobalVariableInstruction(globalReg.clone(), t);
+        Register globalReg = Register.Global(new PointerType(t));
+        GlobalVariableLLVM var = new GlobalVariableLLVM(globalReg.clone(), declaration.name(), t);
         globalBlock.addInstruction(var);
         globalBlock.addBinding(declaration.name(), globalReg.clone());
     }
@@ -309,37 +317,35 @@ public class TypeEnvironment {
                                       ControlFlowGraph graph, BasicBlock block) {
         // generate code for each value in the value list
         // ex. int i = 7 + 9, 6, 8; will generate code for 7 + 9, 6, and 8;
-        List<Source> valueList = declaration.initialValue().stream()
+        List<Register> valueList = declaration.initialValue().stream()
                 .map(exp -> exp.codegen(unit, graph, block)).toList();
-
 
         String name = declaration.name();
         Type paramType = getBinding(name).getType();
 
-
         switch (getLocation(name)) {
             case REGISTER -> {
-                Source value = valueList.isEmpty() ? Literal.nill(paramType.clone()) : valueList.getLast();
+                Register value = valueList.isEmpty() ? Literal.nill(paramType, unit, graph, block) : valueList.getLast();
                 assert value.type() instanceof PrimitiveType;
                 assert paramType instanceof PrimitiveType;
                 if (!PrimitiveType.comparePrimitives((PrimitiveType) value.type(),(PrimitiveType) paramType)) {
-                    ConversionInstruction conv = ConversionInstruction.make(value, (PrimitiveType) paramType);
+                    ConversionLLVM conv = ConversionLLVM.make(value, (PrimitiveType) paramType);
                     block.addInstruction(conv);
                     value = conv.result().clone();
                 }
                 block.addBinding(name, value);
             }
             case STACK -> {
-                Register pReg = Register.LLVM_Register(new PointerType(paramType.clone()));
-                AllocaInstruction alloca = new AllocaInstruction(pReg.clone());
+                Register pReg = Register.LLVM_Register(new PointerType(paramType));
+                AllocaLLVM alloca = new AllocaLLVM(pReg.clone());
                 block.addInstruction(alloca);
                 if (!valueList.isEmpty()) {
-                    StoreInstruction store = new StoreInstruction(valueList.getLast(), pReg.clone());
+                    StoreLLVM store = new StoreLLVM(valueList.getLast(), pReg.clone());
                     block.addInstruction(store);
                 }
                 block.addBinding(name, pReg.clone());
             }
-            case null, default -> {}
+            case null, default -> throw new IllegalStateException("Invalid Location");
         }
     }
 

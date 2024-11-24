@@ -11,10 +11,10 @@ import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.EscapeTuple;
 import codegen.TranslationUnit;
-import codegen.instruction.llvm.ComparatorInstruction;
-import codegen.instruction.llvm.ConditionalBranchInstruction;
-import codegen.instruction.llvm.PhiInstruction;
-import codegen.instruction.llvm.UnconditionalBranchInstruction;
+import codegen.instruction.llvm.ComparatorLLVM;
+import codegen.instruction.llvm.ConditionalBranchLLVM;
+import codegen.instruction.llvm.PhiLLVM;
+import codegen.instruction.llvm.UnconditionalBranchLLVM;
 import codegen.values.Literal;
 import codegen.values.Register;
 import codegen.values.Source;
@@ -71,13 +71,10 @@ public abstract class LoopStatement extends Statement {
         // track the locations that a continue or break could jump to
         EscapeTuple escapeTuple = new EscapeTuple(outerBlock, epilogueBlock);
 
-        // create a constant 'zero' for comparisons
-        Literal zero = new Literal("0", new IntegerType());
-
         // handle the branch into the loop
         if (unconditionalEntrance) {
             // add an unconditional branch into the inner block (for do-loops)
-            UnconditionalBranchInstruction enterBranch = new UnconditionalBranchInstruction(innerBlock.getLabel());
+            UnconditionalBranchLLVM enterBranch = new UnconditionalBranchLLVM(innerBlock.getLabel());
             block.addInstruction(enterBranch);
         } else {
             // only add edge from starting block to outer block if the inner block could be skipped
@@ -89,14 +86,16 @@ public abstract class LoopStatement extends Statement {
             );
 
             // evaluate the guard expressions
-            List<Source> values = guardList.stream()
+            List<Register> values = guardList.stream()
                     .map(exp -> exp.codegen(unit,cfg,block))
                     .toList();
 
             // generate the conditional branch into the while loop
             Register enterValue = Register.LLVM_Register(new IntegerType(IntegerType.Width.BOOL, true));
-            ComparatorInstruction enterCond = new ComparatorInstruction(enterValue, BinaryExpression.Operator.NE, values.getLast(), zero.clone());
-            ConditionalBranchInstruction enterBranch = new ConditionalBranchInstruction(enterValue.clone(), innerBlock.getLabel(), outerBlock.getLabel());
+            // create a constant 'zero' for comparisons
+            Register enterZero = Literal.nill(values.getLast().type(), unit, cfg, block);
+            ComparatorLLVM enterCond = new ComparatorLLVM(enterValue, BinaryExpression.Operator.NE, values.getLast(), enterZero);
+            ConditionalBranchLLVM enterBranch = new ConditionalBranchLLVM(enterValue.clone(), innerBlock.getLabel(), outerBlock.getLabel());
 
             // add the comparison and conditional branch to the current block
             block.addInstruction(enterCond);
@@ -107,9 +106,9 @@ public abstract class LoopStatement extends Statement {
         cfg.generatePhis(innerBlock);
 
         // keep track of the names bound to each phi
-        List<PhiInstruction> emptyPhis = innerBlock.getAllInstructions().stream()
-                .filter(inst -> inst instanceof PhiInstruction)
-                .map(inst -> (PhiInstruction) inst)
+        List<PhiLLVM> emptyPhis = innerBlock.getAllInstructions().stream()
+                .filter(inst -> inst instanceof PhiLLVM)
+                .map(inst -> (PhiLLVM) inst)
                 .toList();
 
         List<String> names = new ArrayList<>();
@@ -139,7 +138,7 @@ public abstract class LoopStatement extends Statement {
             cfg.generatePhis(epilogueBlock);
 
             // add branch from inner to epilogue block
-            UnconditionalBranchInstruction innerToEpilogue = new UnconditionalBranchInstruction(epilogueBlock.getLabel());
+            UnconditionalBranchLLVM innerToEpilogue = new UnconditionalBranchLLVM(epilogueBlock.getLabel());
             endOfInnerBlock.addInstruction(innerToEpilogue);
 
             // evaluate the step expressions if they exist
@@ -148,13 +147,15 @@ public abstract class LoopStatement extends Statement {
             );
 
             // re-evaluate the guard expressions
-            List<Source> exitValues = guardList.stream()
+            List<Register> exitValues = guardList.stream()
                     .map(exp -> exp.codegen(unit,cfg,epilogueBlock))
                     .toList();
 
             Register exitValue = Register.LLVM_Register(new IntegerType(IntegerType.Width.BOOL, true));
-            ComparatorInstruction exitCond = new ComparatorInstruction(exitValue, BinaryExpression.Operator.NE, exitValues.getLast(), zero);
-            ConditionalBranchInstruction exitBranch = new ConditionalBranchInstruction(exitValue.clone(), innerBlock.getLabel(), outerBlock.getLabel());
+            // create a constant 'zero' for comparisons
+            Register exitZero = Literal.nill(exitValues.getLast().type(), unit, cfg, epilogueBlock);
+            ComparatorLLVM exitCond = new ComparatorLLVM(exitValue, BinaryExpression.Operator.NE, exitValues.getLast(), exitZero);
+            ConditionalBranchLLVM exitBranch = new ConditionalBranchLLVM(exitValue.clone(), innerBlock.getLabel(), outerBlock.getLabel());
 
             // add the comparison and conditional branch to the current block
             epilogueBlock.addInstruction(exitCond);
@@ -170,8 +171,8 @@ public abstract class LoopStatement extends Statement {
         // fill the temporary phis
         for (int i = 0; i < names.size(); i++) {
             String name = names.get(i);
-            PhiInstruction phi = emptyPhis.get(i);
-            Pair<List<String>, List<Source>> labelSourcePairs = cfg.findPreviousDefinitions(innerBlock, name);
+            PhiLLVM phi = emptyPhis.get(i);
+            Pair<List<String>, List<Register>> labelSourcePairs = cfg.findPreviousDefinitions(innerBlock, name);
             phi.refresh(labelSourcePairs.a, labelSourcePairs.b);
         }
 

@@ -7,9 +7,8 @@ import ast.types.Type;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
-import codegen.instruction.llvm.StringLiteral;
+import codegen.instruction.llvm.StringLiteralLLVM;
 import codegen.values.Register;
-import codegen.values.Source;
 import ast.TypeEnvironment;
 
 public class LiteralExpression extends Expression {
@@ -27,9 +26,9 @@ public class LiteralExpression extends Expression {
     }
 
     @Override
-    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+    public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
         Register globalPointer = Register.Global(new PointerType(new IntegerType(IntegerType.Width.CHAR, true)));
-        StringLiteral literal = new StringLiteral(globalPointer, id);
+        StringLiteralLLVM literal = new StringLiteralLLVM(globalPointer, id);
         unit.getGlobalBlock().addInstruction(literal);
         return globalPointer;
     }

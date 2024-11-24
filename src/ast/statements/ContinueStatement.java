@@ -7,7 +7,7 @@ import ast.TypeEnvironment;
 import codegen.ControlFlowGraph;
 import codegen.EscapeTuple;
 import codegen.TranslationUnit;
-import codegen.instruction.llvm.UnconditionalBranchInstruction;
+import codegen.instruction.llvm.UnconditionalBranchLLVM;
 
 public class ContinueStatement extends Statement {
 
@@ -28,7 +28,7 @@ public class ContinueStatement extends Statement {
     @Override
     public BasicBlock codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, EscapeTuple esc) {
         if (esc.continuePresent()) {
-            UnconditionalBranchInstruction toCont = new UnconditionalBranchInstruction(esc.continueBlock().getLabel());
+            UnconditionalBranchLLVM toCont = new UnconditionalBranchLLVM(esc.continueBlock().getLabel());
             block.addInstruction(toCont);
             cfg.addEdge(block, esc.continueBlock());
             return block;

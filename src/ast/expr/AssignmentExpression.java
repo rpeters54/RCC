@@ -5,6 +5,7 @@ import ast.types.*;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
+import codegen.values.Register;
 import codegen.values.Source;
 import ast.TypeEnvironment;
 
@@ -36,11 +37,11 @@ public class AssignmentExpression extends Expression {
             if (!leftDecl.getType().equals(rightDecl.getType())) {
                 throw new RuntimeException("AssignmentExpression::verifySemantics: left and right types do not match");
             }
-            result = leftDecl.getType().clone();
+            result = leftDecl.getType();
         } else if ((leftDecl.getType() instanceof PointerType) || (rightDecl.getType() instanceof PointerType)){
             switch (leftDecl.getType()) {
-                case PointerType lpt -> result = lpt.clone();
-                case IntegerType lit ->  result = rightDecl.getType().clone();
+                case PointerType lpt -> result = lpt;
+                case IntegerType lit ->  result = rightDecl.getType();
                 default ->  throw new RuntimeException("AssignmentExpression::verifySemantics: " +
                         "can't apply implicit conversion to float and pointer");
             }
@@ -57,8 +58,8 @@ public class AssignmentExpression extends Expression {
 
 
     @Override
-    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
-        Source rightSource = right.codegen(unit, cfg, block);
+    public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+        Register rightSource = right.codegen(unit, cfg, block);
         return left.processLValue(unit, cfg, block, rightSource);
     }
 }

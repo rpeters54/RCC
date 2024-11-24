@@ -5,17 +5,19 @@ import ast.declarations.DeclarationSpecifier;
 import ast.types.FunctionType;
 import ast.types.Type;
 import codegen.instruction.Instruction;
+import codegen.values.Register;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
-public class FunctionDeclaration extends Instruction {
+public class FunctionDeclarationLLVM extends LLVMInstruction implements Global {
 
     private final String name;
     private final FunctionType type;
 
-    public FunctionDeclaration(String name, FunctionType type) {
-        super(Arch.LLVM, Arrays.asList(), Arrays.asList());
+    public FunctionDeclarationLLVM(String name, FunctionType type) {
+        super(Arrays.asList(), Arrays.asList());
         this.name = name;
         this.type = type;
     }
@@ -46,4 +48,14 @@ public class FunctionDeclaration extends Instruction {
         return sb.toString();
     }
 
+    @Override
+    public List<Instruction> toRisc(List<Register> localResults, List<Register> localRvalues) {
+        // does nothing so return nothing
+        return List.of();
+    }
+
+    @Override
+    public List<Instruction> genHeader(Map<Register, String> globalLabelMap) {
+        return List.of();
+    }
 }

@@ -5,7 +5,7 @@ import ast.types.PrimitiveType;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
-import codegen.values.Source;
+import codegen.values.Register;
 import ast.TypeEnvironment;
 
 public class IncDecExpression extends LValue {
@@ -57,12 +57,12 @@ public class IncDecExpression extends LValue {
     }
 
     @Override
-    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+    public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
         throw new RuntimeException("Not Implemented");
     }
 
     @Override
-    public Source processLValue(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, Source right) {
+    public Register processLValue(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, Register right) {
         throw new RuntimeException("Not Implemented");
     }
 }

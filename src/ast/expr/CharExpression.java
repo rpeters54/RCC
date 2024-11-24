@@ -7,12 +7,11 @@ import ast.types.Type;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
-import codegen.instruction.llvm.AllocaInstruction;
-import codegen.instruction.llvm.LoadInstruction;
-import codegen.instruction.llvm.StoreInstruction;
+import codegen.instruction.llvm.AllocaLLVM;
+import codegen.instruction.llvm.LoadLLVM;
+import codegen.instruction.llvm.LoadLiteralLLVM;
 import codegen.values.Literal;
 import codegen.values.Register;
-import codegen.values.Source;
 import ast.TypeEnvironment;
 
 public class CharExpression extends Expression{
@@ -30,15 +29,13 @@ public class CharExpression extends Expression{
     }
 
     @Override
-    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+    public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
         Register allocaResult = Register.LLVM_Register(new PointerType(new IntegerType()));
         Register loadResult = Register.LLVM_Register(new IntegerType(IntegerType.Width.CHAR, true));
         String numified = Integer.toString(id.charAt(1));
         Literal charValue =  new Literal(numified, new IntegerType(IntegerType.Width.CHAR, true));
 
-        block.addInstruction(new AllocaInstruction(allocaResult));
-        block.addInstruction(new StoreInstruction(charValue, allocaResult.clone()));
-        block.addInstruction(new LoadInstruction(loadResult, allocaResult.clone()));
-        return loadResult.clone();
+        block.addInstruction(new LoadLiteralLLVM(charValue, loadResult.clone(), allocaResult));
+        return loadResult;
     }
 }

@@ -5,10 +5,10 @@ import ast.types.*;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
-import codegen.instruction.llvm.BinaryInstruction;
-import codegen.instruction.llvm.ComparatorInstruction;
-import codegen.instruction.llvm.LoadInstruction;
-import codegen.instruction.llvm.StoreInstruction;
+import codegen.instruction.llvm.BinaryLLVM;
+import codegen.instruction.llvm.ComparatorLLVM;
+import codegen.instruction.llvm.LoadLLVM;
+import codegen.instruction.llvm.StoreLLVM;
 import codegen.values.Literal;
 import codegen.values.Register;
 import codegen.values.Source;
@@ -77,25 +77,26 @@ public class PrefixExpression extends LValue {
     }
 
     @Override
-    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+    public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
 
         switch (operator) {
             case POINTER -> {
-                Source operandSource = operand.codegen(unit, cfg, block);
-                PointerType pt = (PointerType) operandSource.type();
-                Type resultType = pt.base();
+                Register operandReg = operand.codegen(unit, cfg, block);
+                PointerType pt = (PointerType) operandReg.type();
+                Type expandedType = unit.getGlobalTypeEnvironment()
+                        .expandDeclaration(new DeclarationSpecifier(pt.base())).getType();
 
-                switch (resultType) {
-                    case ArrayType at -> { return operandSource; }
-                    case StructType st -> { return operandSource; }
-                    case UnionType ut -> { return operandSource; }
+                switch (expandedType) {
+                    case ArrayType at -> { return operandReg; }
+                    case StructType st -> { return operandReg; }
+                    case UnionType ut -> { return operandReg; }
                     case PrimitiveType primt -> {
-                        Register result = Register.LLVM_Register(resultType.clone());
-                        block.addInstruction(new LoadInstruction(result.clone(), operandSource));
+                        Register result = Register.LLVM_Register(expandedType);
+                        block.addInstruction(new LoadLLVM(result.clone(), operandReg));
                         return result;
                     }
                     case null, default -> {
-                        throw new RuntimeException("IdentifierExpression::codegen: invalid type " + resultType);
+                        throw new RuntimeException("IdentifierExpression::codegen: invalid type " + expandedType);
                     }
                 }
 
@@ -121,32 +122,20 @@ public class PrefixExpression extends LValue {
                 }
             }
             case NOT -> {
-                Source value = operand.codegen(unit, cfg, block);
-                Source zero = switch(value.type()) {
-                    case IntegerType it -> new Literal("0", it.clone());
-                    case FloatingType ft -> new Literal("0.0", ft.clone());
-                    case PointerType pt -> new Literal("0", pt.clone());
-                    case null, default ->
-                        throw new RuntimeException("PrefixExpression::codegen: Only primitive types can be negated");
-                };
+                Register value = operand.codegen(unit, cfg, block);
+                Register zero = Literal.nill(value.type(), unit, cfg, block);
                 Register result = Register.LLVM_Register(new IntegerType(IntegerType.Width.BOOL, true));
-                ComparatorInstruction comp = new ComparatorInstruction(result.clone(),
+                ComparatorLLVM comp = new ComparatorLLVM(result.clone(),
                         BinaryExpression.Operator.EQ, value, zero);
 
                 block.addInstruction(comp);
                 return result;
             }
             case MINUS -> {
-                Source value = operand.codegen(unit, cfg, block);
-                Source zero = switch(value.type()) {
-                    case IntegerType it -> new Literal("0", it.clone());
-                    case FloatingType ft -> new Literal("0.0", ft.clone());
-                    case PointerType pt -> new Literal("0", pt.clone());
-                    case null, default ->
-                            throw new RuntimeException("PrefixExpression::codegen: Only primitive types can be negated");
-                };
-                Register result = Register.LLVM_Register(value.type().clone());
-                BinaryInstruction minus = new BinaryInstruction(result.clone(), BinaryExpression.Operator.MINUS, zero, value);
+                Register value = operand.codegen(unit, cfg, block);
+                Register zero = Literal.nill(value.type(), unit, cfg, block);
+                Register result = Register.LLVM_Register(value.type());
+                BinaryLLVM minus = new BinaryLLVM(result.clone(), BinaryExpression.Operator.MINUS, zero, value);
 
                 block.addInstruction(minus);
                 return result;
@@ -156,11 +145,11 @@ public class PrefixExpression extends LValue {
     }
 
     @Override
-    public Source processLValue(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, Source right) {
+    public Register processLValue(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, Register right) {
         switch (operator) {
             case POINTER -> {
-                Source operandSource = operand.codegen(unit, cfg, block);
-                block.addInstruction(new StoreInstruction(right, operandSource));
+                Register operandReg = operand.codegen(unit, cfg, block);
+                block.addInstruction(new StoreLLVM(right, operandReg));
                 return null;
             }
             case REF -> {

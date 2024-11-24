@@ -5,7 +5,8 @@ import ast.types.FloatingType;
 import ast.types.IntegerType;
 import ast.types.Type;
 
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Stream;
 
 public class Register implements Source {
     private final int number;
@@ -38,10 +39,14 @@ public class Register implements Source {
         LLVM_REGISTER_COUNT = 0;
     }
 
+    public int number() {
+        return number;
+    }
+
 
     @Override
     public Register clone() {
-        return new Register(arch, number, type.clone(), global);
+        return new Register(arch, number, type, global);
     }
 
     @Override
@@ -66,7 +71,7 @@ public class Register implements Source {
                                 + "integer register number exceeds limit " + number);
                     };
                     case FloatingType ft -> switch (number) {
-                        case 0, 1, 2, 3, 4, 5, 6, 7 -> "ft" + (number - 5);
+                        case 0, 1, 2, 3, 4, 5, 6, 7 -> "ft" + (number);
                         case 8, 9 -> "fs" + (number - 8);
                         case 10, 11, 12, 13, 14, 15, 16, 17 -> "fa" + (number - 10);
                         case 18, 19, 20, 21, 22, 23, 24, 25, 26, 27 -> "fs" + (number - 16);
@@ -78,6 +83,77 @@ public class Register implements Source {
                             + "invalid risc register type " + type);
                 };
         };
+    }
+
+    private static final List<Integer> TEMP_INT_NUMBERS = List.of(
+            5, 6, 7, 10, 11, 12, 13, 14, 15, 16, 17, 28, 29, 30, 31
+    );
+    private static final List<Integer> TEMP_FLOAT_NUMBERS = List.of(
+            0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15, 16, 17, 28, 29, 30, 31
+    );
+    private static final List<Integer> SAVED_INT_NUMBERS = List.of( 9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27);
+    private static final List<Integer> SAVED_FLOAT_NUMBERS = List.of( 8, 9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27);
+
+    public static Register RiscRa() {
+        return new Register(Arch.RISC, 1, new IntegerType(IntegerType.Width.LONG, true), false);
+    }
+
+    public static Register RiscSp() {
+        return new Register(Arch.RISC, 2, new IntegerType(IntegerType.Width.LONG, true), false);
+    }
+
+    public static Register RiscFp() {
+        return new Register(Arch.RISC, 8, new IntegerType(IntegerType.Width.LONG, true), false);
+    }
+
+    public static Register RiscZero() {
+        return new Register(Arch.RISC, 0, new IntegerType(IntegerType.Width.LONG, true), false);
+    }
+
+    public static Register RiscIntArg(int number) {
+        if (number < 0 || number > 7) {
+            throw new IllegalArgumentException("Register::toString: RISC argument out of range " + number);
+        }
+        return new Register(Arch.RISC, 10+number, new IntegerType(IntegerType.Width.LONG, true), false);
+    }
+
+    public static Register RiscFloatArg(int number) {
+        if (number < 0 || number > 7) {
+            throw new IllegalArgumentException("Register::toString: RISC argument out of range " + number);
+        }
+        return new Register(Arch.RISC, 10+number, new FloatingType(FloatingType.Width.DOUBLE), false);
+    }
+
+    public static List<Register> SavedRiscRegisters() {
+        Stream<Register> intRegisters = SAVED_INT_NUMBERS.stream()
+                .map(number -> RISC_Register(new IntegerType(IntegerType.Width.LONG, true), number));
+        Stream<Register> floatRegister = SAVED_FLOAT_NUMBERS.stream()
+                .map(number -> RISC_Register(new FloatingType(FloatingType.Width.DOUBLE), number));
+        return Stream.concat(intRegisters, floatRegister).collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+    }
+
+    public static List<Register> TemporaryRiscRegisters() {
+        Stream<Register> intRegisters = TEMP_INT_NUMBERS.stream()
+                .map(number -> RISC_Register(new IntegerType(IntegerType.Width.LONG, true), number));
+        Stream<Register> floatRegister = TEMP_FLOAT_NUMBERS.stream()
+                .map(number -> RISC_Register(new FloatingType(FloatingType.Width.DOUBLE), number));
+        return Stream.concat(intRegisters, floatRegister).collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+    }
+
+    public static List<Register> IntRiscRegisters() {
+        Stream<Register> tempRegisters = TEMP_INT_NUMBERS.stream()
+                .map(number -> RISC_Register(new IntegerType(IntegerType.Width.LONG, true), number));
+        Stream<Register> savedRegisters = SAVED_INT_NUMBERS.stream()
+                .map(number -> RISC_Register(new IntegerType(IntegerType.Width.LONG, true), number));
+        return Stream.concat(tempRegisters, savedRegisters).collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+    }
+
+    public static List<Register> FloatRiscRegisters() {
+        Stream<Register> tempRegisters = TEMP_FLOAT_NUMBERS.stream()
+                .map(number -> RISC_Register(new FloatingType(FloatingType.Width.DOUBLE), number));
+        Stream<Register> savedRegisters = SAVED_FLOAT_NUMBERS.stream()
+                .map(number -> RISC_Register(new FloatingType(FloatingType.Width.DOUBLE), number));
+        return Stream.concat(tempRegisters, savedRegisters).collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
     }
 
 

@@ -2,6 +2,7 @@ package main;
 
 import ast.Program;
 import codegen.BasicBlock;
+import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
 import codegen.values.Register;
 import org.antlr.v4.runtime.CharStream;
@@ -14,6 +15,8 @@ import parser.CParser;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
 
 
 import static java.lang.System.exit;
@@ -32,9 +35,12 @@ public class Main {
         TranslationUnit code = program.codegen();
         code.pruneRedundantPhis();
         code.deadCodeElimination();
-        //code.constantPropagation();
+
+        TranslationUnit risc = code.toRisc();
+        risc.generateRiscFile(args[2]);
+
+        code.bubbleAllocas();
         code.generateLLFile(args[1]);
-//        code.generateDotFile("clean.dot");
     }
 
     public static Program parseProgram(String[] args) {

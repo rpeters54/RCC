@@ -7,20 +7,30 @@ import ast.types.Type;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
-import codegen.instruction.llvm.AllocaInstruction;
-import codegen.instruction.llvm.LoadInstruction;
-import codegen.instruction.llvm.StoreInstruction;
+import codegen.instruction.llvm.AllocaLLVM;
+import codegen.instruction.llvm.LoadLLVM;
+import codegen.instruction.llvm.LoadLiteralLLVM;
 import codegen.values.Literal;
 import codegen.values.Register;
-import codegen.values.Source;
 import ast.TypeEnvironment;
 
 public class IntegerExpression extends Expression {
     private final long value;
+    private final IntegerType.Width size;
+    private final boolean signed;
 
     public IntegerExpression(int lineNum, long value) {
         super(lineNum);
         this.value = value;
+        this.size = IntegerType.Width.LONG;
+        signed = true;
+    }
+
+    public IntegerExpression(int lineNum, long value, IntegerType it) {
+        super(lineNum);
+        this.value = value;
+        this.size = it.size();
+        this.signed = it.signed();
     }
 
     public long getValue() {
@@ -33,15 +43,11 @@ public class IntegerExpression extends Expression {
     }
 
     @Override
-    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
-//        Register allocaResult = Register.LLVM_Register(new PointerType(new IntegerType()));
-//        Register loadResult = Register.LLVM_Register(new IntegerType());
-//        Literal intValue =  new Literal(value, new IntegerType());
-//
-//        block.addInstruction(new AllocaInstruction(allocaResult));
-//        block.addInstruction(new StoreInstruction(intValue, allocaResult.clone()));
-//        block.addInstruction(new LoadInstruction(loadResult, allocaResult.clone()));
-//        return loadResult.clone();
-        return new Literal(Long.toString(value), new IntegerType(IntegerType.Width.LONG, true));
+    public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+        Register allocaResult = Register.LLVM_Register(new PointerType(new IntegerType(size, signed)));
+        Register loadResult = Register.LLVM_Register(new IntegerType(size, signed));
+        Literal intValue =  new Literal(Long.toString(value), new IntegerType(size, signed));
+        block.addInstruction(new LoadLiteralLLVM(intValue, loadResult.clone(), allocaResult));
+        return loadResult;
     }
 }

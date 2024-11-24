@@ -34,7 +34,7 @@ public class CompoundStatement extends Statement {
     public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, FunctionDefinition function) {
         // for each declaration, replace any type aliases with the actual types
         for (Declaration declaration : declarations) {
-            DeclarationSpecifier expandedSpecifier = globalEnv.expandDeclaration(declaration);
+            DeclarationSpecifier expandedSpecifier = globalEnv.expandDeclaration(declaration.declSpec());
             localEnv.addBinding(declaration.name(), expandedSpecifier);
         }
         DeclarationSpecifier specifier = new DeclarationSpecifier();

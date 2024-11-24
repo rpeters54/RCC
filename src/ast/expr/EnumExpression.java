@@ -4,7 +4,7 @@ import ast.declarations.DeclarationSpecifier;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
-import codegen.values.Source;
+import codegen.values.Register;
 import ast.TypeEnvironment;
 
 public class EnumExpression extends Expression {
@@ -22,7 +22,7 @@ public class EnumExpression extends Expression {
     }
 
     @Override
-    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+    public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
         throw new RuntimeException("Not Implemented");
     }
 }

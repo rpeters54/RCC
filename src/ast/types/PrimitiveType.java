@@ -15,16 +15,16 @@ public abstract class PrimitiveType extends Type {
                 switch (right) {
                     case IntegerType rit -> {
                         if (lit.isSameOrLarger(rit)) {
-                            return (NumberType) lit.clone();
+                            return lit;
                         } else {
-                            return (NumberType) rit.clone();
+                            return rit;
                         }
                     }
                     case FloatingType rft -> {
-                        return (NumberType) rft.clone();
+                        return rft;
                     }
                     case PointerType rpt -> {
-                        return (PrimitiveType) rpt.clone();
+                        return rpt;
                     }
                     case null, default ->
                             throw new RuntimeException("PrimitiveType::implicitConversion:" +
@@ -34,13 +34,13 @@ public abstract class PrimitiveType extends Type {
             case FloatingType lft -> {
                 switch (right) {
                     case IntegerType rit -> {
-                        return (NumberType) lft.clone();
+                        return lft;
                     }
                     case FloatingType rft -> {
                         if (lft.isSameOrLarger(rft)) {
-                            return (NumberType) lft.clone();
+                            return lft;
                         } else {
-                            return (NumberType) rft.clone();
+                            return rft;
                         }
                     }
                     case PointerType rpt -> {
@@ -54,14 +54,14 @@ public abstract class PrimitiveType extends Type {
             case PointerType lpt -> {
                 switch (right) {
                     case IntegerType rit -> {
-                        return (PrimitiveType) lpt.clone();
+                        return lpt;
                     }
                     case FloatingType rft -> {
                         throw new RuntimeException("PrimitiveType::implicitConversion: " +
                                 "Can not convert between floats and pointers");
                     }
                     case PointerType rpt -> {
-                        return (PrimitiveType) lpt.clone();
+                        return lpt;
                     }
                     case null, default ->
                             throw new RuntimeException("PrimitiveType::implicitConversion:" +

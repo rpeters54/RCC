@@ -11,9 +11,9 @@ import ast.TypeEnvironment;
 import codegen.ControlFlowGraph;
 import codegen.EscapeTuple;
 import codegen.TranslationUnit;
-import codegen.instruction.llvm.ComparatorInstruction;
-import codegen.instruction.llvm.ConditionalBranchInstruction;
-import codegen.instruction.llvm.UnconditionalBranchInstruction;
+import codegen.instruction.llvm.ComparatorLLVM;
+import codegen.instruction.llvm.ConditionalBranchLLVM;
+import codegen.instruction.llvm.UnconditionalBranchLLVM;
 import codegen.values.Literal;
 import codegen.values.Register;
 import codegen.values.Source;
@@ -76,18 +76,18 @@ public class ConditionalStatement extends Statement {
         cfg.addEdge(block, elseBlock);
 
         // generate code for all guards
-        List<Source> guards = guardList.stream()
+        List<Register> guards = guardList.stream()
                 .map(guard -> guard.codegen(unit, cfg, block))
                 .toList();
 
-        Literal zero = new Literal("0", new IntegerType());
+        Register zero = Literal.nill(guards.getLast().type(), unit, cfg, block);
         Register result = Register.LLVM_Register(new IntegerType(IntegerType.Width.BOOL, true));
-        ComparatorInstruction comp = new ComparatorInstruction(result.clone(), BinaryExpression.Operator.NE,
+        ComparatorLLVM comp = new ComparatorLLVM(result.clone(), BinaryExpression.Operator.NE,
                 guards.getLast(), zero);
         block.addInstruction(comp);
 
         // add conditional branch instruction
-        block.addInstruction(new ConditionalBranchInstruction(
+        block.addInstruction(new ConditionalBranchLLVM(
                 result,
                 thenBlock.getLabel(),
                 elseBlock.getLabel()
@@ -109,8 +109,8 @@ public class ConditionalStatement extends Statement {
             cfg.addEdge(endOfThenBlock, afterBlock);
             cfg.addEdge(endOfElseBlock, afterBlock);
 
-            endOfThenBlock.addInstruction(new UnconditionalBranchInstruction(afterBlock.getLabel()));
-            endOfElseBlock.addInstruction(new UnconditionalBranchInstruction(afterBlock.getLabel()));
+            endOfThenBlock.addInstruction(new UnconditionalBranchLLVM(afterBlock.getLabel()));
+            endOfElseBlock.addInstruction(new UnconditionalBranchLLVM(afterBlock.getLabel()));
 
             // add phi instructions
             cfg.generatePhis(afterBlock);
@@ -121,7 +121,7 @@ public class ConditionalStatement extends Statement {
             cfg.addBlock(afterBlock);
 
             cfg.addEdge(endOfThenBlock, afterBlock);
-            endOfThenBlock.addInstruction(new UnconditionalBranchInstruction(afterBlock.getLabel()));
+            endOfThenBlock.addInstruction(new UnconditionalBranchLLVM(afterBlock.getLabel()));
 
             return afterBlock;
         } else if (endOfThenBlock.endsWithJump() && !endOfElseBlock.endsWithJump()) {
@@ -129,7 +129,7 @@ public class ConditionalStatement extends Statement {
             cfg.addBlock(afterBlock);
 
             cfg.addEdge(endOfElseBlock, afterBlock);
-            endOfElseBlock.addInstruction(new UnconditionalBranchInstruction(afterBlock.getLabel()));
+            endOfElseBlock.addInstruction(new UnconditionalBranchLLVM(afterBlock.getLabel()));
 
             return afterBlock;
         } else {

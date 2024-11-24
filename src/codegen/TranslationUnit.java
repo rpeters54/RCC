@@ -4,12 +4,11 @@ import ast.TypeEnvironment;
 import ast.types.StructType;
 import ast.types.UnionType;
 import codegen.instruction.Instruction;
-import codegen.instruction.llvm.FunctionDeclaration;
+import codegen.instruction.llvm.FunctionDeclarationLLVM;
+import codegen.instruction.llvm.Global;
+import codegen.instruction.llvm.LLVMInstruction;
 import codegen.values.Register;
-import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultEdge;
 
-import javax.naming.ldap.Control;
 import java.io.*;
 import java.util.*;
 
@@ -23,6 +22,13 @@ public class TranslationUnit {
     public TranslationUnit(TypeEnvironment globalTypeEnvironment) {
         this.globalBlock = new BasicBlock();
         this.globalTypeEnvironment = globalTypeEnvironment;
+        this.controlFlowGraphs = new ArrayList<>();
+        this.functionNames = new ArrayList<>();
+    }
+
+    public TranslationUnit() {
+        this.globalBlock = new BasicBlock();
+        this.globalTypeEnvironment = new TypeEnvironment();
         this.controlFlowGraphs = new ArrayList<>();
         this.functionNames = new ArrayList<>();
     }
@@ -60,7 +66,7 @@ public class TranslationUnit {
             }
             for (Instruction inst : globalBlock.getAllInstructions()) {
                 switch (inst) {
-                    case FunctionDeclaration fd -> {
+                    case FunctionDeclarationLLVM fd -> {
                         if (!functionNames.contains(fd.name())) {
                             out.write(inst.toString());
                         }
@@ -76,6 +82,26 @@ public class TranslationUnit {
                     out.newLine();
                 }
             }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void generateRiscFile(String filePath) {
+        try(BufferedWriter out=new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filePath)))){
+            out.write(".section .text\n");
+            for (ControlFlowGraph controlFlowGraph : controlFlowGraphs) {
+                for (String line : controlFlowGraph.sprintInstructions()) {
+                    out.write(line);
+                    out.newLine();
+                }
+            }
+            out.write(".section .data\n");
+            for (Instruction inst : globalBlock.getAllInstructions()) {
+                out.write(inst.toString());
+                out.newLine();
+            }
+
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -103,11 +129,11 @@ public class TranslationUnit {
     }
 
 
-    public void constantPropagation() {
-        for (ControlFlowGraph cfg : controlFlowGraphs) {
-            cfg.constantPropagation();
-        }
-    }
+//    public void constantPropagation() {
+//        for (ControlFlowGraph cfg : controlFlowGraphs) {
+//            cfg.constantPropagation();
+//        }
+//    }
 
     public void deadCodeElimination() {
         for (ControlFlowGraph cfg : controlFlowGraphs) {
@@ -116,15 +142,38 @@ public class TranslationUnit {
         }
     }
 
+    public void bubbleAllocas() {
+        for (ControlFlowGraph cfg : controlFlowGraphs) {
+            ControlFlowGraph.bubbleAllocas(cfg);
+        }
+    }
+
 
     /*
     Register Allocation Functions
      */
 
-    public void allocateRegisters() {
-        for (ControlFlowGraph cfg : this.getControlFlowGraphs()) {
-            Map<BasicBlock, Set<Register>> liveout = cfg.computeLiveRange();
-            Graph<Register, DefaultEdge> iGraph = cfg.buildInterferenceGraph(liveout);
+    /**
+     * Takes a well-formed translation unit containing LLVM instructions and converts
+     * all instructions to their RISCV64 equivalents.
+     */
+    public TranslationUnit toRisc() {
+        TranslationUnit result = new TranslationUnit();
+        List<Instruction> riscGlobals = result.getGlobalBlock().getMutableInstructions();
+        Map<Register, String> globalLabelMap = new HashMap<>();
+        for (Instruction instruction : globalBlock.getAllInstructions()) {
+            if (Objects.requireNonNull(instruction) instanceof Global ll) {
+                riscGlobals.addAll(ll.genHeader(globalLabelMap));
+            } else {
+                throw new IllegalStateException("invalid instruction type");
+            }
         }
+        for (ControlFlowGraph cfg : controlFlowGraphs) {
+            ControlFlowGraph risc = ControlFlowGraph.generatePseudoRisc(cfg, globalLabelMap);
+            ControlFlowGraph.allocateRegisters(risc);
+            result.addControlFlowGraph(risc);
+        }
+        return result;
     }
+
 }

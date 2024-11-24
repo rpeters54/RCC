@@ -8,10 +8,9 @@ import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.EscapeTuple;
 import codegen.TranslationUnit;
-import codegen.instruction.llvm.FunctionDeclaration;
-import codegen.instruction.llvm.GlobalVariableInstruction;
-import codegen.instruction.llvm.PhiInstruction;
-import codegen.instruction.llvm.UnconditionalBranchInstruction;
+import codegen.instruction.llvm.FunctionDeclarationLLVM;
+import codegen.instruction.llvm.PhiLLVM;
+import codegen.instruction.llvm.UnconditionalBranchLLVM;
 import codegen.values.Register;
 
 
@@ -62,7 +61,7 @@ public class Program {
                         }
                         default -> {}
                     }
-                    DeclarationSpecifier expandedSpecifier = globalEnv.expandDeclaration(declaration);
+                    DeclarationSpecifier expandedSpecifier = globalEnv.expandDeclaration(declaration.declSpec());
                     if (declaration.name() != null)
                         globalEnv.addBinding(declaration.name(), expandedSpecifier);
                 }
@@ -80,7 +79,7 @@ public class Program {
                     if (!(stub.declSpec().getType() instanceof FunctionType func))
                         throw new RuntimeException("Program: Function Definition with Non-Function Declaration");
                     for (Declaration param : func.inputTypes()) {
-                        DeclarationSpecifier paramSpecifier = globalEnv.expandDeclaration(param);
+                        DeclarationSpecifier paramSpecifier = globalEnv.expandDeclaration(param.declSpec());
                         localEnv.addBinding(param.name(), paramSpecifier);
                     }
 
@@ -136,7 +135,7 @@ public class Program {
                     // generate all code for the function body
                     BasicBlock last = definition.body().codegen(unit, graph, prologue, new EscapeTuple());
 
-                    Optional<PhiInstruction> returnPhi = graph.getReturnPhi();
+                    Optional<PhiLLVM> returnPhi = graph.getReturnPhi();
                     if (returnPhi.isPresent()) {
                         Register returnRegister = Register.LLVM_Register(definition.returnType());
                         graph.declareReturnRegister(returnRegister);
@@ -145,7 +144,7 @@ public class Program {
                     // if the final block was not linked to the epilogue by default, link them manually
                     // (this happens with void functions that do not end with a return)
                     if (!last.endsWithJump()) {
-                        last.addInstruction(new UnconditionalBranchInstruction(graph.getReturnLabel()));
+                        last.addInstruction(new UnconditionalBranchLLVM(graph.getReturnLabel()));
                         graph.linkReturnBlock(last);
                     }
 
@@ -157,7 +156,7 @@ public class Program {
                     if (declaration.name() != null) {
                         switch (declaration.declSpec().getType()) {
                             case FunctionType function -> {
-                                FunctionDeclaration decl = new FunctionDeclaration(declaration.name(), function);
+                                FunctionDeclarationLLVM decl = new FunctionDeclarationLLVM(declaration.name(), function);
                                 unit.getGlobalBlock().addInstruction(decl);
                             }
                             case null -> throw new RuntimeException("Program::codegen: null declaration");

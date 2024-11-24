@@ -4,7 +4,7 @@ import ast.declarations.DeclarationSpecifier;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
-import codegen.values.Source;
+import codegen.values.Register;
 import ast.TypeEnvironment;
 
 public abstract class Expression {
@@ -23,5 +23,5 @@ public abstract class Expression {
     public abstract DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv,
                                                          TypeEnvironment localEnv,
                                                          TypeEnvironment.StorageLocation location);
-    public abstract Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block);
+    public abstract Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block);
 }

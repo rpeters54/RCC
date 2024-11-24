@@ -1,17 +1,20 @@
 package codegen.instruction.llvm;
 
 import codegen.instruction.Instruction;
+import codegen.instruction.riscv.StringAllocRisc;
 import codegen.values.Register;
 import org.antlr.v4.runtime.misc.Pair;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
-public class StringLiteral extends Instruction {
+public class StringLiteralLLVM extends LLVMInstruction implements Global {
 
     private final String value;
 
-    public StringLiteral(Register location, String value) {
-        super(Arch.LLVM, Arrays.asList(location), Arrays.asList());
+    public StringLiteralLLVM(Register location, String value) {
+        super(Arrays.asList(location), Arrays.asList());
         this.value = value;
     }
 
@@ -53,5 +56,17 @@ public class StringLiteral extends Instruction {
         len++;
         result.append("\\00\"");
         return new Pair<>(result.toString(), len);
+    }
+
+    @Override
+    public List<Instruction> toRisc(List<Register> localResults, List<Register> localRvalues) {
+        throw new RuntimeException("Can't generate instructions for global header");
+    }
+
+    @Override
+    public List<Instruction> genHeader(Map<Register, String> globalLabelMap) {
+        String label = "string."+result().hashCode();
+        globalLabelMap.put(result(), label);
+        return List.of(new StringAllocRisc(label, value));
     }
 }

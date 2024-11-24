@@ -5,8 +5,8 @@ import ast.types.*;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
-import codegen.instruction.llvm.CallInstruction;
-import codegen.instruction.llvm.ConversionInstruction;
+import codegen.instruction.llvm.CallLLVM;
+import codegen.instruction.llvm.ConversionLLVM;
 import codegen.values.Literal;
 import codegen.values.Register;
 import codegen.values.Source;
@@ -74,7 +74,7 @@ public class ApplicationExpression extends Expression {
     }
 
     @Override
-    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+    public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
         assert func instanceof IdentifierExpression;
         String name = ((IdentifierExpression) func).getId();
 
@@ -82,17 +82,17 @@ public class ApplicationExpression extends Expression {
         FunctionType type = ((FunctionType)((PointerType) unit.getGlobalTypeEnvironment()
                 .getBinding(name).getType()).base());
 
-        List<Source> arguments = args.stream()
+        List<Register> arguments = args.stream()
                 .map(arg -> arg.codegen(unit, cfg, block))
                 .collect(Collectors.toList());
 
         // add implicit type conversions if necessary
         for (int i = 0; i < type.inputTypes().size(); i++) {
-            Source arg = arguments.get(i);
+            Register arg = arguments.get(i);
             Type paramType = type.inputTypes().get(i).declSpec().getType();
             if (arg.type() instanceof PrimitiveType at && paramType instanceof PrimitiveType pt) {
                 if (!PrimitiveType.comparePrimitives(at, pt)) {
-                    ConversionInstruction conv = ConversionInstruction.make(arg.clone(), (PrimitiveType) pt.clone());
+                    ConversionLLVM conv = ConversionLLVM.make(arg.clone(), pt);
                     block.addInstruction(conv);
                     arguments.set(i, conv.result().clone());
                 }
@@ -101,12 +101,14 @@ public class ApplicationExpression extends Expression {
 
 
         if (type.returnType() instanceof VoidType) {
-            CallInstruction call = new CallInstruction(arguments, name);
+            CallLLVM call = new CallLLVM(arguments, name);
             block.addInstruction(call);
-            return Literal.nill(new PointerType(new VoidType()));
+            return null;
         } else {
-            Register result = Register.LLVM_Register(type.returnType().clone());
-            CallInstruction call = new CallInstruction(result, arguments, name);
+            Type expandedReturnType = unit.getGlobalTypeEnvironment()
+                    .expandDeclaration(new DeclarationSpecifier(type.returnType())).getType();
+            Register result = Register.LLVM_Register(expandedReturnType);
+            CallLLVM call = new CallLLVM(result, arguments, name);
             block.addInstruction(call);
             return result.clone();
         }

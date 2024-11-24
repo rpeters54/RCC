@@ -6,7 +6,7 @@ import ast.types.PrimitiveType;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
-import codegen.values.Source;
+import codegen.values.Register;
 import ast.TypeEnvironment;
 
 public class ConditionalExpression extends Expression {
@@ -46,7 +46,7 @@ public class ConditionalExpression extends Expression {
     }
 
     @Override
-    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+    public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
         throw new RuntimeException("Not Implemented");
     }
 }

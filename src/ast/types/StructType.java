@@ -22,10 +22,6 @@ public class StructType extends ObjectType {
         return members;
     }
 
-//    public void setMembers(List<Declaration> members) {
-//        this.members = members;
-//    }
-
     public Type typeOfMember(String name) {
         for (Declaration member : members) {
             if (member.name().equals(name)) {
@@ -56,6 +52,17 @@ public class StructType extends ObjectType {
     @Override
     public Type clone() {
         return new StructType(name, members);
+    }
+
+    public long offset(int index) {
+        long offset = 0;
+        if (index >= members.size()) {
+            System.out.println("Here");
+        }
+        for (int i = 0; i < index; i++) {
+            offset += members.get(i).declSpec().getType().sizeof();
+        }
+        return offset;
     }
 
     @Override

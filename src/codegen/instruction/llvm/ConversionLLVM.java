@@ -1,22 +1,27 @@
 package codegen.instruction.llvm;
 
+import ast.expr.BinaryExpression;
 import ast.types.*;
 import codegen.instruction.Instruction;
+import codegen.instruction.riscv.BinaryImmRisc;
+import codegen.instruction.riscv.BinaryRisc;
+import codegen.instruction.riscv.FloatConversionRisc;
 import codegen.values.Register;
-import codegen.values.Source;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
-public class ConversionInstruction extends Instruction {
+public class ConversionLLVM extends LLVMInstruction {
 
     private final ConversionType type;
 
-    private ConversionInstruction(Register result, Source operand, ConversionType type) {
-        super(Arch.LLVM, Arrays.asList(result), Arrays.asList(operand));
+    private ConversionLLVM(Register result, Register operand, ConversionType type) {
+        super(Arrays.asList(result), Arrays.asList(operand));
         this.type = type;
     }
 
-    public static ConversionInstruction make(Source operand, PrimitiveType target) {
+    public static ConversionLLVM make(Register operand, PrimitiveType target) {
         if (!(operand.type() instanceof PrimitiveType opType)) {
             throw new RuntimeException("ConversionInstruction::make operand must be a primitive type");
         }
@@ -78,7 +83,7 @@ public class ConversionInstruction extends Instruction {
         }
 
         Register result = Register.LLVM_Register(target);
-        return new ConversionInstruction(result, operand, type);
+        return new ConversionLLVM(result, operand, type);
     }
 
     @Override
@@ -87,21 +92,63 @@ public class ConversionInstruction extends Instruction {
             case TRUNC -> "trunc";
             case SEXT -> "sext";
             case ZEXT -> "zext";
+
             case SITOFP -> "sitofp";
             case UITOFP -> "uitofp";
-            case INTTOPTR -> "inttoptr";
             case FPTOSI -> "fptosi";
             case FPTOUI -> "fptoui";
+
             case FPTRUNC -> "fptrunc";
             case FPEXT -> "fpext";
+
+            case INTTOPTR -> "inttoptr";
             case PTRTOINT -> "ptrtoint";
             case BITCAST -> "bitcast";
         };
-        return String.format("%s = %s %s %s to %s", this.result(), op, this.source(0).type(),
-                this.source(0), this.result().type());
+        return String.format("%s = %s %s %s to %s", this.result(), op, this.rvalue(0).type(),
+                this.rvalue(0), this.result().type());
     }
 
     public enum ConversionType {
         TRUNC, ZEXT, SEXT, FPTRUNC, FPEXT, FPTOUI, FPTOSI, UITOFP, SITOFP, PTRTOINT, INTTOPTR, BITCAST
+    }
+
+    @Override
+    public List<Instruction> toRisc(List<Register> localResults, List<Register> localRvalues) {
+        List<Instruction> instructions = new ArrayList<>();
+
+        Register localResult = localResults.getFirst();
+        Register operand = localRvalues.getFirst();
+        switch(type) {
+            case TRUNC -> {
+                assert localResult.type() instanceof IntegerType;
+                IntegerType resultIt = (IntegerType) localResult.type();
+                BinaryExpression.Operator sr = resultIt.signed() ?
+                        BinaryExpression.Operator.SR_A : BinaryExpression.Operator.SR;
+                addShifts(instructions, sr, localResult, operand);
+            }
+            case SEXT -> addShifts(instructions, BinaryExpression.Operator.SR_A, localResult, operand);
+            case ZEXT -> addShifts(instructions, BinaryExpression.Operator.SR, localResult, operand);
+            case SITOFP, UITOFP, FPTOSI, FPTOUI, FPTRUNC, FPEXT ->
+                    instructions.add(new FloatConversionRisc(localResult.clone(), operand.clone()));
+            case INTTOPTR, PTRTOINT, BITCAST -> instructions.addAll(BinaryRisc.Mov(localResult, operand));
+        }
+        return instructions;
+    }
+
+    protected static void addShifts(List<Instruction> instructions, BinaryExpression.Operator shr_op,
+                                  Register result, Register operand) {
+        assert result.type() instanceof IntegerType;
+        assert operand.type() instanceof IntegerType;
+
+        IntegerType resultIt = (IntegerType) result.type();
+        IntegerType sourceIt = (IntegerType) operand.type();
+
+        Register interResult1 = Register.LLVM_Register(result.type());
+
+        instructions.add(new BinaryImmRisc(interResult1.clone(), BinaryExpression.Operator.SL,
+                operand.clone(), IntegerType.sizeDiff(sourceIt, resultIt)));
+        instructions.add(new BinaryImmRisc(result.clone(), shr_op,
+                interResult1, IntegerType.sizeDiff(sourceIt, resultIt)));
     }
 }

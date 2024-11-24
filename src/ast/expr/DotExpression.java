@@ -6,9 +6,9 @@ import ast.types.*;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
-import codegen.instruction.llvm.GetElemPtrInstruction;
-import codegen.instruction.llvm.LoadInstruction;
-import codegen.instruction.llvm.StoreInstruction;
+import codegen.instruction.llvm.GetElemPtrLLVM;
+import codegen.instruction.llvm.LoadLLVM;
+import codegen.instruction.llvm.StoreLLVM;
 import codegen.values.Literal;
 import codegen.values.Register;
 import codegen.values.Source;
@@ -58,7 +58,7 @@ public class DotExpression extends LValue {
     }
 
     @Override
-    public Source codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+    public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
         Source operandSource = operand.codegen(unit, cfg, block);
         if (!(operandSource.type() instanceof PointerType pt)) {
             throw new RuntimeException("DotExpression::codegen: Can't use dot operator on type: " + operandSource.type());
@@ -66,10 +66,12 @@ public class DotExpression extends LValue {
 
         switch (pt.base()) {
             case StructType struct -> {
-                Source offsetPtr = structOffset(unit, cfg, block, struct, operandSource);
+                Register offsetPtr = structOffset(unit, cfg, block, struct, operandSource);
 
-                Register result = Register.LLVM_Register(((PointerType)offsetPtr.type()).base().clone());
-                LoadInstruction load = new LoadInstruction(result.clone(), offsetPtr);
+                Type expandedType = unit.getGlobalTypeEnvironment()
+                        .expandDeclaration(new DeclarationSpecifier(((PointerType)offsetPtr.type()).base())).getType();
+                Register result = Register.LLVM_Register(expandedType);
+                LoadLLVM load = new LoadLLVM(result.clone(), offsetPtr);
                 block.addInstruction(load);
 
                 return result;
@@ -82,17 +84,17 @@ public class DotExpression extends LValue {
     }
 
     @Override
-    public Source processLValue(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, Source right) {
-        Source operandSource = operand.codegen(unit, cfg, block);
-        if (!(operandSource.type() instanceof PointerType pt)) {
-            throw new RuntimeException("DotExpression::codegen: Can't use dot operator on type: " + operandSource.type());
+    public Register processLValue(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, Register right) {
+        Register operandReg = operand.codegen(unit, cfg, block);
+        if (!(operandReg.type() instanceof PointerType pt)) {
+            throw new RuntimeException("DotExpression::codegen: Can't use dot operator on type: " + operandReg.type());
         }
 
         switch (pt.base()) {
             case StructType struct -> {
-                Source offsetPtr = structOffset(unit, cfg, block, struct, operandSource);
+                Register offsetPtr = structOffset(unit, cfg, block, struct, operandReg);
 
-                StoreInstruction store = new StoreInstruction(right, offsetPtr);
+                StoreLLVM store = new StoreLLVM(right, offsetPtr);
                 block.addInstruction(store);
 
                 return null;
@@ -104,7 +106,7 @@ public class DotExpression extends LValue {
         }
     }
 
-    public Source handleRef(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
+    public Register handleRef(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
         Source operandSource = operand.codegen(unit, cfg, block);
         if (!(operandSource.type() instanceof PointerType pt)) {
             throw new RuntimeException("DotExpression::codegen: Can't use dot operator on type: " + operandSource.type());
@@ -121,7 +123,7 @@ public class DotExpression extends LValue {
         }
     }
 
-    public Source structOffset(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block,
+    public Register structOffset(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block,
                                StructType struct, Source operand) {
         // if the members aren't included in the variable definition,
         // look up the top level defn for the struct
@@ -130,8 +132,8 @@ public class DotExpression extends LValue {
         }
 
         int index = struct.indexOfMember(member);
-        Type memberType = struct.typeOfMember(member);
-
+        Type memberType =  unit.getGlobalTypeEnvironment()
+                .expandDeclaration(new DeclarationSpecifier(struct.typeOfMember(member))).getType();
 
         // Step through the struct pointer
         Source stepThrough = new Literal("0", new IntegerType());
@@ -139,9 +141,9 @@ public class DotExpression extends LValue {
         Source indexVal = new Literal(Integer.toString(index), new IntegerType());
 
         // ptr offset and result
-        Register offsetPtr = Register.LLVM_Register(new PointerType(memberType.clone()));
+        Register offsetPtr = Register.LLVM_Register(new PointerType(memberType));
 
-        GetElemPtrInstruction gep = new GetElemPtrInstruction(offsetPtr.clone(),
+        GetElemPtrLLVM gep = new GetElemPtrLLVM(offsetPtr.clone(),
                 Arrays.asList(operand, stepThrough, indexVal));
         block.addInstruction(gep);
 
