@@ -3,6 +3,7 @@ package codegen.instruction.riscv;
 import ast.expr.BinaryExpression;
 import ast.types.FloatingType;
 import ast.types.IntegerType;
+import ast.types.PointerType;
 import ast.types.PrimitiveType;
 import codegen.instruction.Instruction;
 import codegen.values.Literal;
@@ -61,6 +62,9 @@ public class LoadRisc extends RiscInstruction {
     public String toString() {
         String opString;
         switch (loadType) {
+            case PointerType pt -> {
+                opString = "ld";
+            }
             case IntegerType i -> {
                 opString = switch (i.size()) {
                     case LONG -> "ld";
@@ -79,11 +83,11 @@ public class LoadRisc extends RiscInstruction {
                 };
             }
             default -> throw new RuntimeException("LoadInstruction::toString: No " +
-                    "Instruction exists to load type" + result().type());
+                    "Instruction exists to load type" + loadType);
         }
 
         if (offset != null) {
-            return String.format("%s %s, %s(%s)", opString, result(), offset, rvalue(0));
+            return String.format("%s %s, %s(%s)", opString, result(), offset.riscPrint(), rvalue(0));
         } else {
             return String.format("%s %s, (%s)", opString, result(), rvalue(0));
         }

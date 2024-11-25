@@ -286,7 +286,7 @@ public class ControlFlowGraph {
                 close = "}";
             }
             case RISC rc -> {
-                header = ".globl " + definition.declaration().name() + ":";
+                header = String.format(".globl %s\n%s:", definition.declaration().name(), definition.declaration().name());
             }
             default -> throw new RuntimeException("Not implemented yet");
         }
@@ -1014,7 +1014,7 @@ public class ControlFlowGraph {
 
             // add intermediate blocks that break backedges
             for (BasicBlock parent : parents) {
-                if (labelToIndex.get(parent.getLabel()) > labelToIndex.get(block.getLabel())) {
+                if (labelToIndex.get(parent.getLabel()) >= labelToIndex.get(block.getLabel())) {
                     BasicBlock intermediate = new BasicBlock(parent.getLabel()+".inter");
                     intermediate.addInstruction(new JumpRisc(block.getLabel()));
                     cfg.graph.addVertex(intermediate);
@@ -1293,11 +1293,15 @@ public class ControlFlowGraph {
     }
 
     private record SpillTuple(Register left, Register right) {}
-    private record RegAllocData(Map<Register, Register> regMap, Map<Register,
-            Long> spillMap, SpillTuple intRegs, SpillTuple floatRegs) {}
+    private record RegAllocData(Map<Register, Register> regMap,
+                                Map<Register, Long> spillMap,
+                                Set<Register> usedSaved,
+                                SpillTuple intRegs,
+                                SpillTuple floatRegs) {}
     private static RegAllocData colorGraph(ControlFlowGraph cfg, Graph<Register, DefaultEdge> iGraph) {
         //initialize register map to map all riscs to themselves
         Map<Register, Register> regMap = new HashMap<>();
+        Set<Register> usedSaved = new HashSet<>();
         List<Register> intRegs = Register.IntRiscRegisters();
         List<Register> floatRegs = Register.FloatRiscRegisters();
         // allocated two registers for handling spilled values of both types
@@ -1392,6 +1396,7 @@ public class ControlFlowGraph {
                 for (Register color : colors) {
                     if (!reserved.contains(color)) {
                         regMap.put(reg, color);
+                        usedSaved.add(color);
                         break;
                     }
                 }
@@ -1405,8 +1410,12 @@ public class ControlFlowGraph {
             }
         }
 
+        // keep track of the saved registers used to reduce the number of registers
+        // pushed/popped on the stack in the prologue and epilogue
+        usedSaved.retainAll(Register.SavedRiscRegisters());
+
         capStack(cfg);
-        return new RegAllocData(regMap, spillMap, intSpillRegs, floatSpillRegs);
+        return new RegAllocData(regMap, spillMap, usedSaved, intSpillRegs, floatSpillRegs);
     }
 
     /**

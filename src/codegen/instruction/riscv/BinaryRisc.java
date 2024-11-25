@@ -6,6 +6,7 @@ import ast.types.IntegerType;
 import ast.types.PointerType;
 import ast.types.PrimitiveType;
 import codegen.instruction.Instruction;
+import codegen.values.Literal;
 import codegen.values.Register;
 
 import java.util.Arrays;
@@ -21,6 +22,14 @@ public class BinaryRisc extends RiscInstruction {
 
         assert result.type() instanceof PrimitiveType;
         this.resultType = (PrimitiveType) result.type();
+        this.op = op;
+    }
+
+    public BinaryRisc(Register result, BinaryExpression.Operator op, Register op1, Register op2,
+                         PrimitiveType resultType) {
+        super(Arrays.asList(result), Arrays.asList(op1, op2));
+
+        this.resultType = resultType;
         this.op = op;
     }
 

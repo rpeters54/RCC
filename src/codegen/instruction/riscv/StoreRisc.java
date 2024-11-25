@@ -3,6 +3,7 @@ package codegen.instruction.riscv;
 import ast.expr.BinaryExpression;
 import ast.types.FloatingType;
 import ast.types.IntegerType;
+import ast.types.PointerType;
 import ast.types.PrimitiveType;
 import codegen.instruction.Instruction;
 import codegen.values.Literal;
@@ -66,6 +67,9 @@ public class StoreRisc extends RiscInstruction {
     public String toString() {
         String opString;
         switch (storeType) {
+            case PointerType pt -> {
+                opString = "sd";
+            }
             case IntegerType i -> {
                 opString = switch (i.size()) {
                     case LONG -> "sd";
@@ -81,11 +85,11 @@ public class StoreRisc extends RiscInstruction {
                 };
             }
             default -> throw new RuntimeException("BinaryInstruction::toString: No " +
-                    "Instruction exists to load type" + result().type());
+                    "Instruction exists to load type" + storeType);
         }
 
         if (offset != null) {
-            return String.format("%s %s, %s(%s)", opString, rvalue(0), offset, rvalue(1));
+            return String.format("%s %s, %s(%s)", opString, rvalue(0), offset.riscPrint(), rvalue(1));
         } else {
             return String.format("%s %s, (%s)", opString, rvalue(0), rvalue(1));
         }

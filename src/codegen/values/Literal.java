@@ -65,9 +65,19 @@ public class Literal implements Source {
                    }
                }
            }
+            case PointerType pt -> {
+               return "null";
+            }
            case null, default -> {
                return value;
            }
+        }
+    }
+
+    public String riscPrint() {
+        switch (type) {
+            case PointerType pt -> { return value; }
+            case null, default -> { return toString(); }
         }
     }
 

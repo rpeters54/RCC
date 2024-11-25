@@ -34,6 +34,6 @@ public class LoadImmRisc extends RiscInstruction {
 
     @Override
     public String toString() {
-        return String.format("li %s, %s", result(), imm);
+        return String.format("li %s, %s", result(), imm.riscPrint());
     }
 }

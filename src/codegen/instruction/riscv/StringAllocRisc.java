@@ -16,6 +16,6 @@ public class StringAllocRisc extends RiscInstruction {
 
     @Override
     public String toString() {
-        return label+":\n\t.asciz " + value;
+        return label+":\n\t.asciz \"" + value + "\"";
     }
 }

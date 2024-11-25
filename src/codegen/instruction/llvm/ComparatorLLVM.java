@@ -144,11 +144,8 @@ public class ComparatorLLVM extends LLVMInstruction {
             case LT -> risc.add(new BinaryRisc(localResult.clone(), BinaryExpression.Operator.LT,
                     localRvalues.get(0).clone(), localRvalues.get(1)));
             case GT -> {
-                Register secondaryResult = Register.LLVM_Register(new IntegerType(IntegerType.Width.BOOL, true));
-                risc.add(new BinaryRisc(secondaryResult.clone(), BinaryExpression.Operator.LT,
-                        localRvalues.get(0).clone(), localRvalues.get(1)));
-                risc.add(new BinaryImmRisc(localResult.clone(), BinaryExpression.Operator.B_XOR,
-                        secondaryResult, new Literal("1", new IntegerType(IntegerType.Width.BOOL, true))));
+                risc.add(new BinaryRisc(localResult.clone(), BinaryExpression.Operator.LT,
+                        localRvalues.get(1).clone(), localRvalues.get(0)));
             }
             case LE -> {
                 Register secondaryResult = Register.LLVM_Register(new IntegerType(IntegerType.Width.BOOL, true));
@@ -157,17 +154,29 @@ public class ComparatorLLVM extends LLVMInstruction {
                 risc.add(new BinaryImmRisc(localResult.clone(), BinaryExpression.Operator.B_XOR,
                         secondaryResult, new Literal("1", new IntegerType(IntegerType.Width.BOOL, true))));
             }
-            case GE -> risc.add(new BinaryRisc(localResult.clone(), BinaryExpression.Operator.LT,
-                    localRvalues.get(1).clone(), localRvalues.get(0)));
-            case EQ -> {
+            case GE -> {
                 Register secondaryResult = Register.LLVM_Register(new IntegerType(IntegerType.Width.BOOL, true));
-                risc.add(new BinaryRisc(secondaryResult.clone(), BinaryExpression.Operator.B_XOR,
+                risc.add(new BinaryRisc(secondaryResult.clone(), BinaryExpression.Operator.LT,
                         localRvalues.get(0).clone(), localRvalues.get(1)));
                 risc.add(new BinaryImmRisc(localResult.clone(), BinaryExpression.Operator.B_XOR,
                         secondaryResult, new Literal("1", new IntegerType(IntegerType.Width.BOOL, true))));
             }
-            case NE -> risc.add(new BinaryRisc(localResult.clone(), BinaryExpression.Operator.B_XOR,
-                    localRvalues.get(0).clone(), localRvalues.get(1)));
+            case EQ -> {
+                Register secondaryResult = Register.LLVM_Register(new IntegerType(IntegerType.Width.BOOL, true));
+                risc.add(new BinaryRisc(secondaryResult.clone(), BinaryExpression.Operator.MINUS,
+                        localRvalues.get(0).clone(), localRvalues.get(1)));
+                risc.add(new BinaryImmRisc(localResult.clone(), BinaryExpression.Operator.LT,
+                        secondaryResult, new Literal("1", new IntegerType(IntegerType.Width.BOOL, true)),
+                        new IntegerType(IntegerType.Width.BOOL, false)));
+            }
+            case NE -> {
+                Register secondaryResult = Register.LLVM_Register(new IntegerType(IntegerType.Width.BOOL, true));
+                risc.add(new BinaryRisc(secondaryResult.clone(), BinaryExpression.Operator.MINUS,
+                        localRvalues.get(0).clone(), localRvalues.get(1)));
+                risc.add(new BinaryRisc(localResult.clone(), BinaryExpression.Operator.LT,
+                        Register.RiscZero(), secondaryResult,
+                        new IntegerType(IntegerType.Width.BOOL, false)));
+            }
             default -> throw new RuntimeException("ComparatorInstruction::toString: " +
                     "Invalid Operator");
         }

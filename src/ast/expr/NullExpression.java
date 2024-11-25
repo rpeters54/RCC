@@ -28,7 +28,7 @@ public class NullExpression extends Expression {
     public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
         Register allocaResult = Register.LLVM_Register(new PointerType(new PointerType(new VoidType())));
         Register loadResult = Register.LLVM_Register(new PointerType(new VoidType()));
-        Literal nullValue =  new Literal("null", new PointerType(new VoidType()));
+        Literal nullValue =  new Literal("0", new PointerType(new VoidType()));
 
         block.addInstruction(new LoadLiteralLLVM(nullValue, loadResult.clone(), allocaResult));
         return loadResult;

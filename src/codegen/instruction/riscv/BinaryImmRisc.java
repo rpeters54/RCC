@@ -27,6 +27,16 @@ public class BinaryImmRisc extends RiscInstruction {
         this.op = op;
     }
 
+    public BinaryImmRisc(Register result, BinaryExpression.Operator op, Register op1, Literal imm,
+                         PrimitiveType resultType) {
+        super(Arrays.asList(result), Arrays.asList(op1));
+
+        this.resultType = resultType;
+        this.imm = imm;
+        this.op = op;
+    }
+
+
     public BinaryImmRisc(Register result, BinaryExpression.Operator op, Register op1, long imm) {
         super(Arrays.asList(result), Arrays.asList(op1));
 
@@ -61,14 +71,21 @@ public class BinaryImmRisc extends RiscInstruction {
                     case SR_A -> "srai";
                     case SR -> "srli";
                     case SL -> "slli";
+                    case LT -> "slti";
                     default -> throw new RuntimeException("BinaryInstruction::toString: No Integer " +
                             "Instruction exists with " + op);
                 };
+                if (!i.signed()) {
+                    switch (op) {
+                        case LT -> opString += "u";
+                        default -> {}
+                    }
+                }
             }
             default -> throw new RuntimeException("BinaryInstruction::toString: No " +
                     "Instruction exists with type " + result().type());
         }
-        return String.format("%s %s, %s, %s", opString, result(), rvalue(0), imm);
+        return String.format("%s %s, %s, %s", opString, result(), rvalue(0), imm.riscPrint());
     }
 
 
