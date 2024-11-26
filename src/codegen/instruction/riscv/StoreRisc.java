@@ -1,10 +1,7 @@
 package codegen.instruction.riscv;
 
 import ast.expr.BinaryExpression;
-import ast.types.FloatingType;
-import ast.types.IntegerType;
-import ast.types.PointerType;
-import ast.types.PrimitiveType;
+import ast.types.*;
 import codegen.instruction.Instruction;
 import codegen.values.Literal;
 import codegen.values.Register;
@@ -19,7 +16,14 @@ public class StoreRisc extends RiscInstruction {
     private Literal offset;
     private final PrimitiveType storeType;
 
-    public StoreRisc(Register value, Register location, Literal offset) {
+    public StoreRisc(Register value, Register location) {
+        super(new ArrayList<>(), Arrays.asList(value, location));
+        assert value.type() instanceof PrimitiveType;
+        this.storeType = (PrimitiveType) value.type();
+        this.offset = null;
+    }
+
+    private StoreRisc(Register value, Register location, Literal offset) {
         super(new ArrayList<>(), Arrays.asList(value, location));
         assert value.type() instanceof PrimitiveType;
         this.storeType = (PrimitiveType) value.type();
@@ -33,12 +37,41 @@ public class StoreRisc extends RiscInstruction {
         this.offset = new Literal(Long.toString(offset), new IntegerType(IntegerType.Width.LONG, true));
     }
 
-    public StoreRisc(Register value, Register location) {
-        super(new ArrayList<>(), Arrays.asList(value, location));
-        assert value.type() instanceof PrimitiveType;
-        this.storeType = (PrimitiveType) value.type();
-        this.offset = null;
-    }
+//    public static List<Instruction> withOffset(Register value, Register location, long offset) {
+//        Literal offsetLit = new Literal(Long.toString(offset), new IntegerType(IntegerType.Width.LONG, true));
+//        if (offset > 2047 || offset < -2048) {
+//            return List.of(
+//                    new LoadImmRisc(Register.RiscIntTemp(0), offsetLit),
+//                    new BinaryRisc(Register.RiscIntTemp(1), BinaryExpression.Operator.PLUS,
+//                            Register.RiscIntTemp(0), Register.RiscSp()),
+//                    new StoreRisc(value, Register.RiscIntTemp(1))
+//            );
+//        } else {
+//            return List.of(
+//                    new StoreRisc(value, location, offsetLit)
+//            );
+//        }
+//    }
+
+//    public static List<Instruction> generateDefaultStack(long offset) {
+//        List<Instruction> result = new ArrayList<>();
+//        // add SP decrement
+//        if (offset > 2047 || offset < -2048) {
+//            result.add(new LoadImmRisc(Register.RiscIntTemp(0), new Literal(Long.toString(-offset),
+//                    new IntegerType(IntegerType.Width.LONG, true))));
+//            result.add(new BinaryRisc(Register.RiscSp(), BinaryExpression.Operator.PLUS,
+//                    Register.RiscSp(), Register.RiscIntTemp(0)));
+//        } else {
+//            result.add(new BinaryImmRisc(Register.RiscSp(), BinaryExpression.Operator.PLUS, Register.RiscSp(), -offset));
+//        }
+//        // store all saved registers
+//        offset-=8;
+//        result.addAll(StoreRisc.withOffset(Register.RiscRa(), Register.RiscSp(), offset));
+//        offset-=8;
+//        result.addAll(StoreRisc.withOffset(Register.RiscFp(), Register.RiscSp(), offset));
+//
+//        return result;
+//    }
 
     public static List<Instruction> generateDefaultStack(long offset) {
         List<Instruction> result = new ArrayList<>();

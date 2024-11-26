@@ -12,11 +12,15 @@ import java.util.List;
 
 public class LoadImmRisc extends RiscInstruction {
 
-    private final Literal imm;
+    private Literal imm;
 
     public LoadImmRisc(Register result, Literal imm) {
         super(Arrays.asList(result), new ArrayList<>());
         this.imm = imm;
+    }
+
+    public void setImm(long imm) {
+        this.imm = new Literal(Long.toString(imm), new IntegerType(IntegerType.Width.LONG, true));
     }
 
     public static Register OptionalImmediateLoad(List<Instruction> instructions, Source optionalImm) {

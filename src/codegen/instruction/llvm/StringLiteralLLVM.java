@@ -65,7 +65,7 @@ public class StringLiteralLLVM extends LLVMInstruction implements Global {
 
     @Override
     public List<Instruction> genHeader(Map<Register, String> globalLabelMap) {
-        String label = "string."+result().hashCode();
+        String label = "L."+result().number()+ ".string";
         globalLabelMap.put(result(), label);
         return List.of(new StringAllocRisc(label, value));
     }

@@ -87,7 +87,8 @@ public class ApplicationExpression extends Expression {
                 .collect(Collectors.toList());
 
         // add implicit type conversions if necessary
-        for (int i = 0; i < type.inputTypes().size(); i++) {
+        int i;
+        for (i = 0; i < type.inputTypes().size(); i++) {
             Register arg = arguments.get(i);
             Type paramType = type.inputTypes().get(i).declSpec().getType();
             if (arg.type() instanceof PrimitiveType at && paramType instanceof PrimitiveType pt) {
@@ -99,16 +100,29 @@ public class ApplicationExpression extends Expression {
             }
         }
 
+        // variadic functions promote unspecified floats to doubles
+        // add that conversion here for the remaining arguments
+        if (type.isVariadic()) {
+            for (; i < arguments.size(); i++) {
+                Register arg = arguments.get(i);
+                if (arg.type() instanceof FloatingType ft && ft.size() == FloatingType.Width.FLOAT) {
+                    ConversionLLVM conv = ConversionLLVM.make(arg.clone(), new FloatingType(FloatingType.Width.DOUBLE));
+                    block.addInstruction(conv);
+                    arguments.set(i, conv.result().clone());
+                }
+            }
+        }
+
 
         if (type.returnType() instanceof VoidType) {
-            CallLLVM call = new CallLLVM(arguments, name);
+            CallLLVM call = new CallLLVM(arguments, name, type);
             block.addInstruction(call);
             return null;
         } else {
             Type expandedReturnType = unit.getGlobalTypeEnvironment()
                     .expandDeclaration(new DeclarationSpecifier(type.returnType())).getType();
             Register result = Register.LLVM_Register(expandedReturnType);
-            CallLLVM call = new CallLLVM(result, arguments, name);
+            CallLLVM call = new CallLLVM(result, arguments, name, type);
             block.addInstruction(call);
             return result.clone();
         }

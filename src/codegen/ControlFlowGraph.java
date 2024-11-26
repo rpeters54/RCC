@@ -4,6 +4,7 @@ import ast.TypeEnvironment;
 import ast.declarations.Declaration;
 import ast.declarations.DeclarationSpecifier;
 import ast.declarations.FunctionDefinition;
+import ast.expr.BinaryExpression;
 import ast.types.*;
 import codegen.instruction.Instruction;
 import codegen.instruction.Jump;
@@ -962,7 +963,7 @@ public class ControlFlowGraph {
             List<Instruction> moves = switch (param.type()) {
                 case IntegerType it -> BinaryRisc.Mov(param.clone(), Register.RiscIntArg(intRegCount++));
                 case PointerType it -> BinaryRisc.Mov(param.clone(), Register.RiscIntArg(intRegCount++));
-                case FloatingType ft -> BinaryRisc.FMov(param.clone(), Register.RiscFloatArg(floatRegCount++));
+                case FloatingType ft -> BinaryRisc.FMovToFloatReg(param.clone(), Register.RiscFloatArg(floatRegCount++));
                 default -> throw new RuntimeException("invalid param type");
             };
             List<Instruction> inst = entrance.getMutableInstructions();
@@ -1154,23 +1155,56 @@ public class ControlFlowGraph {
         }
 
         // update all loads to use the stack offset
-        for (Instruction inst : start.getAllInstructions()) {
-            switch (inst) {
-                case StoreRisc st -> {
-                    if (stackOffsets.containsKey(st.rvalue(1))) {
-                        st.setOffset(stackOffsets.get(st.rvalue(1)));
-                        st.setRvalue(1, Register.RiscFp());
+        for (BasicBlock block : cfg.topologicalList) {
+            for (int i = 0; i < block.getMutableInstructions().size(); i++) {
+                Instruction inst = block.getMutableInstructions().get(i);
+                if (inst instanceof RiscInstruction) {
+                    switch (inst) {
+                        case StoreRisc st -> {
+                            if (stackOffsets.containsKey(st.rvalue(1))) {
+                                st.setOffset(stackOffsets.get(st.rvalue(1)));
+                                st.setRvalue(1, Register.RiscFp());
+                            }
+                        }
+                        case LoadRisc ld -> {
+                            if (stackOffsets.containsKey(ld.rvalue(0))) {
+                                ld.setOffset(stackOffsets.get(ld.rvalue(0)));
+                                ld.setRvalue(0, Register.RiscFp());
+                            }
+                        }
+                        default -> {
+                            for (int j = 0; j < inst.rvalues().size(); j++) {
+                                Register rvalue = inst.rvalue(j);
+                                if (stackOffsets.containsKey(rvalue)) {
+                                    Register ptr = Register.LLVM_Register(rvalue.type());
+                                    block.getMutableInstructions().add(i++, new BinaryImmRisc(ptr,
+                                            BinaryExpression.Operator.PLUS,
+                                            Register.RiscFp(), stackOffsets.get(rvalue)));
+                                    inst.setRvalue(j, ptr);
+                                }
+                            }
+                        }
                     }
                 }
-                case LoadRisc ld -> {
-                    if (stackOffsets.containsKey(ld.rvalue(0))) {
-                        ld.setOffset(stackOffsets.get(ld.rvalue(0)));
-                        ld.setRvalue(0, Register.RiscFp());
-                    }
-                }
-                default -> {}
             }
         }
+//        for (Instruction inst : start.getAllInstructions()) {
+//            switch (inst) {
+//                case StoreRisc st -> {
+//                    if (stackOffsets.containsKey(st.rvalue(1))) {
+//                        st.setOffset(stackOffsets.get(st.rvalue(1)));
+//                        st.setRvalue(1, Register.RiscFp());
+//                    }
+//                }
+//                case LoadRisc ld -> {
+//                    if (stackOffsets.containsKey(ld.rvalue(0))) {
+//                        ld.setOffset(stackOffsets.get(ld.rvalue(0)));
+//                        ld.setRvalue(0, Register.RiscFp());
+//                    }
+//                }
+//                default -> {}
+//            }
+//        }
 
         // generate and place default stack
         List<Instruction> defaultStack = StoreRisc.generateDefaultStack(totalOffset);

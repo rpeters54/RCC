@@ -41,7 +41,7 @@ public class FloatMovRisc extends RiscInstruction {
                 if (ft.size() == FloatingType.Width.DOUBLE) {
                     result = ".d";
                 } else {
-                    result = ".s";
+                    result = ".w";
                 }
             }
             default -> throw new RuntimeException("FloatConversionInstruction: Invalid type: " + t);

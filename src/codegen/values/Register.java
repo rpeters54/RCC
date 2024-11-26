@@ -110,6 +110,17 @@ public class Register implements Source {
         return new Register(Arch.RISC, 0, new IntegerType(IntegerType.Width.LONG, true), false);
     }
 
+    public static Register RiscIntTemp(int number) {
+        if (number < 0 || number > 6) {
+            throw new IllegalArgumentException("Register::toString: RISC argument out of range " + number);
+        }
+        if (number <= 2) {
+            return new Register(Arch.RISC, 5+number, new IntegerType(IntegerType.Width.LONG, true), false);
+        } else {
+            return new Register(Arch.RISC, 25+number, new IntegerType(IntegerType.Width.LONG, true), false);
+        }
+    }
+
     public static Register RiscIntArg(int number) {
         if (number < 0 || number > 7) {
             throw new IllegalArgumentException("Register::toString: RISC argument out of range " + number);

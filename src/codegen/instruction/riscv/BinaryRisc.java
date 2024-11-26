@@ -6,7 +6,6 @@ import ast.types.IntegerType;
 import ast.types.PointerType;
 import ast.types.PrimitiveType;
 import codegen.instruction.Instruction;
-import codegen.values.Literal;
 import codegen.values.Register;
 
 import java.util.Arrays;
@@ -37,7 +36,7 @@ public class BinaryRisc extends RiscInstruction {
         return switch (op1.type()) {
             case IntegerType it -> BinaryRisc.Mov(result, op1);
             case PointerType it -> BinaryRisc.Mov(result, op1);
-            case FloatingType ft -> BinaryRisc.FMov(result, op1);
+            case FloatingType ft -> BinaryRisc.FMovToFloatReg(result, op1);
             default -> throw new RuntimeException("invalid type");
         };
     }
@@ -47,13 +46,52 @@ public class BinaryRisc extends RiscInstruction {
         return List.of(new BinaryRisc(result, BinaryExpression.Operator.PLUS, op1, Register.RiscZero()));
     }
 
-    public static List<Instruction> FMov(Register result, Register op1) {
+    /**
+     * move a float into another floating register
+     * @param result
+     * @param op1
+     * @return
+     */
+    public static List<Instruction> FMovToFloatReg(Register result, Register op1) {
         assert op1.type() instanceof FloatingType;
-        Register zero = Register.LLVM_Register(op1.type());
+        assert result.type() instanceof FloatingType;
+        Register floatingRegister = Register.LLVM_Register(op1.type());
         return List.of(
-                new FloatMovRisc(zero.clone(), Register.RiscZero()),
-                new BinaryRisc(result, BinaryExpression.Operator.PLUS, op1, zero)
+                new FloatMovRisc(floatingRegister, Register.RiscZero()),
+                new BinaryRisc(result, BinaryExpression.Operator.PLUS, op1, floatingRegister)
         );
+    }
+
+    /**
+     * move a float into an integer register
+     * @param result
+     * @param op1
+     * @return
+     */
+    public static List<Instruction> FMovToIntReg(Register result, Register op1) {
+        assert op1.type() instanceof FloatingType;
+        assert result.type() instanceof IntegerType;
+        FloatingType ft = (FloatingType) op1.type();
+        Register temp = Register.LLVM_Register(result.type());
+        return List.of(
+                new FloatMovRisc(temp, op1),
+                new BinaryRisc(result, BinaryExpression.Operator.PLUS, temp, Register.RiscZero())
+        );
+//        switch (ft.size()) {
+//            case DOUBLE -> {
+//                return List.of(
+//                        new FloatMovRisc(temp, op1),
+//                        new BinaryRisc(result, BinaryExpression.Operator.PLUS, temp, Register.RiscZero())
+//                );
+//            }
+//            case FLOAT -> {
+//                return List.of(
+//                        new FloatMovRisc(temp, op1),
+//                        new BinaryRisc(result, BinaryExpression.Operator.PLUS, temp, Register.RiscZero())
+//                );
+//            }
+//            case null, default -> throw new RuntimeException("invalid type");
+//        }
     }
 
     @Override

@@ -7,6 +7,7 @@ import ast.types.Type;
 import codegen.instruction.Instruction;
 import codegen.instruction.riscv.LoadImmRisc;
 import codegen.instruction.riscv.LoadRisc;
+import codegen.instruction.riscv.StoreRisc;
 import codegen.values.Literal;
 import codegen.values.Register;
 
@@ -44,7 +45,7 @@ public class LoadLiteralLLVM extends LLVMInstruction {
                 Register intermediate = Register.LLVM_Register(new IntegerType(IntegerType.Width.LONG, true));
                 risc.add(new AllocaLLVM(localRvalues.get(0).clone()));
                 risc.add(new LoadImmRisc(intermediate.clone(), value.clone()));
-                risc.add(new StoreLLVM(intermediate, localRvalues.get(0).clone()));
+                risc.add(new StoreRisc(intermediate, localRvalues.get(0).clone()));
                 risc.add(new LoadRisc(localResult.clone(), localRvalues.get(0).clone()));
             }
             default -> throw new RuntimeException("invalid type");

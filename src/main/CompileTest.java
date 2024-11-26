@@ -30,7 +30,10 @@ public class CompileTest {
 
     // Method to provide file paths (or any test data)
     static Stream<TestTuple> fileProvider() {
+
         return Stream.of(
+                new TestTuple(testDir+"width/", "width.c"),
+                new TestTuple(testDir+"floats/", "floats.c"),
                 new TestTuple(testDir+"degrees/", "degrees.c"),
                 new TestTuple(testDir+"fib/", "fib.c"),
                 new TestTuple(testDir+"fizzbuzz/", "fizzbuzz.c"),
@@ -38,7 +41,7 @@ public class CompileTest {
                 new TestTuple(testDir+"ref/", "ref.c"),
                 new TestTuple(testDir+"structs/", "structs.c"),
                 new TestTuple(testDir+"superBasic/", "superBasic.c"),
-                new TestTuple(testDir+"arrays/", "array.c"),
+                new TestTuple(testDir+"arrays/", "arrays.c"),
                 new TestTuple(testDir+"sort/", "sort.c"),
                 new TestTuple(testDir+"bert/", "bert.c"),
                 new TestTuple(testDir+"BenchMarkishTopics/", "BenchMarkishTopics.c"),

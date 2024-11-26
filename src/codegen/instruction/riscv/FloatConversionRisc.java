@@ -39,7 +39,7 @@ public class FloatConversionRisc extends RiscInstruction {
                 if (it.size() == IntegerType.Width.LONG) {
                     result = ".l";
                 } else {
-                    result = ".f";
+                    result = ".w";
                 }
                 if (it.signed()) {
                     result += "u";

@@ -43,7 +43,7 @@ public class ReturnLLVM extends LLVMInstruction implements Critical {
                     risc.addAll(BinaryRisc.Mov(Register.RiscIntArg(0), result));
                 }
                 case FloatingType ft -> {
-                    risc.addAll(BinaryRisc.FMov(Register.RiscIntArg(0), result));
+                    risc.addAll(BinaryRisc.FMovToFloatReg(Register.RiscFloatArg(0), result));
                 }
                 default -> throw new IllegalArgumentException("Unexpected type: " + localRvalues.get(0).type());
             }

@@ -184,13 +184,13 @@ public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
         long value;
         if (valueStr.startsWith("0x") || valueStr.startsWith("0X")) {
             // Hexadecimal format (base 16)
-            value = Long.parseLong(valueStr.substring(2), 16);
+            value = Long.parseUnsignedLong(valueStr.substring(2), 16);
         } else if (valueStr.startsWith("0") && valueStr.length() > 1) {
             // Octal format (base 8)
-            value = Long.parseLong(valueStr.substring(1), 8);
+            value = Long.parseUnsignedLong(valueStr.substring(1), 8);
         } else {
             // Decimal format (base 10)
-            value = Long.parseLong(valueStr, 10);
+            value = Long.parseUnsignedLong(valueStr, 10);
         }
 
         return new IntegerExpression(
