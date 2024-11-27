@@ -83,10 +83,10 @@ public class StoreRisc extends RiscInstruction {
         base+=8;
         result.add(new StoreRisc(Register.RiscFp(), Register.RiscSp(), base));
         base+=8;
-        for (Register saved : Register.SavedRiscRegisters()) {
-            result.add(new StoreRisc(saved, Register.RiscSp(), base));
-            base+=8;
-        }
+//        for (Register saved : Register.SavedRiscRegisters()) {
+//            result.add(new StoreRisc(saved, Register.RiscSp(), base));
+//            base+=8;
+//        }
         // move current SP into the FP
         result.addAll(BinaryRisc.Mov(Register.RiscFp(), Register.RiscSp()));
         return result;

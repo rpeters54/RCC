@@ -1128,7 +1128,7 @@ public class ControlFlowGraph {
         cfg.topologicalList.addAll(blockBuffer);
     }
 
-    private static final long DEFAULT_SP_OFFSET = 25 * 8; // # Saved Registers * Size of Each
+    private static final long DEFAULT_SP_OFFSET = 2 * 8; // # Saved Registers * Size of Each
     /**
      * with allocas in the first block, determine the offset of all items in the stack
      * this value will have to be added to during register allocation spillage
@@ -1188,23 +1188,6 @@ public class ControlFlowGraph {
                 }
             }
         }
-//        for (Instruction inst : start.getAllInstructions()) {
-//            switch (inst) {
-//                case StoreRisc st -> {
-//                    if (stackOffsets.containsKey(st.rvalue(1))) {
-//                        st.setOffset(stackOffsets.get(st.rvalue(1)));
-//                        st.setRvalue(1, Register.RiscFp());
-//                    }
-//                }
-//                case LoadRisc ld -> {
-//                    if (stackOffsets.containsKey(ld.rvalue(0))) {
-//                        ld.setOffset(stackOffsets.get(ld.rvalue(0)));
-//                        ld.setRvalue(0, Register.RiscFp());
-//                    }
-//                }
-//                default -> {}
-//            }
-//        }
 
         // generate and place default stack
         List<Instruction> defaultStack = StoreRisc.generateDefaultStack(totalOffset);
@@ -1239,8 +1222,9 @@ public class ControlFlowGraph {
     private static long growStack(ControlFlowGraph cfg, Register spilled) {
         assert cfg.code instanceof RISC;
         RISC riscmetadata = (RISC) cfg.code;
+        long temp = riscmetadata.stackOffset;
         riscmetadata.stackOffset += spilled.type().sizeof();
-        return riscmetadata.stackOffset;
+        return temp;
     }
 
     private static final long STACK_DIVISIBILITY = 16;
@@ -1249,12 +1233,27 @@ public class ControlFlowGraph {
      * Finalize the stack by
      * @param cfg
      */
-    private static void capStack(ControlFlowGraph cfg) {
+    private static void capStack(ControlFlowGraph cfg, Set<Register> used) {
         assert cfg.code instanceof RISC;
         RISC riscmetadata = (RISC) cfg.code;
-        riscmetadata.stackOffset += riscmetadata.stackOffset % STACK_DIVISIBILITY;
+        BasicBlock start = cfg.getTopologicalList().getFirst();
+        BasicBlock last = cfg.getTopologicalList().getLast();
+        assert start.getMutableInstructions().removeFirst() instanceof BinaryImmRisc;
+        assert last.getMutableInstructions().removeLast() instanceof ReturnRisc;
+        assert last.getMutableInstructions().removeLast() instanceof BinaryImmRisc;
+
+        for (Register use : used) {
+            start.getMutableInstructions().addFirst(new StoreRisc(use, Register.RiscSp(), riscmetadata.stackOffset));
+            last.getMutableInstructions().addLast(new LoadRisc(use, Register.RiscSp(), riscmetadata.stackOffset));
+            riscmetadata.stackOffset += use.type().sizeof();
+        }
+
+        riscmetadata.stackOffset += STACK_DIVISIBILITY - (riscmetadata.stackOffset % STACK_DIVISIBILITY);
         riscmetadata.stackIncDec.getFirst().setImmAsLong(-riscmetadata.stackOffset);
+        start.getMutableInstructions().addFirst(riscmetadata.stackIncDec.getFirst());
         riscmetadata.stackIncDec.getLast().setImmAsLong(riscmetadata.stackOffset);
+        last.getMutableInstructions().addLast(riscmetadata.stackIncDec.getLast());
+        last.getMutableInstructions().addLast(new ReturnRisc());
     }
 
 
@@ -1448,7 +1447,7 @@ public class ControlFlowGraph {
         // pushed/popped on the stack in the prologue and epilogue
         usedSaved.retainAll(Register.SavedRiscRegisters());
 
-        capStack(cfg);
+        capStack(cfg, usedSaved);
         return new RegAllocData(regMap, spillMap, usedSaved, intSpillRegs, floatSpillRegs);
     }
 

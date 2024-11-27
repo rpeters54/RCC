@@ -87,10 +87,10 @@ public class LoadRisc extends RiscInstruction {
         base+=8;
         result.add(new LoadRisc(Register.RiscFp(), Register.RiscSp(), base));
         base+=8;
-        for (Register saved : Register.SavedRiscRegisters()) {
-            result.add(new LoadRisc(saved, Register.RiscSp(), base));
-            base+=8;
-        }
+//        for (Register saved : Register.SavedRiscRegisters()) {
+//            result.add(new LoadRisc(saved, Register.RiscSp(), base));
+//            base+=8;
+//        }
         result.add(new BinaryImmRisc(Register.RiscSp(), BinaryExpression.Operator.PLUS,Register.RiscSp(), offset));
         return result;
     }

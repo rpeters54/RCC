@@ -132,6 +132,7 @@ public class ConversionLLVM extends LLVMInstruction {
             case SITOFP, UITOFP, FPTOSI, FPTOUI, FPTRUNC, FPEXT ->
                     instructions.add(new FloatConversionRisc(localResult.clone(), operand.clone()));
             case INTTOPTR, PTRTOINT, BITCAST -> instructions.addAll(BinaryRisc.Mov(localResult, operand));
+            case null, default -> throw new RuntimeException("ConversionInstruction::make operand must be a valid primitive type");
         }
         return instructions;
     }

@@ -117,7 +117,7 @@ public class BinaryLLVM extends LLVMInstruction {
                 Register right = localRvalues.get(1);
                 switch (it.size()) {
                     case LONG -> instructions.add(new BinaryRisc(localResult.clone(), op, left, right));
-                    case INT, SHORT, CHAR-> {
+                    case INT, SHORT, BOOL, CHAR-> {
                         BinaryExpression.Operator sr = it.signed() ?
                                BinaryExpression.Operator.SR_A : BinaryExpression.Operator.SR;
                         Register interResult = Register.LLVM_Register(new IntegerType(IntegerType.Width.LONG, it.signed()));
