@@ -1,0 +1,16 @@
+Value at (row: 0, col: 0) = 14
+Value at (row: 0, col: 1) = 32
+Value at (row: 0, col: 2) = 50
+Value at (row: 0, col: 3) = 68
+Value at (row: 1, col: 0) = 32
+Value at (row: 1, col: 1) = 77
+Value at (row: 1, col: 2) = 122
+Value at (row: 1, col: 3) = 167
+Value at (row: 2, col: 0) = 50
+Value at (row: 2, col: 1) = 122
+Value at (row: 2, col: 2) = 194
+Value at (row: 2, col: 3) = 266
+Value at (row: 3, col: 0) = 68
+Value at (row: 3, col: 1) = 167
+Value at (row: 3, col: 2) = 266
+Value at (row: 3, col: 3) = 365

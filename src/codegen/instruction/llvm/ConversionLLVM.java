@@ -35,7 +35,7 @@ public class ConversionLLVM extends LLVMInstruction {
                         if (op.isSameOrLarger(it)) {
                             type = ConversionType.TRUNC;
                         } else {
-                            if (it.signed()) {
+                            if (op.signed()) {
                                 type = ConversionType.SEXT;
                             } else {
                                 type = ConversionType.ZEXT;
@@ -106,7 +106,7 @@ public class ConversionLLVM extends LLVMInstruction {
             case BITCAST -> "bitcast";
         };
         return String.format("%s = %s %s %s to %s", this.result(), op, this.rvalue(0).type(),
-                this.rvalue(0), this.result().type());
+                this.rvalue(0), this.result().type().fmtTypeString());
     }
 
     public enum ConversionType {

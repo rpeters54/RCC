@@ -10,6 +10,7 @@ import codegen.instruction.Instruction;
 import codegen.instruction.Jump;
 import codegen.instruction.llvm.*;
 import codegen.instruction.riscv.*;
+import codegen.values.Literal;
 import codegen.values.Register;
 import org.antlr.v4.runtime.misc.Pair;
 import org.jgrapht.Graph;
@@ -418,24 +419,30 @@ public class ControlFlowGraph {
     }
 
 
+    /**
+     * construct a map associating registers with all their uses
+     * @return the map
+     */
     public Map<Register, List<Instruction>> uses() {
         Map<Register, List<Instruction>> uses = new HashMap<>();
         for (BasicBlock block : topologicalList) {
             for (Instruction inst : block.getAllInstructions()) {
-                inst.rvalues().stream()
-                        .filter(item -> item instanceof Register)
-                        .map(item -> (Register) item)
-                        .forEach( reg -> {
-                            if (!uses.containsKey(reg)) {
-                                uses.put(reg.clone(), new ArrayList<>());
-                            }
-                            uses.get(reg).add(inst);
-                        });
+                inst.rvalues()
+                    .forEach( reg -> {
+                        if (!uses.containsKey(reg)) {
+                            uses.put(reg.clone(), new ArrayList<>());
+                        }
+                        uses.get(reg).add(inst);
+                    });
             }
         }
         return uses;
     }
 
+    /**
+     * construct a map associating registers with their definition
+     * @return the map
+     */
     public Map<Register, Instruction> defs() {
         Map<Register, Instruction> defs = new HashMap<>();
         for (BasicBlock block : topologicalList) {
@@ -448,7 +455,23 @@ public class ControlFlowGraph {
         return defs;
     }
 
-    public void pruneRedundantPhis() {
+
+    public void optLLVM() {
+        boolean check = true;
+        while (check) {
+            check  = pruneRedundantPhis();
+            check |= constantPropagation();
+            check |= deadCodeElimination();
+            hoistBranches();
+        }
+    }
+
+
+    /**
+     * Remove phis that handle single value, or move multiple of the same value
+     */
+    public boolean pruneRedundantPhis() {
+        boolean check = false;
         Map<Register, List<Instruction>> uses = uses();
 
         for (BasicBlock block : topologicalList) {
@@ -459,6 +482,7 @@ public class ControlFlowGraph {
                         Register singularity = phi.collapse();
                         Register phiResult = phi.result();
                         if (singularity != null) {
+                            check = true;
                             removedPhis.add(phi);
                             List<Instruction> usesOfPhiResult = uses.get(phiResult);
                             if (usesOfPhiResult == null) {
@@ -475,36 +499,57 @@ public class ControlFlowGraph {
             }
             block.getMutableInstructions().removeAll(removedPhis);
         }
+
+        return check;
     }
 
-//    public void constantPropagation() {
-//        Map<Register, List<Instruction>> uses = uses();
-//
-//        for (BasicBlock block : topologicalList) {
-//            List<Instruction> removed = new ArrayList<>();
-//            for (Instruction inst : block.getAllInstructions()) {
-//                switch (inst) {
-//                    case BinaryLLVM bin -> {
-//                        Source singularity = bin.collapse();
-//                        Register result = bin.result();
-//                        if (singularity != null) {
-//                            removed.add(bin);
-//                            List<Instruction> usesOfResult = uses.get(result);
-//                            if (usesOfResult == null) {
-//                                continue;
-//                            }
-//                            for (Instruction useOfResult : usesOfResult) {
-//                                int index = useOfResult.rvalues().indexOf(result);
-//                                useOfResult.rvalues().set(index, singularity);
-//                            }
-//                        }
-//                    }
-//                    case null, default -> {}
-//                }
-//            }
-//            block.getMutableInstructions().removeAll(removed);
-//        }
-//    }
+    public boolean constantPropagation() {
+        boolean check = false;
+
+        Map<Register, List<Instruction>> uses = uses();
+        Map<Register, LoadLiteralLLVM> literalLoads = new HashMap<>();
+        Set<Instruction> removed = new HashSet<>();
+
+        for (BasicBlock block : topologicalList) {
+
+            for (int instInd = 0; instInd < block.getAllInstructions().size(); instInd++) {
+                Instruction inst = block.getAllInstructions().get(instInd);
+                switch (inst) {
+                    case LoadLiteralLLVM load -> {
+                        literalLoads.put(load.result(), load);
+                    }
+                    case BinaryLLVM bin -> {
+                        if (!(literalLoads.containsKey(bin.rvalue(0))
+                                && literalLoads.containsKey(bin.rvalue(1)))) {
+                            continue;
+                        }
+                        LoadLiteralLLVM leftInst = literalLoads.get(bin.rvalue(0));
+                        LoadLiteralLLVM rightInst = literalLoads.get(bin.rvalue(1));
+
+                        Literal left = leftInst.getValue();
+                        Literal right = rightInst.getValue();
+
+                        LoadLiteralLLVM singularity = bin.collapse(left, right);
+                        block.getMutableInstructions().remove(bin);
+                        block.getMutableInstructions().add(instInd, singularity);
+                        Register result = bin.result();
+                        for (Instruction useOfConstant : uses.get(result)) {
+                            for (int rvalueInd = 0; rvalueInd < useOfConstant.rvalues().size(); rvalueInd++) {
+                                Register rvalue = useOfConstant.rvalue(rvalueInd);
+                                if (rvalue.equals(result)) {
+                                    useOfConstant.setRvalue(rvalueInd, singularity.result());
+                                }
+                            }
+                        }
+                        check = true;
+                        removed.add(bin);
+                    }
+                    case null, default -> {}
+                }
+            }
+        }
+        return check;
+    }
 
 
     /**
@@ -512,7 +557,8 @@ public class ControlFlowGraph {
      * program state or the output
      * Note: requires a call to pruneRedundantPhis beforehand for correctness
      */
-    public void deadCodeElimination() {
+    public boolean deadCodeElimination() {
+        boolean check = false;
         // associations between labels and block pointers
         Map<String, BasicBlock> labelToBlockMap = new HashMap<>();
         for (BasicBlock block : topologicalList) {
@@ -605,17 +651,21 @@ public class ControlFlowGraph {
                 if (criticalInst.contains(inst)) {
                     filteredInstructions.add(inst);
                 } else if (inst instanceof Jump) {
+                    check = true;
                     BasicBlock jumpBlock = computeNearestPostDominator(block, liveBlocks);
                     clearSuccessors(block);
                     addEdge(block, jumpBlock);
                     UnconditionalBranchLLVM uncond = new UnconditionalBranchLLVM(jumpBlock.getLabel());
                     filteredInstructions.add(uncond);
+                } else {
+                    check = true;
                 }
             }
             block.getMutableInstructions().clear();
             block.getMutableInstructions().addAll(filteredInstructions);
         }
 
+        return check;
     }
 
     /**
@@ -1337,8 +1387,7 @@ public class ControlFlowGraph {
         Set<Register> usedSaved = new HashSet<>();
         List<Register> intRegs = Register.IntRiscRegisters();
         List<Register> floatRegs = Register.FloatRiscRegisters();
-        // allocated two registers for handling spilled values of both types
-        // easier than recomputing liverange and coloring for every spilled value
+        // place all used risc registers into the coloring by default
         Register sp = Register.RiscSp();
         Register zero = Register.RiscZero();
         Register ra = Register.RiscRa();
@@ -1349,8 +1398,14 @@ public class ControlFlowGraph {
         regMap.put(fp, fp);
         intRegs.forEach(reg -> regMap.put(reg, reg));
         floatRegs.forEach(reg -> regMap.put(reg, reg));
-        SpillTuple intSpillRegs = new SpillTuple(intRegs.removeFirst(), intRegs.removeFirst());
-        SpillTuple floatSpillRegs = new SpillTuple(floatRegs.removeFirst(), floatRegs.removeFirst());
+
+        // assign two registers of each regfile for spillage
+        intRegs.remove(Register.RiscIntTemp(5));
+        intRegs.remove(Register.RiscIntTemp(6));
+        floatRegs.remove(Register.RiscFloatTemp(10));
+        floatRegs.remove(Register.RiscFloatTemp(11));
+        SpillTuple intSpillRegs = new SpillTuple(Register.RiscIntTemp(5), Register.RiscIntTemp(6));
+        SpillTuple floatSpillRegs = new SpillTuple(Register.RiscFloatTemp(10), Register.RiscFloatTemp(11));
 
         // create a shallow copy of the interference graph
         Graph<Register, DefaultEdge> temp = new DefaultUndirectedGraph<>(DefaultEdge.class);
@@ -1538,6 +1593,30 @@ public class ControlFlowGraph {
             block.getMutableInstructions().addAll(translation);
         }
     }
+
+
+    /* Risc Optimizations */
+
+    public static void opt(ControlFlowGraph cfg) {
+        uselessMoves(cfg);
+    }
+
+    public static void uselessMoves(ControlFlowGraph cfg) {
+        for (BasicBlock block : cfg.topologicalList) {
+            Register zero = Register.RiscZero();
+            List<Instruction> cleaned = new ArrayList<>();
+            for (Instruction inst : block.getAllInstructions()) {
+                if (!(inst instanceof BinaryRisc br && br.getOp() == BinaryExpression.Operator.PLUS
+                        && (br.result().equals(br.rvalue(0)) || br.result().equals(br.rvalue(1)))
+                        && (zero.equals(br.rvalue(0)) || zero.equals(br.rvalue(1))))) {
+                    cleaned.add(inst);
+                }
+            }
+            block.getMutableInstructions().clear();
+            block.getMutableInstructions().addAll(cleaned);
+        }
+    }
+
 }
 
 

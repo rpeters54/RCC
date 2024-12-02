@@ -17,7 +17,7 @@ import ast.TypeEnvironment;
 
 import java.util.Arrays;
 
-public class BinaryExpression extends Expression {
+public class BinaryExpression extends Expression implements ConstantExpression {
     private final Operator operator;
     private final Expression left;
     private final Expression right;
@@ -266,6 +266,44 @@ public class BinaryExpression extends Expression {
 
         return new RegTuple(leftReg, rightReg);
     }
+
+
+    /**
+     * Interpret a constant expression, used for handling array types in parser
+     * @return the interpreted value
+     */
+    public long interp() {
+        if (!(left instanceof ConstantExpression lConst && right instanceof ConstantExpression rConst)) {
+            throw new RuntimeException("Can't interp a non-constant expression");
+        }
+
+        long leftVal = lConst.interp();
+        long rightVal = rConst.interp();
+
+        return switch(operator) {
+            case EQ -> leftVal == rightVal ? 1 : 0;
+            case NE -> leftVal != rightVal ? 1 : 0;
+            case LT -> leftVal < rightVal ? 1 : 0;
+            case GT -> leftVal > rightVal ? 1 : 0;
+            case LE -> leftVal <= rightVal ? 1 : 0;
+            case GE -> leftVal >= rightVal ? 1 : 0;
+            case SL -> leftVal << rightVal;
+            case SR -> leftVal >> rightVal;
+            case B_AND -> leftVal & rightVal;
+            case B_OR -> leftVal | rightVal;
+            case B_XOR -> leftVal ^ rightVal;
+            case PLUS -> leftVal + rightVal;
+            case MINUS -> leftVal - rightVal;
+            case TIMES -> leftVal * rightVal;
+            case DIVIDE -> leftVal / rightVal;
+            case MODULO -> leftVal % rightVal;
+            case L_OR -> ((leftVal | rightVal) != 0) ? 1 : 0;
+            case L_AND -> ((leftVal & rightVal) != 0) ? 1 : 0;
+            case SR_A -> leftVal >>> rightVal;
+            case null, default -> throw new RuntimeException("Invalid operator: " + operator);
+        };
+    }
+
 
 
 }

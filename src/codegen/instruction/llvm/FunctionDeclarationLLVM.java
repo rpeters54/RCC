@@ -12,23 +12,20 @@ import java.util.List;
 import java.util.Map;
 
 public class FunctionDeclarationLLVM extends LLVMInstruction implements Global {
-
-    private final String name;
     private final FunctionType type;
 
-    public FunctionDeclarationLLVM(String name, FunctionType type) {
-        super(Arrays.asList(), Arrays.asList());
-        this.name = name;
+    public FunctionDeclarationLLVM(Register ptr, FunctionType type) {
+        super(Arrays.asList(ptr), Arrays.asList());
         this.type = type;
     }
 
     public String name() {
-        return this.name;
+        return result().alias();
     }
 
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(String.format("declare %s @%s(", type.returnType(), name));
+        sb.append(String.format("declare %s %s(", type.returnType(), result()));
         List<Type> inputTypes = type.inputTypes().stream()
                 .map(Declaration::declSpec)
                 .map(DeclarationSpecifier::getType)
@@ -56,6 +53,7 @@ public class FunctionDeclarationLLVM extends LLVMInstruction implements Global {
 
     @Override
     public List<Instruction> genHeader(Map<Register, String> globalLabelMap) {
+        globalLabelMap.put(result(), result().alias());
         return List.of();
     }
 }

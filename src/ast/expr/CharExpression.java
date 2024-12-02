@@ -7,8 +7,6 @@ import ast.types.Type;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
-import codegen.instruction.llvm.AllocaLLVM;
-import codegen.instruction.llvm.LoadLLVM;
 import codegen.instruction.llvm.LoadLiteralLLVM;
 import codegen.values.Literal;
 import codegen.values.Register;
@@ -30,12 +28,11 @@ public class CharExpression extends Expression{
 
     @Override
     public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
-        Register allocaResult = Register.LLVM_Register(new PointerType(new IntegerType()));
         Register loadResult = Register.LLVM_Register(new IntegerType(IntegerType.Width.CHAR, true));
         String numified = Integer.toString(id.charAt(1));
         Literal charValue =  new Literal(numified, new IntegerType(IntegerType.Width.CHAR, true));
 
-        block.addInstruction(new LoadLiteralLLVM(charValue, loadResult.clone(), allocaResult));
+        block.addInstruction(new LoadLiteralLLVM(charValue, loadResult.clone()));
         return loadResult;
     }
 }

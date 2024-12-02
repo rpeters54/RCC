@@ -35,7 +35,7 @@ public class AssignmentExpression extends Expression {
         // if the types are primitive and non-equal, cast to the type being assigned to
         if (!(leftDecl.getType() instanceof PrimitiveType) || !(rightDecl.getType() instanceof PrimitiveType)) {
             if (!leftDecl.getType().equals(rightDecl.getType())) {
-                throw new RuntimeException("AssignmentExpression::verifySemantics: left and right types do not match");
+                throw new RuntimeException("AssignmentExpression::verifySemantics: line: " + lineNum() +" left and right types do not match");
             }
             result = leftDecl.getType();
         } else if ((leftDecl.getType() instanceof PointerType) || (rightDecl.getType() instanceof PointerType)){
@@ -46,10 +46,11 @@ public class AssignmentExpression extends Expression {
                         "can't apply implicit conversion to float and pointer");
             }
         } else {
-            result = PrimitiveType.implicitConversion(
-                    (NumberType) leftDecl.getType(),
-                    (NumberType) rightDecl.getType()
-            );
+//            result = PrimitiveType.implicitConversion(
+//                    (NumberType) leftDecl.getType(),
+//                    (NumberType) rightDecl.getType()
+//            );
+            result = leftDecl.getType();
         }
 
         return new DeclarationSpecifier(result);

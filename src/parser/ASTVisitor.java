@@ -2,7 +2,7 @@ package parser;
 
 import ast.declarations.*;
 import ast.Program;
-import ast.expr.Expression;
+import ast.expr.*;
 import ast.statements.Statement;
 import ast.types.*;
 import ast.types.Enumeration;
@@ -12,6 +12,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 
 public class ASTVisitor extends CBaseVisitor<Object> {
@@ -19,8 +20,7 @@ public class ASTVisitor extends CBaseVisitor<Object> {
     private final ASTExpressionVisitor expVisitor;
     private final ASTStatementVisitor stmtVisitor;
 
-    private int anon_struct_counter = 0;
-    private int anon_union_counter = 0;
+    private int anon_counter = 0;
 
     protected final Set<String> typeNames = new HashSet<>();
     protected final Set<String> structNames = new HashSet<>();
@@ -32,11 +32,11 @@ public class ASTVisitor extends CBaseVisitor<Object> {
     }
 
     private String anonStructName() {
-        return String.format("anon.%s", anon_struct_counter++);
+        return String.format("anon.%s", anon_counter++);
     }
 
     private String anonUnionName() {
-        return String.format("anon.%s", anon_union_counter++);
+        return String.format("anon.%s", anon_counter++);
     }
 
 
@@ -114,7 +114,7 @@ public class ASTVisitor extends CBaseVisitor<Object> {
 
         Object obj = visit(ctx.name);
         if (!(obj instanceof Declaration functionDeclaration)) {
-            throw new RuntimeException("visitFunctionDefinition: visit(ctx.name) should return List<Declaration>");
+            throw new RuntimeException("visitFunctionDefinition: visit(ctx.name) should return Declaration");
         }
 
         //update functionDeclaration to contain the DeclarationSpecifier found while parsing retType
@@ -231,16 +231,18 @@ public class ASTVisitor extends CBaseVisitor<Object> {
     @Override
     public Object visitTypeDeclaration(CParser.TypeDeclarationContext ctx) {
         DeclarationSpecifier specifier = new DeclarationSpecifier();
+        ArrayList<Type> typeList = new ArrayList<>();
         for (CParser.SpecifierQualifierContext sqctx : ctx.specifierQualifier()) {
             Object obj = visit(sqctx);
-            if (obj instanceof Type) {
-                specifier.setType((Type) obj);
-            } else if (obj instanceof Type.TypeQualifier) {
-                specifier.updateQualifier((Type.TypeQualifier)obj);
+            if (obj instanceof Type t) {
+                typeList.add(t);
+            } else if (obj instanceof Type.TypeQualifier t) {
+                specifier.updateQualifier(t);
             } else {
                 throw new RuntimeException("visitTypeDeclaration: unresolved specifier qualifier");
             }
         }
+        specifier.setType(buildBaseType(typeList));
         // Add type to the global context, (used to disambiguate statements and declarations in compound statement)
         typeNames.add(ctx.Identifier().getText());
         return new TypeDeclaration(ctx.Identifier().getText(), specifier);
@@ -492,26 +494,57 @@ public class ASTVisitor extends CBaseVisitor<Object> {
         }
         if (ctx.initializer() != null) {
             obj = visit(ctx.initializer());
-            if (!(obj instanceof List)) {
+            if (!(obj instanceof InitializerTuple tuple)) {
                 throw new IllegalArgumentException("Invalid return from initializer visit");
             }
-            decl.setInitialValue((List<Expression>) obj);
+            Type t = decl.declSpec().getType();
+            for (int i = tuple.dimLength.size()-1; i >= 0; i--) {
+                if (! (t instanceof ArrayType arr)) {
+                    throw new IllegalArgumentException("Invalid initializer for non-array type");
+                }
+                arr.setSize(tuple.dimLength.get(i));
+                t = arr.base();
+            }
+            decl.setInitialValue(tuple.explist);
         }
         return decl;
     }
 
+
+    private record InitializerTuple(List<Expression> explist, List<Integer> dimLength) {}
     @Override
     public Object visitInitializer(CParser.InitializerContext ctx) {
         List<Expression> initList = new ArrayList<>();
-        if (ctx.expression() != null) {
-            initList.add(expVisitor.visit(ctx.expression()));
+        if (ctx.assignmentExpression() != null) {
+            initList.add(expVisitor.visit(ctx.assignmentExpression()));
+            return new InitializerTuple(initList, new ArrayList<>());
         }
+
         if (ctx.initializerList() != null) {
-            for (CParser.InitializerContext ictx : ctx.initializerList().initializer()) {
-                initList.addAll((List<Expression>) visit(ictx));
+            List<InitializerTuple> tupleList = ctx.initializerList().initializer().stream()
+                    .map(this::visit)
+                    .map(result -> (InitializerTuple) result)
+                    .toList();
+
+            Set<List<Integer>> set = tupleList.stream()
+                    .map(InitializerTuple::dimLength)
+                    .collect(Collectors.toSet());
+
+            if (set.size() != 1) {
+                throw new RuntimeException("Invalid array size");
             }
+
+            List<Expression> expList = tupleList.stream()
+                    .flatMap(tuple -> tuple.explist.stream())
+                    .toList();
+
+            List<Integer> newDimLength = tupleList.getFirst().dimLength();
+            newDimLength.add(tupleList.size());
+
+            return new InitializerTuple(expList, newDimLength);
         }
-        return initList;
+
+        throw new RuntimeException("Invalid initializer visit");
     }
 
     @Override
@@ -587,13 +620,18 @@ public class ASTVisitor extends CBaseVisitor<Object> {
         Declaration decl = (Declaration) obj;
 
         // add array type to declarator
-        ArrayType arr = new ArrayType();
+        long size = 0;
         if (ctx.constantExpressionList() != null) {
-            arr.deriveSize(expVisitor.parseExpressionList(ctx.constantExpressionList().expressionList()));
+            List<Expression> expr = expVisitor.parseExpressionList(ctx.constantExpressionList().expressionList());
+            size = switch (expr.getLast()) {
+                case BinaryExpression binExp -> binExp.interp();
+                case PrefixExpression prefixExp -> prefixExp.interp();
+                case IntegerExpression intExp -> intExp.interp();
+                case null, default -> throw new RuntimeException("Invalid constant expression in array body");
+            };
         }
 
-        DeclarationSpecifier arraySpecifier = new DeclarationSpecifier();
-        arraySpecifier.setType(arr);
+        DeclarationSpecifier arraySpecifier = new DeclarationSpecifier(new ArrayType(null, size));
         updateDeclaration(decl, arraySpecifier);
 
         return decl;
@@ -614,8 +652,23 @@ public class ASTVisitor extends CBaseVisitor<Object> {
             func = (FunctionType) obj;
         }
 
-        DeclarationSpecifier functionSpecifier = new DeclarationSpecifier();
-        functionSpecifier.setType(func);
+        // handle case when inputs to function are void;
+        boolean has_void = false;
+        List<Declaration> inputs = func.inputTypes();
+        for (Declaration declaration : inputs) {
+            if (declaration.declSpec().getType() instanceof VoidType)
+                has_void = true;
+        }
+        if (has_void) {
+            if (inputs.size() > 1) {
+                throw new RuntimeException("visitFunctionDefinition: function declaration can't have void argument" +
+                        "along with other arguments, line " + ctx.getStop().getLine());
+            } else {
+                inputs.clear();
+            }
+        }
+
+        DeclarationSpecifier functionSpecifier = new DeclarationSpecifier(func);
         updateDeclaration(decl, functionSpecifier);
 
         return decl;
@@ -708,9 +761,12 @@ public class ASTVisitor extends CBaseVisitor<Object> {
         // if a constant expression list, return an array declaration
         if (ctx.constantExpressionList() != null) {
             List<Expression> expList = expVisitor.parseExpressionList(ctx.constantExpressionList().expressionList());
-            ArrayType arr = new ArrayType();
-            arr.deriveSize(expList);
-            arr.setBase(type);
+            ArrayType arr;
+            if (expList.getLast() instanceof ConstantExpression constExp) {
+                arr = new ArrayType(type, constExp.interp());
+            } else {
+                throw new RuntimeException("Array initializer type must be a constant expression");
+            }
             self.declSpec().setType(arr);
             return self;
         }
@@ -752,8 +808,12 @@ public class ASTVisitor extends CBaseVisitor<Object> {
     public Object visitDirectAbstractDeclaratorTail(CParser.DirectAbstractDeclaratorTailContext ctx) {
         if (ctx.constantExpressionList() != null) {
             List<Expression> expList = expVisitor.parseExpressionList(ctx.constantExpressionList().expressionList());
-            ArrayType arr = new ArrayType();
-            arr.deriveSize(expList);
+            ArrayType arr;
+            if (expList.getLast() instanceof ConstantExpression constExp) {
+                arr = new ArrayType(null, constExp.interp());
+            } else {
+                throw new RuntimeException("Array initializer type must be a constant expression");
+            }
             return arr;
         }
 
@@ -967,6 +1027,7 @@ public class ASTVisitor extends CBaseVisitor<Object> {
 
         if (typeList.getFirst() instanceof DefinedType
                 || typeList.getFirst() instanceof StructType
+                || typeList.getFirst() instanceof UnionType
                 || typeList.getFirst() instanceof DefinedType
                 || typeList.getFirst() instanceof EnumType
                 || typeList.getFirst() instanceof VoidType) {

@@ -5,6 +5,7 @@ import ast.declarations.DeclarationSpecifier;
 import ast.expr.*;
 import ast.types.Type;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,8 +30,8 @@ public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
     public Expression visitApplicationExpr(CParser.ApplicationExprContext ctx) {
         List<Expression> expList = new ArrayList<>();
         if (ctx.expressionList() != null) {
-            List<CParser.ExpressionContext> expCtxList = ctx.expressionList().expression();
-            for (CParser.ExpressionContext expCtx : expCtxList) {
+            List<CParser.AssignmentExpressionContext> expCtxList = ctx.expressionList().assignmentExpression();
+            for (CParser.AssignmentExpressionContext expCtx : expCtxList) {
                 expList.add(visit(expCtx));
             }
         }
@@ -140,6 +141,11 @@ public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
     }
 
     @Override
+    public Expression visitAssignmentStepThrough(CParser.AssignmentStepThroughContext ctx) {
+        return visit(ctx.expression());
+    }
+
+    @Override
     public Expression visitAssignmentExpr(CParser.AssignmentExprContext ctx) {
         int lineNum = ctx.op.getLine();
         Expression left = visit(ctx.left);
@@ -164,6 +170,8 @@ public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
         );
     }
 
+
+
     @Override
     public Expression visitIdentifierExpr(CParser.IdentifierExprContext ctx) {
         return new IdentifierExpression(
@@ -179,18 +187,19 @@ public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
 
     @Override
     public Expression visitIntegerExpr(CParser.IntegerExprContext ctx) {
-        String valueStr = ctx.getText().trim().replaceAll("[Ll]$", "");
 
+        String valueStr = ctx.getText().trim().replaceAll("[UuLl]", "");
         long value;
         if (valueStr.startsWith("0x") || valueStr.startsWith("0X")) {
             // Hexadecimal format (base 16)
-            value = Long.parseUnsignedLong(valueStr.substring(2), 16);
+
+            value = (new BigInteger(valueStr.substring(2), 16)).longValue();
         } else if (valueStr.startsWith("0") && valueStr.length() > 1) {
             // Octal format (base 8)
-            value = Long.parseUnsignedLong(valueStr.substring(1), 8);
+            value = (new BigInteger(valueStr.substring(1), 8)).longValue();
         } else {
             // Decimal format (base 10)
-            value = Long.parseUnsignedLong(valueStr, 10);
+            value = (new BigInteger(valueStr, 10)).longValue();
         }
 
         return new IntegerExpression(
@@ -233,14 +242,14 @@ public class ASTExpressionVisitor extends CBaseVisitor<Expression>{
 
     @Override
     public Expression visitNestedExpr(CParser.NestedExprContext ctx) {
-        return visit(ctx.expression());
+        return visit(ctx.assignmentExpression());
     }
 
 
 
     public List<Expression> parseExpressionList(CParser.ExpressionListContext elctx) {
         List<Expression> expressionList = new ArrayList<>();
-        for (CParser.ExpressionContext epctx : elctx.expression()) {
+        for (CParser.AssignmentExpressionContext epctx : elctx.assignmentExpression()) {
             Expression exp = visit(epctx);
             expressionList.add(exp);
         }

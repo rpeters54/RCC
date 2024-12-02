@@ -5,10 +5,7 @@ import ast.types.FunctionType;
 import ast.types.IntegerType;
 import ast.types.PointerType;
 import codegen.instruction.Instruction;
-import codegen.instruction.riscv.BinaryRisc;
-import codegen.instruction.riscv.CallRisc;
-import codegen.instruction.riscv.FloatMovRisc;
-import codegen.instruction.riscv.LoadImmRisc;
+import codegen.instruction.riscv.*;
 import codegen.values.Register;
 import codegen.values.Source;
 
@@ -19,27 +16,55 @@ import java.util.List;
 public class CallLLVM extends LLVMInstruction implements Critical {
 
     private final String name;
+    private final Register funcPtr;
     private FunctionType type;
 
     public CallLLVM(Register result, List<Register> arguments, String name, FunctionType type) {
         super(Arrays.asList(result), arguments);
         this.name = name;
         this.type = type;
+        this.funcPtr = null;
     }
 
     public CallLLVM(List<Register> arguments, String name, FunctionType type) {
         super(Arrays.asList(), arguments);
         this.name = name;
         this.type = type;
+        this.funcPtr = null;
+    }
+
+    public CallLLVM(Register result, List<Register> arguments, Register functionPtr, FunctionType type) {
+        super(Arrays.asList(result), arguments);
+        addRValue(functionPtr);
+        this.name = "";
+        this.type = type;
+        this.funcPtr = functionPtr;
+    }
+
+    public CallLLVM(List<Register> arguments, Register functionPtr, FunctionType type) {
+        super(Arrays.asList(), arguments);
+        addRValue(functionPtr);
+        this.name = "";
+        this.type = type;
+        this.funcPtr = functionPtr;
     }
 
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        if (results().isEmpty()) {
-            builder.append(String.format("call void @%s(", name));
+
+        if (name.isEmpty()) {
+            if (results().isEmpty()) {
+                builder.append(String.format("call void % s(", funcPtr));
+            } else {
+                builder.append(String.format("%s = call %s %s(", result(), result().type(), funcPtr));
+            }
         } else {
-            builder.append(String.format("%s = call %s @%s(", result(), result().type(), name));
+            if (results().isEmpty()) {
+                builder.append(String.format("call void @%s(", name));
+            } else {
+                builder.append(String.format("%s = call %s @%s(", result(), result().type(), name));
+            }
         }
         for (Source source : rvalues()) {
             builder.append(String.format("%s %s, ", source.type(), source));
@@ -71,7 +96,12 @@ public class CallLLVM extends LLVMInstruction implements Critical {
             }
         }
         // add the call instruction
-        risc.add(new CallRisc(name));
+        if (name.isEmpty()) {
+            risc.add(new JalrRisc(funcPtr));
+        } else {
+            risc.add(new LoadAddressRisc(Register.RiscIntTemp(1), name));
+            risc.add(new JalrRisc(Register.RiscIntTemp(1)));
+        }
         // grab the result from the correct risc arg register
         if (!localResults.isEmpty()) {
             Register localResult = localResults.getFirst();

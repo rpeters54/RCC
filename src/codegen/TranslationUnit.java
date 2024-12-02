@@ -122,23 +122,29 @@ public class TranslationUnit {
         }
     }
 
-    public void pruneRedundantPhis() {
-        for (ControlFlowGraph cfg : controlFlowGraphs) {
-            cfg.pruneRedundantPhis();
-        }
-    }
-
-
+//    public void pruneRedundantPhis() {
+//        for (ControlFlowGraph cfg : controlFlowGraphs) {
+//            cfg.pruneRedundantPhis();
+//        }
+//    }
+//
+//
 //    public void constantPropagation() {
 //        for (ControlFlowGraph cfg : controlFlowGraphs) {
 //            cfg.constantPropagation();
 //        }
 //    }
+//
+//    public void deadCodeElimination() {
+//        for (ControlFlowGraph cfg : controlFlowGraphs) {
+//            cfg.deadCodeElimination();
+//            cfg.hoistBranches();
+//        }
+//    }
 
-    public void deadCodeElimination() {
+    public void optLLVM() {
         for (ControlFlowGraph cfg : controlFlowGraphs) {
-            cfg.deadCodeElimination();
-            cfg.hoistBranches();
+            cfg.optLLVM();
         }
     }
 

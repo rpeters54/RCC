@@ -7,8 +7,6 @@ import ast.types.Type;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
-import codegen.instruction.llvm.AllocaLLVM;
-import codegen.instruction.llvm.LoadLLVM;
 
 import codegen.instruction.llvm.LoadLiteralLLVM;
 import codegen.values.Literal;
@@ -39,11 +37,14 @@ public class FloatExpression extends Expression {
 
     @Override
     public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
-        Register allocaResult = Register.LLVM_Register(new PointerType(new FloatingType(size)));
         Register loadResult = Register.LLVM_Register(new FloatingType(size));
-        Literal floatValue =  new Literal(Double.toString(value), new FloatingType(size));
 
-        block.addInstruction(new LoadLiteralLLVM(floatValue, loadResult.clone(), allocaResult));
+        Literal floatValue = switch (size) {
+            case FLOAT -> new Literal(Float.toString((float)value), new FloatingType(size));
+            case DOUBLE -> new Literal(Double.toString(value), new FloatingType(size));
+        };
+
+        block.addInstruction(new LoadLiteralLLVM(floatValue, loadResult.clone()));
         return loadResult;
     }
 }

@@ -52,19 +52,6 @@ public class Literal implements Source {
     @Override
     public String toString() {
         switch (type) {
-           case FloatingType ft -> {
-               switch (ft.size()) {
-                   case DOUBLE -> {
-                       return "0x"+Long.toHexString(Double.doubleToLongBits(Double.parseDouble(value)));
-                   }
-                   case FLOAT -> {
-                       return "0x"+Long.toHexString(Double.doubleToLongBits(Double.parseDouble(value)) & 0xFFFFFFFF_00000000L);
-                   }
-                   case null, default -> {
-                       throw new RuntimeException("not sure how i got here?");
-                   }
-               }
-           }
             case PointerType pt -> {
                return "null";
             }
@@ -74,9 +61,47 @@ public class Literal implements Source {
         }
     }
 
+    public String llvmStorePrint() {
+        switch (type) {
+            case FloatingType ft -> {
+                switch (ft.size()) {
+                    case DOUBLE -> {
+                        return "0x"+Long.toHexString(Double.doubleToLongBits(Double.parseDouble(value)));
+                    }
+                    case FLOAT -> {
+                        return "0x"+Long.toHexString(Double.doubleToLongBits(Double.parseDouble(value)) & 0xFFFFFFFF_00000000L);
+                    }
+                    case null, default -> {
+                        throw new RuntimeException("not sure how i got here?");
+                    }
+                }
+            }
+            case null, default -> {
+                return toString();
+            }
+        }
+    }
+
+    public static Literal longLiteral(long value) {
+        return new Literal(Long.toString(value), new IntegerType(IntegerType.Width.LONG, true));
+    }
+
     public String riscPrint() {
         switch (type) {
             case PointerType pt -> { return value; }
+            case FloatingType ft -> {
+                switch (ft.size()) {
+                    case DOUBLE -> {
+                        return "0x"+Long.toHexString(Double.doubleToLongBits(Double.parseDouble(value)));
+                    }
+                    case FLOAT -> {
+                        return "0x"+Long.toHexString(Double.doubleToLongBits(Double.parseDouble(value)) & 0xFFFFFFFF_00000000L);
+                    }
+                    case null, default -> {
+                        throw new RuntimeException("not sure how i got here?");
+                    }
+                }
+            }
             case null, default -> { return toString(); }
         }
     }

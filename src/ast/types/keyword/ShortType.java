@@ -9,6 +9,11 @@ public class ShortType extends Type {
     }
 
     @Override
+    public String fmtTypeString() {
+        return toString();
+    }
+
+    @Override
     public long sizeof() {
         return 0;
     }

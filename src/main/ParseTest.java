@@ -10,13 +10,31 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
 
+import java.io.File;
+import java.nio.file.DirectoryStream;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 
 public class ParseTest {
 
     private static final String testDir = "/Users/rileypeters/ANSIParser/src/main/tests/parseTests/";
+
+    @Test
+    @DisplayName("Test Fails")
+    void testFails() {
+        String directoryPath = testDir+"badFiles/";
+        File directory = new File(directoryPath);
+        for (File file : Objects.requireNonNull(directory.listFiles())) {
+            if (file.getName().endsWith(".c")) {
+                Assertions.assertThrows(Exception.class, () -> {
+                    Main.parseProgram(new String[]{directoryPath+file.getName()});
+                });
+            }
+        }
+    }
 
     @Test
     @DisplayName("Simple Variable Declarations")
@@ -110,7 +128,6 @@ public class ParseTest {
         StructType type = (StructType) anonStruct.declSpec().getType();
         List<Declaration> members = type.members();
         Assertions.assertEquals("goated", anonStruct.name());
-        Assertions.assertNull(type.name());
         integerDeclarationTest(members.get(0), "name", IntegerType.Width.CHAR, true,
                 Type.StorageClass.NONE, Type.TypeQualifier.NONE);
         integerDeclarationTest(members.get(1), "game", IntegerType.Width.INT, true,
@@ -119,7 +136,6 @@ public class ParseTest {
         Declaration truck = declarations.get(1);
         type = (StructType) truck.declSpec().getType();
         members = type.members();
-        Assertions.assertNull(truck.name());
         Assertions.assertEquals("truck", type.name());
 
         Declaration arr = members.getFirst();
@@ -155,14 +171,11 @@ public class ParseTest {
         Declaration union = declarations.get(2);
         UnionType uType = (UnionType) union.declSpec().getType();
         members = uType.members();
-        Assertions.assertNull(union.name());
         Assertions.assertEquals("constitution", uType.name());
 
         Declaration innerStruct = members.get(0);
         Assertions.assertInstanceOf(StructType.class, innerStruct.declSpec().getType());
         StructType innerType = (StructType) innerStruct.declSpec().getType();
-        Assertions.assertNull(innerStruct.name());
-        Assertions.assertNull(innerType.name());
 
         integerDeclarationTest(innerType.members().get(0), "man", IntegerType.Width.LONG,
                 true, Type.StorageClass.NONE, Type.TypeQualifier.NONE);

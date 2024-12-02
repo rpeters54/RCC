@@ -87,4 +87,15 @@ public class FunctionType extends Type {
         sb.append(")");
         return sb.toString();
     }
+
+    @Override
+    public String fmtTypeString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(returnType.fmtTypeString()).append(" (");
+        for (Declaration input : inputTypes) {
+            sb.append(input.declSpec().getType().fmtTypeString()).append(" ");
+        }
+        sb.append(")");
+        return sb.toString();
+    }
 }

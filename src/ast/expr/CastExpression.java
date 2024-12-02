@@ -13,7 +13,7 @@ import ast.TypeEnvironment;
 
 public class CastExpression extends Expression {
 
-    private final Type type;
+    private Type type;
     private final Expression casted;
 
     public CastExpression(int lineNum, Type type, Expression casted) {
@@ -25,6 +25,7 @@ public class CastExpression extends Expression {
 
     @Override
     public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, TypeEnvironment.StorageLocation location) {
+        type = globalEnv.expandDeclaration(new DeclarationSpecifier(type)).getType();
         casted.verifySemantics(globalEnv, localEnv, TypeEnvironment.StorageLocation.REGISTER);
         if (!(type instanceof PrimitiveType)) {
             throw new RuntimeException("Cast expression expects a primitive type");

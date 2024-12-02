@@ -7,6 +7,7 @@ import ast.types.IntegerType;
 import ast.types.PointerType;
 import codegen.instruction.Instruction;
 import codegen.instruction.riscv.BinaryRisc;
+import codegen.values.Literal;
 import codegen.values.Register;
 
 import java.util.ArrayList;
@@ -60,52 +61,106 @@ public class BinaryLLVM extends LLVMInstruction {
                 rvalue(0), rvalue(1));
     }
 
-//    public Source collapse() {
-//        Source leftSource = rvalue(0);
-//        Source rightSource = rvalue(1);
-//
-//        if (!(leftSource instanceof Literal leftLiteral) || !(rightSource instanceof Literal rightLiteral)) {
-//            return null;
-//        }
-//
-//        String result;
-//        switch (leftLiteral.type()) {
-//            case IntegerType it -> {
-//                long left = Long.parseLong(leftLiteral.toString());
-//                long right = Long.parseLong(rightLiteral.toString());
-//                switch (op) {
-//                    case PLUS -> result = String.format("%d", left + right);
-//                    case MINUS -> result = String.format("%d", left - right);
-//                    case TIMES -> result = String.format("%d", left * right);
-//                    case DIVIDE -> result = String.format("%d", left / right);
-//                    case B_XOR -> result = String.format("%d", left ^ right);
-//                    case B_AND -> result = String.format("%d", left & right);
-//                    case B_OR -> result = String.format("%d", left | right);
-//                    case SR -> result = String.format("%d", left >> right);
-//                    case SL -> result = String.format("%d", left << right);
-//                    case MODULO -> result = String.format("%d", left % right);
-//                    case null, default -> throw new RuntimeException("BinaryInstruction::collapse: " +
-//                            "Undefined Operand");
-//                }
-//            }
-//            case FloatingType ft -> {
-//                double left = Double.parseDouble(leftLiteral.toString());
-//                double right = Double.parseDouble(rightLiteral.toString());
-//                switch (op) {
-//                    case PLUS -> result = String.format("%f", left + right);
-//                    case MINUS -> result = String.format("%f", left - right);
-//                    case TIMES -> result = String.format("%f", left * right);
-//                    case DIVIDE -> result = String.format("%f", left / right);
-//                    case null, default -> throw new RuntimeException("BinaryInstruction::collapse: " +
-//                            "Undefined Operand");
-//                }
-//            }
-//            case null, default -> throw new RuntimeException("BinaryInstruction::collapse: No " +
-//                    "Instruction exists with " + op);
-//        }
-//
-//        return new Literal(result, leftLiteral.type().clone());
-//    }
+    public LoadLiteralLLVM collapse(Literal left, Literal right) {
+
+        Literal result;
+        switch (left.type()) {
+            case IntegerType it -> {
+                long leftVal = Long.parseLong(left.toString());
+                long rightVal = Long.parseLong(right.toString());
+                long resultVal = switch (op) {
+                    case PLUS -> leftVal + rightVal;
+                    case MINUS -> leftVal - rightVal;
+                    case TIMES -> leftVal * rightVal;
+                    case DIVIDE -> leftVal / rightVal;
+                    case B_XOR -> leftVal ^ rightVal;
+                    case B_AND -> leftVal & rightVal;
+                    case B_OR -> leftVal | rightVal;
+                    case SR -> leftVal >> rightVal;
+                    case SL -> leftVal << rightVal;
+                    case MODULO -> leftVal % rightVal;
+                    case null, default -> throw new RuntimeException("BinaryInstruction::collapse: " +
+                            "Undefined Operand");
+                };
+                switch (it.size()) {
+                    case LONG -> {
+                        if (it.signed()) {
+                            result = new Literal(Long.toString(resultVal),
+                                    new IntegerType(IntegerType.Width.LONG, true));
+                        } else {
+                            result = new Literal(Long.toUnsignedString(resultVal),
+                                    new IntegerType(IntegerType.Width.LONG, false));
+                        }
+                    }
+                    case INT -> {
+                        int clippedResultVal = (int) resultVal;
+                        if (it.signed()) {
+                            result = new Literal(Integer.toString(clippedResultVal),
+                                    new IntegerType(IntegerType.Width.INT, true));
+                        } else {
+                            result = new Literal(Integer.toUnsignedString(clippedResultVal),
+                                    new IntegerType(IntegerType.Width.INT, false));
+                        }
+                    }
+                    case SHORT -> {
+                        short clippedResultVal = (short) resultVal;
+                        if (it.signed()) {
+                            result = new Literal(Short.toString(clippedResultVal),
+                                    new IntegerType(IntegerType.Width.SHORT, true));
+                        } else {
+                            result = new Literal(Integer.toUnsignedString(clippedResultVal),
+                                    new IntegerType(IntegerType.Width.SHORT, false));
+                        }
+                    }
+                    case CHAR -> {
+                        char clippedResultVal = (char) resultVal;
+                        if (it.signed()) {
+                            result = new Literal(Integer.toString(clippedResultVal),
+                                    new IntegerType(IntegerType.Width.CHAR, true));
+                        } else {
+                            result = new Literal(Integer.toUnsignedString(clippedResultVal),
+                                    new IntegerType(IntegerType.Width.CHAR, false));
+                        }
+                    }
+                    case BOOL -> {
+                        int boolVal = resultVal != 0 ? 1 : 0;
+                        result = new Literal(Integer.toUnsignedString(boolVal),
+                                new IntegerType(IntegerType.Width.BOOL, true));
+                    }
+                    case null, default -> throw new RuntimeException("Invalid integer size");
+                }
+            }
+            case FloatingType ft -> {
+                double leftVal = Double.parseDouble(left.toString());
+                double rightVal = Double.parseDouble(right.toString());
+                double resultVal = switch (op) {
+                    case PLUS -> leftVal + rightVal;
+                    case MINUS -> leftVal - rightVal;
+                    case TIMES -> leftVal * rightVal;
+                    case DIVIDE -> leftVal / rightVal;
+                    case null, default -> throw new RuntimeException("BinaryInstruction::collapse: " +
+                            "Undefined Operand");
+                };
+                switch (ft.size()) {
+                    case DOUBLE -> {
+                        result = new Literal(Double.toString(resultVal),
+                                new FloatingType(FloatingType.Width.DOUBLE));
+                    }
+                    case FLOAT -> {
+                        float clippedResultVal = (float) resultVal;
+                        result = new Literal(Float.toString(clippedResultVal),
+                                new FloatingType(FloatingType.Width.FLOAT));
+                    }
+                    case null, default -> throw new RuntimeException("Invalid floating point size");
+                }
+            }
+            case null, default -> throw new RuntimeException("BinaryInstruction::collapse: No " +
+                    "Instruction exists with " + op);
+        }
+
+        Register tempLocal = Register.LLVM_Register(result.type());
+        return new LoadLiteralLLVM(result, tempLocal);
+    }
 
     public List<Instruction> toRisc(List<Register> localResults, List<Register> localRvalues) {
         List<Instruction> instructions = new ArrayList<>();

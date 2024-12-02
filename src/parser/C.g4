@@ -175,8 +175,14 @@ initializerList
     : initializer (',' initializer)*
     ;
 
+//initializer
+//    : expression
+//    | '{' initializerList '}'
+//    | '{' initializerList ',' '}'
+//    ;
+
 initializer
-    : expression
+    : assignmentExpression
     | '{' initializerList '}'
     | '{' initializerList ',' '}'
     ;
@@ -252,8 +258,18 @@ jumpStatement
 /* K&R Definition is a mess of nested Expression defintions so this I what I came up with to fix it */
 constantExpressionList : expressionList;
 
+//expressionList
+//    : expression (',' expression)*
+//    ;
+
 expressionList
-    : expression (',' expression)*
+    : assignmentExpression (',' assignmentExpression)*
+    ;
+
+
+assignmentExpression
+    : expression                                                                                              #AssignmentStepThrough
+    | left=expression op=('='|'*='|'/='|'%='|'+='|'-='|'<<='|'>>='|'&='|'^='|'|=') right=assignmentExpression #AssignmentExpr
     ;
 
 expression
@@ -278,7 +294,7 @@ expression
     | left=expression op='&&' right=expression                          #BinaryExpr
     | left=expression op='||' right=expression                          #BinaryExpr
     | guard=expression op='?' then=expression ':' other=expression      #ConditionalExpr
-    | left=expression op=('='|'*='|'/='|'%='|'+='|'-='|'<<='|'>>='|'&='|'^='|'|=') right=expression  #AssignmentExpr
+ //   | left=expression op=('='|'*='|'/='|'%='|'+='|'-='|'<<='|'>>='|'&='|'^='|'|=') right=expression  #AssignmentExpr
     | Null                                                              #NullExpr
     | Identifier                                                        #IdentifierExpr
     | IntegerConstant                                                   #IntegerExpr
@@ -286,7 +302,8 @@ expression
     | EnumerationConstant                                               #EnumExpr
     | CharacterConstant                                                 #CharExpr
     | StringLiteral                                                     #LiteralExpr
-    | '(' expression ')'                                                #NestedExpr
+    | '(' assignmentExpression ')'                                      #NestedExpr
+//    | '(' expression ')'                                                #NestedExpr
     ;
 
 

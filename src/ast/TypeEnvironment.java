@@ -8,22 +8,18 @@ import ast.types.*;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
-import codegen.instruction.llvm.AllocaLLVM;
-import codegen.instruction.llvm.ConversionLLVM;
-import codegen.instruction.llvm.GlobalVariableLLVM;
-import codegen.instruction.llvm.StoreLLVM;
+import codegen.instruction.llvm.*;
 import codegen.values.Literal;
 import codegen.values.Register;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class TypeEnvironment {
     private final Map<String, DeclarationSpecifier> types;
     private final Map<String, ObjectType> objects;
     private final Map<String, DeclarationSpecifier> names;
     private final Map<String, StorageLocation> locations;
+    private final Set<String> declaredFunctions;
 
     public enum StorageLocation {
         REGISTER, STACK
@@ -34,6 +30,7 @@ public class TypeEnvironment {
         this.objects = new HashMap<>();
         this.names = new HashMap<>();
         this.locations = new HashMap<>();
+        this.declaredFunctions = new HashSet<>();
     }
 
     public TypeEnvironment duplicate() {
@@ -42,6 +39,7 @@ public class TypeEnvironment {
         clone.objects.putAll(this.objects);
         clone.names.putAll(this.names);
         clone.locations.putAll(this.locations);
+        clone.declaredFunctions.addAll(this.declaredFunctions);
         return clone;
     }
 
@@ -50,6 +48,7 @@ public class TypeEnvironment {
         this.objects.clear();
         this.names.clear();
         this.locations.clear();
+        this.declaredFunctions.clear();
     }
 
 
@@ -193,7 +192,12 @@ public class TypeEnvironment {
                         specifier.getQualifier());
             }
             case FunctionType f -> {
-                return new DeclarationSpecifier(new PointerType(f),
+                Type retType = expandDeclaration(new DeclarationSpecifier(f.returnType())).getType();
+                List<Declaration> expandedInputs = f.inputTypes().stream()
+                        .map(decl -> new Declaration(decl.name(), expandDeclaration(decl.declSpec())))
+                        .toList();
+
+                return new DeclarationSpecifier(new FunctionType(retType, expandedInputs, f.isVariadic()),
                         specifier.getStorage(),
                         specifier.getQualifier());
             }
@@ -207,17 +211,22 @@ public class TypeEnvironment {
      * @param name name of the declaration to be added
      * @param specifier type and specifier qualifier of the declaration
      */
-    public void addBinding(String name, DeclarationSpecifier specifier) {
+    public void addBinding(String name, DeclarationSpecifier specifier, TypeEnvironment globalEnv) {
         if (specifier == null) {
             System.err.println("TypeEnvironment::addBinding: Malformed specifier declaration");
         }
+
+        DeclarationSpecifier expanded = globalEnv.expandDeclaration(specifier);
         switch (specifier.getType()) {
-            case ArrayType at -> addVariable(name, specifier, StorageLocation.STACK);
-            case StructType st -> addVariable(name, specifier, StorageLocation.STACK);
-            case UnionType ut -> addVariable(name, specifier, StorageLocation.STACK);
-            case FloatingType ft -> addVariable(name, specifier, StorageLocation.STACK);
+            case ArrayType at -> addVariable(name, expanded, StorageLocation.STACK);
+            case StructType st -> addVariable(name, expanded, StorageLocation.STACK);
+            case UnionType ut -> addVariable(name, expanded, StorageLocation.STACK);
+            case FunctionType ft -> {
+                expanded.setType(new PointerType(expanded.getType()));
+                addVariable(name, expanded, StorageLocation.REGISTER);
+            }
             case null -> throw new RuntimeException("TypeEnvironment::addBinding: should never encounter a null type");
-            default -> addVariable(name, specifier, StorageLocation.REGISTER);
+            default -> addVariable(name, expanded, StorageLocation.REGISTER);
         }
     }
 
@@ -269,6 +278,52 @@ public class TypeEnvironment {
         return result;
     }
 
+    /**
+     * Add a global declaration to the global block
+     * @param declaration
+     * @param globalBlock
+     */
+    public void addGlobalDeclarations(Declaration declaration, BasicBlock globalBlock) {
+        DeclarationSpecifier specifier = expandDeclaration(declaration.declSpec());
+        declaration.setDeclSpec(specifier);
+        Type t = specifier.getType();
+        Register globalReg;
+        if (t instanceof FunctionType ft) {
+            declaredFunctions.add(declaration.name());
+            globalReg = Register.FunctionPointer(declaration.name(), new PointerType(t));
+            globalBlock.addInstruction(new FunctionDeclarationLLVM(globalReg, ft));
+        } else {
+            globalReg = Register.Global(new PointerType(t));
+            globalBlock.addInstruction(new GlobalVariableLLVM(globalReg.clone(), declaration.name(), t));
+        }
+        globalBlock.addBinding(declaration.name(), globalReg.clone());
+    }
+
+
+    /**
+     * Add function definition to the global type environment
+     * @param name
+     * @param func
+     * @param globalEnv
+     */
+    public void addFunctionDefinition(String name, FunctionDefinition func, TypeEnvironment globalEnv) {
+        DeclarationSpecifier currentSpecifier = names.get(name);
+        DeclarationSpecifier funcExpanded = globalEnv.expandDeclaration(func.declaration().declSpec());
+        func.setDeclSpec(funcExpanded);
+
+        if (currentSpecifier != null) {
+            DeclarationSpecifier expanded = globalEnv.expandDeclaration(currentSpecifier);
+            assert expanded.getType() instanceof PointerType;
+            Type type = ((PointerType) expanded.getType()).base();
+            if (!funcExpanded.getType().equals(type)) {
+                throw new RuntimeException(String.format("TypeEnvironment: Illegal Redifinition of Function %s", name));
+            }
+        } else {
+            DeclarationSpecifier newSpec = new DeclarationSpecifier(new PointerType(funcExpanded.getType()));
+            newSpec.updateBoth(funcExpanded);
+            addBinding(name, newSpec, globalEnv);
+        }
+    }
 
     /**
      * Add declaration from the parameters of a function
@@ -299,13 +354,6 @@ public class TypeEnvironment {
         }
     }
 
-    public void addGlobalDeclarations(Declaration declaration, BasicBlock globalBlock) {
-        Type t = declaration.declSpec().getType();
-        Register globalReg = Register.Global(new PointerType(t));
-        GlobalVariableLLVM var = new GlobalVariableLLVM(globalReg.clone(), declaration.name(), t);
-        globalBlock.addInstruction(var);
-        globalBlock.addBinding(declaration.name(), globalReg.clone());
-    }
 
     /**
      * Add declaration from a compound statement
@@ -315,7 +363,7 @@ public class TypeEnvironment {
      * @param block the current basic block
      */
     public void addCompoundDeclarations(Declaration declaration, TranslationUnit unit,
-                                      ControlFlowGraph graph, BasicBlock block) {
+                                      ControlFlowGraph graph, BasicBlock block, TypeEnvironment globalEnv) {
         // generate code for each value in the value list
         // ex. int i = 7 + 9, 6, 8; will generate code for 7 + 9, 6, and 8;
         List<Register> valueList = declaration.initialValue().stream()
@@ -337,12 +385,17 @@ public class TypeEnvironment {
                 block.addBinding(name, value);
             }
             case STACK -> {
-                Register pReg = Register.LLVM_Register(new PointerType(paramType));
+                DeclarationSpecifier paramSpec = globalEnv.expandDeclaration(declaration.declSpec());
+                Register pReg = Register.LLVM_Register(new PointerType(paramSpec.getType()));
                 AllocaLLVM alloca = new AllocaLLVM(pReg.clone());
                 block.addInstruction(alloca);
                 if (!valueList.isEmpty()) {
-                    StoreLLVM store = new StoreLLVM(valueList.getLast(), pReg.clone());
-                    block.addInstruction(store);
+                    if (paramSpec.getType() instanceof ArrayType arr) {
+                        block.getMutableInstructions().addAll(arr.initArrayValues(pReg, valueList));
+                    } else {
+                        StoreLLVM store = new StoreLLVM(valueList.getLast(), pReg.clone());
+                        block.addInstruction(store);
+                    }
                 }
                 block.addBinding(name, pReg.clone());
             }
@@ -385,23 +438,6 @@ public class TypeEnvironment {
         if (objects.get(name) != null)
             throw new RuntimeException(String.format("TypeEnvironment: Enum/Struct/Union with name %s already exists", name));
         objects.put(name, union);
-    }
-
-    public void addDefinition(String name, FunctionDefinition func) {
-        DeclarationSpecifier declSpec = names.get(name);
-
-        if (declSpec != null) {
-            assert declSpec.getType() instanceof PointerType;
-            Type type = ((PointerType) declSpec.getType()).base();
-            if (!func.declaration().declSpec().getType().equals(type)) {
-                throw new RuntimeException(String.format("TypeEnvironment: Illegal Redifinition of Function %s", name));
-            }
-        }
-
-        DeclarationSpecifier newSpec = new DeclarationSpecifier(new PointerType(func.declaration().declSpec().getType()));
-        newSpec.updateBoth(func.declaration().declSpec());
-        locations.put(name, StorageLocation.STACK);
-        names.put(name, newSpec);
     }
 
     private void addVariable(String name, DeclarationSpecifier variable, StorageLocation location) {
@@ -480,6 +516,10 @@ public class TypeEnvironment {
 
     public StorageLocation getLocation(String name) {
         return locations.get(name);
+    }
+
+    public boolean isDeclaredFunction(String name) {
+        return declaredFunctions.contains(name);
     }
 
 

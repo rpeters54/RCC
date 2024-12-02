@@ -41,4 +41,9 @@ public class DefinedType extends Type {
     public String toString() {
         throw new RuntimeException("Shouldn't be called");
     }
+
+    @Override
+    public String fmtTypeString() {
+        throw new RuntimeException("Shouldn't be called");
+    }
 }

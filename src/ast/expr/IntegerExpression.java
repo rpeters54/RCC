@@ -7,14 +7,12 @@ import ast.types.Type;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
-import codegen.instruction.llvm.AllocaLLVM;
-import codegen.instruction.llvm.LoadLLVM;
 import codegen.instruction.llvm.LoadLiteralLLVM;
 import codegen.values.Literal;
 import codegen.values.Register;
 import ast.TypeEnvironment;
 
-public class IntegerExpression extends Expression {
+public class IntegerExpression extends Expression implements ConstantExpression {
     private final long value;
     private final IntegerType.Width size;
     private final boolean signed;
@@ -44,10 +42,17 @@ public class IntegerExpression extends Expression {
 
     @Override
     public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
-        Register allocaResult = Register.LLVM_Register(new PointerType(new IntegerType(size, signed)));
         Register loadResult = Register.LLVM_Register(new IntegerType(size, signed));
         Literal intValue =  new Literal(Long.toString(value), new IntegerType(size, signed));
-        block.addInstruction(new LoadLiteralLLVM(intValue, loadResult.clone(), allocaResult));
+        block.addInstruction(new LoadLiteralLLVM(intValue, loadResult.clone()));
         return loadResult;
+    }
+
+    /**
+     * Interpret a constant expression, used for handling array types in parser
+     * @return the interpreted value
+     */
+    public long interp() {
+        return value;
     }
 }

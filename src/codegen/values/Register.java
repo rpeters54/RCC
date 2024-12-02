@@ -13,26 +13,32 @@ public class Register implements Source {
     private final Type type;
     private final boolean global;
     private final Arch arch;
+    private final String alias;
 
     private static int LLVM_REGISTER_COUNT = 0;
 
-    public Register(Arch arch, int number, Type type, boolean global) {
+    public Register(Arch arch, int number, String alias, Type type, boolean global) {
         this.arch = arch;
         this.number = number;
+        this.alias = alias;
         this.type = type;
         this.global = global;
     }
 
     public static Register LLVM_Register(Type type) {
-        return new Register(Arch.LLVM, LLVM_REGISTER_COUNT++, type, false);
+        return new Register(Arch.LLVM, LLVM_REGISTER_COUNT++, "", type, false);
     }
 
     public static Register RISC_Register(Type type, int number) {
-        return new Register(Arch.RISC, number, type, false);
+        return new Register(Arch.RISC, number, "", type, false);
     }
 
     public static Register Global(Type type) {
-        return new Register(Arch.LLVM, LLVM_REGISTER_COUNT++, type, true);
+        return new Register(Arch.LLVM, LLVM_REGISTER_COUNT++, "", type, true);
+    }
+
+    public static Register FunctionPointer(String name, Type type) {
+        return new Register(Arch.LLVM, LLVM_REGISTER_COUNT++, name, type, true);
     }
 
     public static void ResetCount() {
@@ -43,18 +49,28 @@ public class Register implements Source {
         return number;
     }
 
+    public String alias() {
+        return alias;
+    }
+
 
     @Override
     public Register clone() {
-        return new Register(arch, number, type, global);
+        return new Register(arch, number, alias, type, global);
     }
 
     @Override
     public String toString() {
-        return switch (arch) {
-            case LLVM -> global ? "@.r" + number : "%r" + number;
-            case RISC ->
-                switch (type) {
+         switch (arch) {
+            case LLVM -> {
+                if (alias.isEmpty()) {
+                    return global ? "@.r" + number : "%r" + number;
+                } else {
+                    return global ? "@" + alias : "%" + alias;
+                }
+            }
+            case RISC -> {
+                return switch (type) {
                     case IntegerType it -> switch (number) {
                         case 0 -> "zero";
                         case 1 -> "ra";
@@ -82,7 +98,9 @@ public class Register implements Source {
                     default -> throw new RuntimeException("Register::toString: RISC "
                             + "invalid risc register type " + type);
                 };
-        };
+            }
+             case null, default -> throw new RuntimeException("Register::toString: NULL");
+        }
     }
 
     private static final List<Integer> TEMP_INT_NUMBERS = List.of(
@@ -95,19 +113,19 @@ public class Register implements Source {
     private static final List<Integer> SAVED_FLOAT_NUMBERS = List.of( 8, 9, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27);
 
     public static Register RiscRa() {
-        return new Register(Arch.RISC, 1, new IntegerType(IntegerType.Width.LONG, true), false);
+        return new Register(Arch.RISC, 1, "", new IntegerType(IntegerType.Width.LONG, true), false);
     }
 
     public static Register RiscSp() {
-        return new Register(Arch.RISC, 2, new IntegerType(IntegerType.Width.LONG, true), false);
+        return new Register(Arch.RISC, 2, "", new IntegerType(IntegerType.Width.LONG, true), false);
     }
 
     public static Register RiscFp() {
-        return new Register(Arch.RISC, 8, new IntegerType(IntegerType.Width.LONG, true), false);
+        return new Register(Arch.RISC, 8, "", new IntegerType(IntegerType.Width.LONG, true), false);
     }
 
     public static Register RiscZero() {
-        return new Register(Arch.RISC, 0, new IntegerType(IntegerType.Width.LONG, true), false);
+        return new Register(Arch.RISC, 0, "", new IntegerType(IntegerType.Width.LONG, true), false);
     }
 
     public static Register RiscIntTemp(int number) {
@@ -115,9 +133,20 @@ public class Register implements Source {
             throw new IllegalArgumentException("Register::toString: RISC argument out of range " + number);
         }
         if (number <= 2) {
-            return new Register(Arch.RISC, 5+number, new IntegerType(IntegerType.Width.LONG, true), false);
+            return new Register(Arch.RISC, 5+number, "", new IntegerType(IntegerType.Width.LONG, true), false);
         } else {
-            return new Register(Arch.RISC, 25+number, new IntegerType(IntegerType.Width.LONG, true), false);
+            return new Register(Arch.RISC, 25+number, "", new IntegerType(IntegerType.Width.LONG, true), false);
+        }
+    }
+
+    public static Register RiscFloatTemp(int number) {
+        if (number < 0 || number > 11) {
+            throw new IllegalArgumentException("Register::toString: RISC argument out of range " + number);
+        }
+        if (number <= 7) {
+            return new Register(Arch.RISC, number, "", new FloatingType(FloatingType.Width.DOUBLE), false);
+        } else {
+            return new Register(Arch.RISC, 20+number, "", new FloatingType(FloatingType.Width.DOUBLE), false);
         }
     }
 
@@ -125,14 +154,14 @@ public class Register implements Source {
         if (number < 0 || number > 7) {
             throw new IllegalArgumentException("Register::toString: RISC argument out of range " + number);
         }
-        return new Register(Arch.RISC, 10+number, new IntegerType(IntegerType.Width.LONG, true), false);
+        return new Register(Arch.RISC, 10+number, "", new IntegerType(IntegerType.Width.LONG, true), false);
     }
 
     public static Register RiscFloatArg(int number) {
         if (number < 0 || number > 7) {
             throw new IllegalArgumentException("Register::toString: RISC argument out of range " + number);
         }
-        return new Register(Arch.RISC, 10+number, new FloatingType(FloatingType.Width.DOUBLE), false);
+        return new Register(Arch.RISC, 10+number, "", new FloatingType(FloatingType.Width.DOUBLE), false);
     }
 
     public static List<Register> SavedRiscRegisters() {

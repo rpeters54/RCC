@@ -32,6 +32,11 @@ public class CompileTest {
     static Stream<TestTuple> fileProvider() {
 
         return Stream.of(
+                new TestTuple(testDir+"incdec/", "incdec.c"),
+                new TestTuple(testDir+"minheap/", "minheap.c"),
+                new TestTuple(testDir+"stack/", "stacks.c"),
+                new TestTuple(testDir+"unions/", "unions.c"),
+                new TestTuple(testDir+"matmul/", "matmul.c"),
                 new TestTuple(testDir+"width/", "width.c"),
                 new TestTuple(testDir+"floats/", "floats.c"),
                 new TestTuple(testDir+"degrees/", "degrees.c"),
@@ -43,6 +48,7 @@ public class CompileTest {
                 new TestTuple(testDir+"superBasic/", "superBasic.c"),
                 new TestTuple(testDir+"arrays/", "arrays.c"),
                 new TestTuple(testDir+"sort/", "sort.c"),
+                new TestTuple(testDir+"creativeBenchMarkName/", "creativeBenchMarkName.c"),
                 new TestTuple(testDir+"bert/", "bert.c"),
                 new TestTuple(testDir+"BenchMarkishTopics/", "BenchMarkishTopics.c"),
                 new TestTuple(testDir+"biggest/", "biggest.c"),
@@ -169,8 +175,7 @@ public class CompileTest {
         Declaration variable = new Declaration("a", new DeclarationSpecifier(new DefinedType("Node")));
         env.addTypeDef(decl);
         env.addClass(struct.declSpec());
-        DeclarationSpecifier expandedSpecifier = env.expandDeclaration(variable.declSpec());
-        env.addBinding(variable.name(), expandedSpecifier);
+        env.addBinding(variable.name(), variable.declSpec(), env);
 
         Assertions.assertInstanceOf(StructType.class, env.getBinding("a").getType());
     }
@@ -187,8 +192,7 @@ public class CompileTest {
         Declaration variable = new Declaration("a", new DeclarationSpecifier(new DefinedType("Node")));
         env.addTypeDef(decl);
         env.addClass(struct.declSpec());
-        DeclarationSpecifier expandedSpecifier = env.expandDeclaration(variable.declSpec());
-        env.addBinding(variable.name(), expandedSpecifier);
+        env.addBinding(variable.name(), variable.declSpec(), env);
 
         Assertions.assertInstanceOf(StructType.class, env.getBinding("a").getType());
         StructType st = (StructType) env.getBinding("a").getType();

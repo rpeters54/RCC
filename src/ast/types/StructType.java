@@ -95,5 +95,10 @@ public class StructType extends ObjectType {
     public String toString() {
         return "%struct." + name;
     }
+
+    @Override
+    public String fmtTypeString() {
+        return toString();
+    }
 }
 

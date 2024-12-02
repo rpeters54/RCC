@@ -401,6 +401,20 @@ public interface CVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExpressionList(CParser.ExpressionListContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code AssignmentStepThrough}
+	 * labeled alternative in {@link CParser#assignmentExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAssignmentStepThrough(CParser.AssignmentStepThroughContext ctx);
+	/**
+	 * Visit a parse tree produced by the {@code AssignmentExpr}
+	 * labeled alternative in {@link CParser#assignmentExpression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAssignmentExpr(CParser.AssignmentExprContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code FloatExpr}
 	 * labeled alternative in {@link CParser#expression}.
 	 * @param ctx the parse tree
@@ -421,13 +435,6 @@ public interface CVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitSizeofExprExpr(CParser.SizeofExprExprContext ctx);
-	/**
-	 * Visit a parse tree produced by the {@code AssignmentExpr}
-	 * labeled alternative in {@link CParser#expression}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitAssignmentExpr(CParser.AssignmentExprContext ctx);
 	/**
 	 * Visit a parse tree produced by the {@code DotExpr}
 	 * labeled alternative in {@link CParser#expression}.

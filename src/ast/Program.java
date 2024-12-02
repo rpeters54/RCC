@@ -61,9 +61,8 @@ public class Program {
                         }
                         default -> {}
                     }
-                    DeclarationSpecifier expandedSpecifier = globalEnv.expandDeclaration(declaration.declSpec());
                     if (declaration.name() != null)
-                        globalEnv.addBinding(declaration.name(), expandedSpecifier);
+                        globalEnv.addBinding(declaration.name(), declaration.declSpec(), globalEnv);
                 }
                 case TypeDeclaration declaration -> globalEnv.addTypeDef(declaration);
                 case FunctionDefinition definition -> {
@@ -73,14 +72,13 @@ public class Program {
                     Statement stmt = definition.body();
 
                     // add function definition to the environment
-                    globalEnv.addDefinition(stub.name(), definition);
+                    globalEnv.addFunctionDefinition(stub.name(), definition, globalEnv);
 
                     // ensure that the function has function type and add its args to the local env
                     if (!(stub.declSpec().getType() instanceof FunctionType func))
                         throw new RuntimeException("Program: Function Definition with Non-Function Declaration");
                     for (Declaration param : func.inputTypes()) {
-                        DeclarationSpecifier paramSpecifier = globalEnv.expandDeclaration(param.declSpec());
-                        localEnv.addBinding(param.name(), paramSpecifier);
+                        localEnv.addBinding(param.name(), param.declSpec(), globalEnv);
                     }
 
                     // by standard, functions must have a compound statement as their body
@@ -127,6 +125,11 @@ public class Program {
                     BasicBlock prologue = new BasicBlock();
                     graph.addBlock(prologue);
 
+                    // add declaration to global block
+                    if (unit.getGlobalBlock().getBinding(definition.declaration().name()) == null) {
+                        unit.getGlobalTypeEnvironment().addGlobalDeclarations(definition.declaration(), unit.getGlobalBlock());
+                    }
+
                     // add all parameter registers
                     definition.parameters().forEach(declaration ->
                             localEnv.AddParamDeclarations(declaration, graph, prologue)
@@ -155,10 +158,10 @@ public class Program {
                 case Declaration declaration -> {
                     if (declaration.name() != null) {
                         switch (declaration.declSpec().getType()) {
-                            case FunctionType function -> {
-                                FunctionDeclarationLLVM decl = new FunctionDeclarationLLVM(declaration.name(), function);
-                                unit.getGlobalBlock().addInstruction(decl);
-                            }
+//                            case FunctionType function -> {
+//                                FunctionDeclarationLLVM decl = new FunctionDeclarationLLVM(declaration.name(), function);
+//                                unit.getGlobalBlock().addInstruction(decl);
+//                            }
                             case null -> throw new RuntimeException("Program::codegen: null declaration");
                             default -> {
                                 unit.getGlobalTypeEnvironment().addGlobalDeclarations(declaration, unit.getGlobalBlock());

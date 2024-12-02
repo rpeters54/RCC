@@ -14,7 +14,7 @@ import codegen.values.Register;
 import codegen.values.Source;
 import ast.TypeEnvironment;
 
-public class PrefixExpression extends LValue {
+public class PrefixExpression extends LValue implements ConstantExpression {
 
     private final Operator operator;
     private final Expression operand;
@@ -157,6 +157,24 @@ public class PrefixExpression extends LValue {
             }
             case null, default -> throw new RuntimeException("PrefixExpression::codegen: Not Implemented");
         }
+    }
 
+    /**
+     * Interpret a constant expression, used for handling array types in parser
+     * @return the interpreted value
+     */
+    public long interp() {
+        if (!(operand instanceof ConstantExpression opConst)) {
+            throw new RuntimeException("Can't interp a non-constant expression");
+        }
+
+        long opVal = opConst.interp();
+
+        return switch(operator) {
+            case MINUS -> -opVal;
+            case INV -> ~opVal;
+            case POS -> opVal;
+            case null, default -> throw new RuntimeException("Invalid operator: " + operator);
+        };
     }
 }

@@ -6,6 +6,7 @@ import ast.types.*;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
+import codegen.instruction.llvm.ConversionLLVM;
 import codegen.instruction.llvm.GetElemPtrLLVM;
 import codegen.instruction.llvm.LoadLLVM;
 import codegen.instruction.llvm.StoreLLVM;
@@ -59,7 +60,7 @@ public class DotExpression extends LValue {
 
     @Override
     public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
-        Source operandSource = operand.codegen(unit, cfg, block);
+        Register operandSource = operand.codegen(unit, cfg, block);
         if (!(operandSource.type() instanceof PointerType pt)) {
             throw new RuntimeException("DotExpression::codegen: Can't use dot operator on type: " + operandSource.type());
         }
@@ -70,14 +71,45 @@ public class DotExpression extends LValue {
 
                 Type expandedType = unit.getGlobalTypeEnvironment()
                         .expandDeclaration(new DeclarationSpecifier(((PointerType)offsetPtr.type()).base())).getType();
-                Register result = Register.LLVM_Register(expandedType);
-                LoadLLVM load = new LoadLLVM(result.clone(), offsetPtr);
-                block.addInstruction(load);
 
-                return result;
+                switch (expandedType) {
+                    case ArrayType at -> { return offsetPtr; }
+                    case StructType st -> { return offsetPtr; }
+                    case UnionType ut -> { return offsetPtr; }
+                    case PrimitiveType primt -> {
+                        Register result = Register.LLVM_Register(expandedType);
+                        block.addInstruction(new LoadLLVM(result.clone(), offsetPtr));
+                        return result;
+                    }
+                    case null, default -> {
+                        throw new RuntimeException("DotExpression::codegen: invalid type " +
+                                expandedType);
+                    }
+                }
             }
             case UnionType union -> {
-                throw new RuntimeException("Not Implemented");
+                Type deref = unit.getGlobalTypeEnvironment()
+                        .expandDeclaration(new DeclarationSpecifier(union.typeOfMember(member))).getType();
+
+                ConversionLLVM conv = ConversionLLVM.make(operandSource, new PointerType(deref));
+                block.addInstruction(conv);
+
+                Register castedPtr = conv.result();
+
+                switch (deref) {
+                    case ArrayType at -> { return castedPtr; }
+                    case StructType st -> { return castedPtr; }
+                    case UnionType ut -> { return castedPtr; }
+                    case PrimitiveType primt -> {
+                        // add the necessary bitcast and load
+                        Register result = Register.LLVM_Register(deref);
+                        block.addInstruction(new LoadLLVM(result, conv.result()));
+                        return result;
+                    }
+                    case null, default -> {
+                        throw new RuntimeException("DotExpression::codegen: invalid type " + castedPtr);
+                    }
+                }
             }
             case null, default -> throw new RuntimeException("DotExpression::codegen: called with non-struct or union type");
         }
@@ -94,13 +126,38 @@ public class DotExpression extends LValue {
             case StructType struct -> {
                 Register offsetPtr = structOffset(unit, cfg, block, struct, operandReg);
 
-                StoreLLVM store = new StoreLLVM(right, offsetPtr);
+                Register optionalCast;
+                if (struct.typeOfMember(member) instanceof PrimitiveType) {
+                    if (!PrimitiveType.comparePrimitives((PrimitiveType) struct.typeOfMember(member), (PrimitiveType) right.type())) {
+                        ConversionLLVM implicitConv = ConversionLLVM.make(
+                                right,
+                                (PrimitiveType) struct.typeOfMember(member)
+                        );
+                        block.addInstruction(implicitConv);
+                        optionalCast = implicitConv.result().clone();
+                    } else {
+                        optionalCast = right;
+                    }
+                } else {
+                    optionalCast = right;
+                }
+
+
+                StoreLLVM store = new StoreLLVM(optionalCast, offsetPtr);
                 block.addInstruction(store);
 
                 return null;
             }
             case UnionType union -> {
-                throw new RuntimeException("Not Implemented");
+                Type deref = unit.getGlobalTypeEnvironment()
+                        .expandDeclaration(new DeclarationSpecifier(union.typeOfMember(member))).getType();
+
+                // add the necessary bitcast and load
+                ConversionLLVM conv = ConversionLLVM.make(operandReg, new PointerType(deref));
+                block.addInstruction(conv);
+                block.addInstruction(new StoreLLVM(right, conv.result()));
+
+                return null;
             }
             case null, default -> throw new RuntimeException("DotExpression::codegen: called with non-struct or union type");
         }
@@ -149,4 +206,6 @@ public class DotExpression extends LValue {
 
         return offsetPtr;
     }
+
+
 }

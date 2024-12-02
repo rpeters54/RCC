@@ -111,9 +111,16 @@ public class IdentifierExpression extends LValue {
             PointerType pt = (PointerType) address.type();
             Type expandedType = unit.getGlobalTypeEnvironment()
                     .expandDeclaration(new DeclarationSpecifier(pt.base())).getType();
-            Register result = Register.LLVM_Register(expandedType);
-            LoadLLVM load = new LoadLLVM(result.clone(), address.clone());
-            block.addInstruction(load);
+
+            Register result;
+            if (expandedType instanceof FunctionType) {
+                result = address.clone();
+            } else {
+                result = Register.LLVM_Register(expandedType);
+                LoadLLVM load = new LoadLLVM(result.clone(), address.clone());
+                block.addInstruction(load);
+            }
+
             return result;
         }
         throw new RuntimeException("IdentifierExpression::codegen: Unbound Identifier " + id);
@@ -122,6 +129,7 @@ public class IdentifierExpression extends LValue {
     @Override
     public Register processLValue(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block, Register right) {
         // find where the value is specified
+
         DeclarationSpecifier specifier = cfg.getLocalEnvironment().getBinding(id);
         TypeEnvironment.StorageLocation location = cfg.getLocalEnvironment().getLocation(id);
         if (specifier != null) {
@@ -163,6 +171,12 @@ public class IdentifierExpression extends LValue {
         }
         specifier = unit.getGlobalTypeEnvironment().getBinding(id);
         if (specifier != null) {
+            if (unit.getGlobalTypeEnvironment().isDeclaredFunction(id)) {
+                throw new RuntimeException("IdentifierExpression::processLValue: '" + id + "' on line: "+ lineNum()
+                        + " is a declared function" +
+                        " and therefore can not be modified");
+            }
+
             Register address = unit.getGlobalBlock().getBinding(id);
             assert address != null;
 
@@ -205,9 +219,6 @@ public class IdentifierExpression extends LValue {
         specifier = unit.getGlobalTypeEnvironment().getBinding(id);
         if (specifier != null) {
             Register address = unit.getGlobalBlock().getBinding(id);
-            if (address == null) {
-                System.out.println("Here");
-            }
             assert address != null;
             return address.clone();
         }

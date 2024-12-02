@@ -58,8 +58,8 @@ public class GetElemPtrLLVM extends LLVMInstruction {
         }
         Type internal = ((PointerType) rvalue(0).type()).base();
         String deref = switch(internal) {
-            case PointerType pt -> pt.typeString();
-            case CompoundType ct -> ct.typeString();
+            case PointerType pt -> pt.fmtTypeString();
+            case CompoundType ct -> ct.fmtTypeString();
             default -> internal.toString();
         };
         StringBuilder builder = new StringBuilder();

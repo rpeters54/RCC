@@ -4,6 +4,7 @@ public abstract class Type {
     public abstract String toString();
     public abstract Type clone();
     public abstract long sizeof();
+    public abstract String fmtTypeString();
 
     public enum Specifier {
         CHAR, DOUBLE, FLOAT, INT, LONG, SHORT, SIGNED, UNSIGNED

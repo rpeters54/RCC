@@ -33,8 +33,7 @@ public class Main {
         Program program = parseProgram(args);
         program.verifySemantics();
         TranslationUnit code = program.codegen();
-        code.pruneRedundantPhis();
-        code.deadCodeElimination();
+        code.optLLVM();
 
         TranslationUnit risc = code.toRisc();
         risc.generateRiscFile(args[2]);

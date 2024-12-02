@@ -42,8 +42,8 @@ public class PointerType extends PrimitiveType implements CompoundType {
         return Objects.hashCode(base);
     }
 
-    public String typeString() {
-        return base.toString() + "*";
+    public String fmtTypeString() {
+        return base.fmtTypeString() + "*";
     }
 
     @Override

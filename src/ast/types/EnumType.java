@@ -51,4 +51,9 @@ public class EnumType extends ObjectType {
     public String toString() {
         throw new RuntimeException("Not implemented yet");
     }
+
+    @Override
+    public String fmtTypeString() {
+        throw new RuntimeException("Not implemented yet");
+    }
 }

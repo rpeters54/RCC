@@ -43,6 +43,14 @@ public class FunctionDefinition implements ExternalDeclaration {
         return ((FunctionType) declaration.declSpec().getType()).returnType();
     }
 
+    public void setType(FunctionType type) {
+        declaration.declSpec().setType(type);
+    }
+
+    public void setDeclSpec(DeclarationSpecifier declSpec) {
+        declaration.setDeclSpec(declSpec);
+    }
+
     public List<Declaration> parameters() {
         assert declaration.declSpec().getType() instanceof FunctionType;
         FunctionType functionType = (FunctionType) declaration.declSpec().getType();

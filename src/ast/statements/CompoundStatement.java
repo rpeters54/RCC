@@ -3,6 +3,7 @@ package ast.statements;
 import ast.declarations.Declaration;
 import ast.declarations.DeclarationSpecifier;
 import ast.declarations.FunctionDefinition;
+import ast.expr.Expression;
 import codegen.BasicBlock;
 import ast.TypeEnvironment;
 import codegen.ControlFlowGraph;
@@ -34,8 +35,12 @@ public class CompoundStatement extends Statement {
     public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, FunctionDefinition function) {
         // for each declaration, replace any type aliases with the actual types
         for (Declaration declaration : declarations) {
-            DeclarationSpecifier expandedSpecifier = globalEnv.expandDeclaration(declaration.declSpec());
-            localEnv.addBinding(declaration.name(), expandedSpecifier);
+            if (declaration.initialValue() != null) {
+                for (Expression expression : declaration.initialValue()) {
+                    expression.verifySemantics(globalEnv, localEnv, TypeEnvironment.StorageLocation.REGISTER);
+                }
+            }
+            localEnv.addBinding(declaration.name(), declaration.declSpec(), globalEnv);
         }
         DeclarationSpecifier specifier = new DeclarationSpecifier();
         for (Statement statement : statements) {
@@ -58,7 +63,8 @@ public class CompoundStatement extends Statement {
         // add all declarations to the block environment
         // assign them 'nill' if they were not initialized by the programmer
         for (Declaration declaration : declarations) {
-            cfg.getLocalEnvironment().addCompoundDeclarations(declaration, unit, cfg, block);
+            cfg.getLocalEnvironment().addCompoundDeclarations(declaration, unit, cfg,
+                    block, unit.getGlobalTypeEnvironment());
         }
         // walk through the statements
         BasicBlock current = block;

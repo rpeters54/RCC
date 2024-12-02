@@ -20,7 +20,7 @@ public class BinaryRisc extends RiscInstruction {
         super(Arrays.asList(result), Arrays.asList(op1, op2));
 
         assert result.type() instanceof PrimitiveType;
-        this.resultType = (PrimitiveType) result.type();
+        this.resultType = (PrimitiveType) op1.type();
         this.op = op;
     }
 
@@ -30,6 +30,10 @@ public class BinaryRisc extends RiscInstruction {
 
         this.resultType = resultType;
         this.op = op;
+    }
+
+    public BinaryExpression.Operator getOp() {
+        return op;
     }
 
     public static List<Instruction> AnyMov(Register result, Register op1) {
@@ -77,21 +81,6 @@ public class BinaryRisc extends RiscInstruction {
                 new FloatMovRisc(temp, op1),
                 new BinaryRisc(result, BinaryExpression.Operator.PLUS, temp, Register.RiscZero())
         );
-//        switch (ft.size()) {
-//            case DOUBLE -> {
-//                return List.of(
-//                        new FloatMovRisc(temp, op1),
-//                        new BinaryRisc(result, BinaryExpression.Operator.PLUS, temp, Register.RiscZero())
-//                );
-//            }
-//            case FLOAT -> {
-//                return List.of(
-//                        new FloatMovRisc(temp, op1),
-//                        new BinaryRisc(result, BinaryExpression.Operator.PLUS, temp, Register.RiscZero())
-//                );
-//            }
-//            case null, default -> throw new RuntimeException("invalid type");
-//        }
     }
 
     @Override

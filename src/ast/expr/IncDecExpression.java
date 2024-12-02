@@ -5,6 +5,9 @@ import ast.types.PrimitiveType;
 import codegen.BasicBlock;
 import codegen.ControlFlowGraph;
 import codegen.TranslationUnit;
+import codegen.instruction.llvm.BinaryLLVM;
+import codegen.instruction.llvm.LoadLiteralLLVM;
+import codegen.values.Literal;
 import codegen.values.Register;
 import ast.TypeEnvironment;
 
@@ -45,6 +48,9 @@ public class IncDecExpression extends LValue {
 
     @Override
     public DeclarationSpecifier verifySemantics(TypeEnvironment globalEnv, TypeEnvironment localEnv, TypeEnvironment.StorageLocation location) {
+        if (!(operand instanceof LValue)) {
+            throw new RuntimeException("PostIncDecExpression::verifySemantics: Operand must be a LValue");
+        }
         DeclarationSpecifier opDeclSpec = operand.verifySemantics(globalEnv,localEnv, TypeEnvironment.StorageLocation.REGISTER);
         switch (operator) {
             case PRE_INC, PRE_DEC, POST_INC, POST_DEC -> {
@@ -58,7 +64,34 @@ public class IncDecExpression extends LValue {
 
     @Override
     public Register codegen(TranslationUnit unit, ControlFlowGraph cfg, BasicBlock block) {
-        throw new RuntimeException("Not Implemented");
+        // get current value
+        Register operandCurrentValue = operand.codegen(unit, cfg, block);
+        // load a literal with the value 1
+        Register one = Register.LLVM_Register(operandCurrentValue.type());
+        block.addInstruction(new LoadLiteralLLVM(new Literal("1", operandCurrentValue.type()), one));
+
+        // depending on inc/dec create the proper binary instruction
+        Register opResult = Register.LLVM_Register(operandCurrentValue.type());
+        switch (operator) {
+            case PRE_INC, POST_INC -> block.addInstruction(new BinaryLLVM(opResult,
+                    BinaryExpression.Operator.PLUS, operandCurrentValue, one));
+            case PRE_DEC, POST_DEC -> block.addInstruction(new BinaryLLVM(opResult,
+                    BinaryExpression.Operator.MINUS, operandCurrentValue, one));
+            default -> throw new RuntimeException("PostIncDecExpression::codegen: Invalid Operator");
+        }
+
+        // return the correct value depending on pre/post
+        switch (operator) {
+            case PRE_INC, PRE_DEC -> {
+                ((LValue)operand).processLValue(unit,cfg,block,opResult);
+                return opResult;
+            }
+            case POST_INC, POST_DEC -> {
+                ((LValue)operand).processLValue(unit,cfg,block,opResult);
+                return operandCurrentValue;
+            }
+            default -> throw new RuntimeException("PostIncDecExpression::codegen: Invalid Operator");
+        }
     }
 
     @Override

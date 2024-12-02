@@ -16,9 +16,12 @@ public class IntegerType extends NumberType {
         this.signed = signed;
     }
 
+    // ensure that values are 4 byte aligned
+    private static final long ALIGNMENT = 4;
     @Override
     public long sizeof() {
-        return size.value / 8;
+        long base = size.value / 8;
+        return Math.max(base, ALIGNMENT);
     }
 
     public Width size() {
@@ -70,6 +73,11 @@ public class IntegerType extends NumberType {
     @Override
     public String toString() {
         return "i"+size.value;
+    }
+
+    @Override
+    public String fmtTypeString() {
+        return toString();
     }
 
     public static long sizeDiff(IntegerType longer, IntegerType shorter) {

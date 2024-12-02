@@ -62,6 +62,11 @@ public class FloatingType extends NumberType {
         };
     }
 
+    @Override
+    public String fmtTypeString() {
+        return toString();
+    }
+
     public static FloatingType wider(FloatingType a, FloatingType b) {
         Width size;
         if (a.size == Width.DOUBLE || b.size == Width.DOUBLE) {

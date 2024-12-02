@@ -35,9 +35,28 @@ public class UnionType extends ObjectType {
         return size;
     }
 
+    public Type typeOfMember(String name) {
+        for (Declaration member : members) {
+            if (member.name().equals(name)) {
+                return member.declSpec().getType();
+            }
+        }
+        return null;
+    }
+
+    public int indexOfMember(String name) {
+        for (int i = 0; i < members.size(); i++) {
+            if (members.get(i).name().equals(name)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+
     @Override
     public Type clone() {
-        throw new RuntimeException("not implemented yet");
+        return new UnionType(name, members);
     }
 
     @Override
@@ -68,5 +87,10 @@ public class UnionType extends ObjectType {
     @Override
     public String toString() {
         return "%union." + name;
+    }
+
+    @Override
+    public String fmtTypeString() {
+        return toString();
     }
 }

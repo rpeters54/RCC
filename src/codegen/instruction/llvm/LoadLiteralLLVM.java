@@ -5,6 +5,7 @@ import ast.types.IntegerType;
 import ast.types.PointerType;
 import ast.types.Type;
 import codegen.instruction.Instruction;
+import codegen.instruction.riscv.FloatConversionRisc;
 import codegen.instruction.riscv.LoadImmRisc;
 import codegen.instruction.riscv.LoadRisc;
 import codegen.instruction.riscv.StoreRisc;
@@ -19,9 +20,15 @@ public class LoadLiteralLLVM extends LLVMInstruction {
 
     private final Literal value;
 
-    public LoadLiteralLLVM(Literal value, Register local, Register address) {
-        super(Arrays.asList(local), Arrays.asList(address));
+    public LoadLiteralLLVM(Literal value, Register local) {
+        super(Arrays.asList(local), new ArrayList<>());
+        Register address = Register.LLVM_Register(new PointerType(local.type()));
+        addRValue(address);
         this.value = value;
+    }
+
+    public Literal getValue() {
+        return value;
     }
 
     @Override
@@ -29,7 +36,8 @@ public class LoadLiteralLLVM extends LLVMInstruction {
         assert rvalue(0).type() instanceof PointerType;
         Type deref = ((PointerType) rvalue(0).type()).base();
         String alloca = String.format("%s = alloca %s", rvalue(0), deref);
-        String store  = String.format("store %s %s, %s %s", value.type(), value, rvalue(0).type(), rvalue(0));
+        String store  = String.format("store %s %s, %s %s", value.type(), value.llvmStorePrint(),
+                rvalue(0).type(), rvalue(0));
         String load   = String.format("%s = load %s, %s %s", result(), result().type(), rvalue(0).type(), rvalue(0));
         return alloca + "\n\t" + store + "\n\t" + load;
     }
@@ -46,7 +54,16 @@ public class LoadLiteralLLVM extends LLVMInstruction {
                 risc.add(new AllocaLLVM(localRvalues.get(0).clone()));
                 risc.add(new LoadImmRisc(intermediate.clone(), value.clone()));
                 risc.add(new StoreRisc(intermediate, localRvalues.get(0).clone()));
-                risc.add(new LoadRisc(localResult.clone(), localRvalues.get(0).clone()));
+                switch (ft.size()) {
+                    case DOUBLE -> {
+                        risc.add(new LoadRisc(localResult.clone(), localRvalues.get(0).clone()));
+                    }
+                    case FLOAT -> {
+                        Register temp = Register.LLVM_Register(new FloatingType(FloatingType.Width.DOUBLE));
+                        risc.add(new LoadRisc(temp.clone(), localRvalues.get(0).clone()));
+                        risc.add(new FloatConversionRisc(localResult.clone(), temp));
+                    }
+                }
             }
             default -> throw new RuntimeException("invalid type");
         }

@@ -1,8 +1,18 @@
 package ast.types;
 
+import ast.TypeEnvironment;
 import ast.expr.Expression;
 import ast.expr.IntegerExpression;
+import codegen.instruction.Instruction;
+import codegen.instruction.llvm.GetElemPtrLLVM;
+import codegen.instruction.llvm.LLVMInstruction;
+import codegen.instruction.llvm.StoreLLVM;
+import codegen.values.Literal;
+import codegen.values.Register;
+import codegen.values.Source;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
@@ -32,12 +42,38 @@ public class ArrayType extends Type implements CompoundType {
         this.size = size;
     }
 
-    public void deriveSize(List<Expression> sizeExpression) {
-        Expression first = sizeExpression.getLast();
-        if (!(first instanceof IntegerExpression ie)) {
-            throw new RuntimeException("ArrayType requires an integer expression");
+    public List<Instruction> initArrayValues(Register ptr, List<Register> values) {
+        List<Instruction> inst = new ArrayList<>();
+        List<Long> dimensions = new ArrayList<>();
+        List<Long> currentIndex = new ArrayList<>();
+        Type t = this;
+        while (t instanceof ArrayType arr) {
+            dimensions.add(arr.size);
+            currentIndex.add((long)0);
+            t = arr.base();
         }
-        size = ie.getValue();
+
+        for (Register value : values) {
+            Register offsetPtr = Register.LLVM_Register(new PointerType(this));
+            List<Source> indirections = currentIndex.stream()
+                    .map(Literal::longLiteral)
+                    .collect(LinkedList::new, LinkedList::add, LinkedList::addAll);
+            indirections.addFirst(Literal.longLiteral(0));
+            indirections.addFirst(ptr);
+            inst.add(new GetElemPtrLLVM(offsetPtr, indirections));
+            inst.add(new StoreLLVM(value, offsetPtr));
+
+            for (int i = currentIndex.size()-1; i >= 0; i--) {
+                if (currentIndex.get(i).equals(dimensions.get(i)-1)) {
+                    currentIndex.set(i, (long)0);
+                } else {
+                    currentIndex.set(i, currentIndex.get(i)+1);
+                    break;
+                }
+            }
+        }
+
+        return inst;
     }
 
     @Override
@@ -67,12 +103,12 @@ public class ArrayType extends Type implements CompoundType {
         return Objects.hash(base, size);
     }
 
-    public String typeString() {
-        return toString();
-    }
-
     @Override
     public String toString() {
         return String.format("[%d x %s]", size, base.toString());
+    }
+
+    public String fmtTypeString() {
+        return String.format("[%d x %s]", size, base.fmtTypeString());
     }
 }
