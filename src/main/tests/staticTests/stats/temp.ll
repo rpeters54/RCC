@@ -141,10 +141,10 @@ l7:
     %r107 = icmp ne i1 %r106, %r108
     br i1 %r107, label %l8, label %l10
 l8:
-    %r110 = phi i64 [%r116, %l8], [%r99, %l7]
-    %r111 = phi i64 [%r111, %l8], [%r101, %l7]
-    %r112 = phi ptr [%r121, %l8], [%r90, %l7]
-    %r113 = phi i64 [%r119, %l8], [%r97, %l7]
+    %r110 = phi i64 [%r99, %l7], [%r116, %l8]
+    %r111 = phi i64 [%r101, %l7], [%r111, %l8]
+    %r112 = phi ptr [%r90, %l7], [%r121, %l8]
+    %r113 = phi i64 [%r97, %l7], [%r119, %l8]
     %r116 = add i64 %r110, %r114
     %r117 = getelementptr inbounds %struct._mini_linkedNums, ptr %r112, i32 0, i32 0
     %r118 = load i64, ptr %r117
@@ -156,9 +156,9 @@ l8:
     %r130 = icmp ne i1 %r129, %r131
     br i1 %r130, label %l8, label %l10
 l10:
-    %r133 = phi i64 [%r116, %l8], [%r99, %l7]
-    %r134 = phi i64 [%r111, %l8], [%r101, %l7]
-    %r136 = phi i64 [%r119, %l8], [%r97, %l7]
+    %r133 = phi i64 [%r99, %l7], [%r116, %l8]
+    %r134 = phi i64 [%r101, %l7], [%r111, %l8]
+    %r136 = phi i64 [%r97, %l7], [%r119, %l8]
     %r139 = icmp ne i64 %r133, %r137
     %r142 = icmp ne i1 %r139, %r140
     br i1 %r142, label %l11, label %l13
@@ -274,10 +274,10 @@ l25:
     %r230 = icmp ne i1 %r229, %r231
     br i1 %r230, label %l26, label %l28
 l26:
-    %r233 = phi i64 [%r220, %l25], [%r270, %l37]
-    %r234 = phi i64 [%r222, %l25], [%r271, %l37]
-    %r235 = phi i64 [%r224, %l25], [%r272, %l37]
-    %r236 = phi ptr [%r213, %l25], [%r275, %l37]
+    %r233 = phi i64 [%r270, %l37], [%r220, %l25]
+    %r234 = phi i64 [%r271, %l37], [%r222, %l25]
+    %r235 = phi i64 [%r272, %l37], [%r224, %l25]
+    %r236 = phi ptr [%r275, %l37], [%r213, %l25]
     %r239 = icmp ne i64 %r235, %r237
     br i1 %r239, label %l29, label %l30
 l29:
@@ -313,10 +313,10 @@ l35:
     %r265 = phi ptr [%r236, %l33], [%r236, %l32]
     br label %l36
 l36:
-    %r266 = phi i64 [%r253, %l31], [%r262, %l35]
-    %r267 = phi i64 [%r234, %l31], [%r263, %l35]
-    %r268 = phi i64 [%r235, %l31], [%r264, %l35]
-    %r269 = phi ptr [%r236, %l31], [%r265, %l35]
+    %r266 = phi i64 [%r262, %l35], [%r253, %l31]
+    %r267 = phi i64 [%r263, %l35], [%r234, %l31]
+    %r268 = phi i64 [%r264, %l35], [%r235, %l31]
+    %r269 = phi ptr [%r265, %l35], [%r236, %l31]
     br label %l37
 l37:
     %r270 = phi i64 [%r241, %l29], [%r266, %l36]
@@ -330,8 +330,8 @@ l37:
     %r284 = icmp ne i1 %r283, %r285
     br i1 %r284, label %l26, label %l28
 l28:
-    %r287 = phi i64 [%r220, %l25], [%r270, %l37]
-    %r288 = phi i64 [%r222, %l25], [%r271, %l37]
+    %r287 = phi i64 [%r270, %l37], [%r220, %l25]
+    %r288 = phi i64 [%r271, %l37], [%r222, %l25]
     %r292 = call i32 @printf(ptr @.r291, i64 %r287)
     %r294 = call i32 @printf(ptr @.r293, i64 %r288)
     ret void

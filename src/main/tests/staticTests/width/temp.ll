@@ -45,9 +45,9 @@ l4:
     %r15 = call i32 @printf(ptr @.r14)
     br label %l5
 l5:
-    %r17 = phi i32 [%r3, %l4], [%r3, %l3]
-    %r18 = phi i64 [%r5, %l4], [%r5, %l3]
-    %r19 = phi i32 [%r2, %l4], [%r2, %l3]
+    %r17 = phi i32 [%r3, %l3], [%r3, %l4]
+    %r18 = phi i64 [%r5, %l3], [%r5, %l4]
+    %r19 = phi i32 [%r2, %l3], [%r2, %l4]
     %r22 = icmp uge i64 %r18, %r20
     %r25 = icmp ne i1 %r22, %r23
     br i1 %r25, label %l6, label %l7

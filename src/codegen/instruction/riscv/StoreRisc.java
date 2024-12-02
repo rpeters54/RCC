@@ -16,24 +16,17 @@ public class StoreRisc extends RiscInstruction {
     private Literal offset;
     private final PrimitiveType storeType;
 
-    public StoreRisc(Register value, Register location) {
+    public StoreRisc(Register value, Register location, Type explicitType) {
         super(new ArrayList<>(), Arrays.asList(value, location));
-        assert value.type() instanceof PrimitiveType;
-        this.storeType = (PrimitiveType) value.type();
+        assert explicitType instanceof PrimitiveType;
+        this.storeType = (PrimitiveType) explicitType;
         this.offset = null;
     }
 
-    private StoreRisc(Register value, Register location, Literal offset) {
+    public StoreRisc(Register value, Register location, long offset, Type explicitType) {
         super(new ArrayList<>(), Arrays.asList(value, location));
-        assert value.type() instanceof PrimitiveType;
-        this.storeType = (PrimitiveType) value.type();
-        this.offset = offset;
-    }
-
-    public StoreRisc(Register value, Register location, long offset) {
-        super(new ArrayList<>(), Arrays.asList(value, location));
-        assert value.type() instanceof PrimitiveType;
-        this.storeType = (PrimitiveType) value.type();
+        assert explicitType instanceof PrimitiveType;
+        this.storeType = (PrimitiveType) explicitType;
         this.offset = new Literal(Long.toString(offset), new IntegerType(IntegerType.Width.LONG, true));
     }
 
@@ -79,9 +72,9 @@ public class StoreRisc extends RiscInstruction {
         // add SP decrement
         result.add(new BinaryImmRisc(Register.RiscSp(), BinaryExpression.Operator.PLUS,Register.RiscSp(), -offset));
         // store all saved registers
-        result.add(new StoreRisc(Register.RiscRa(), Register.RiscSp(), base));
+        result.add(new StoreRisc(Register.RiscRa(), Register.RiscSp(), base, Register.RiscRa().type()));
         base+=8;
-        result.add(new StoreRisc(Register.RiscFp(), Register.RiscSp(), base));
+        result.add(new StoreRisc(Register.RiscFp(), Register.RiscSp(), base, Register.RiscRa().type()));
         base+=8;
 //        for (Register saved : Register.SavedRiscRegisters()) {
 //            result.add(new StoreRisc(saved, Register.RiscSp(), base));

@@ -114,9 +114,9 @@ l4:
     %r97 = icmp ne i1 %r96, %r98
     br i1 %r97, label %l5, label %l7
 l5:
-    %r101 = phi ptr [%r108, %l5], [%r93, %l4]
-    %r102 = phi i64 [%r113, %l5], [%r88, %l4]
-    %r103 = phi i64 [%r106, %l5], [%r91, %l4]
+    %r101 = phi ptr [%r93, %l4], [%r108, %l5]
+    %r102 = phi i64 [%r88, %l4], [%r113, %l5]
+    %r103 = phi i64 [%r91, %l4], [%r106, %l5]
     %r104 = getelementptr inbounds %struct._mini_node, ptr %r101, i32 0, i32 0
     %r105 = load i64, ptr %r104
     %r106 = mul i64 %r103, %r105
@@ -128,7 +128,7 @@ l5:
     %r121 = icmp ne i1 %r120, %r122
     br i1 %r121, label %l5, label %l7
 l7:
-    %r127 = phi i64 [%r106, %l5], [%r91, %l4]
+    %r127 = phi i64 [%r91, %l4], [%r106, %l5]
     ret i64 %r127
 }
 define i64 @_mini_add(ptr %r130) {
@@ -159,9 +159,9 @@ l9:
     %r147 = icmp ne i1 %r146, %r148
     br i1 %r147, label %l10, label %l12
 l10:
-    %r151 = phi ptr [%r158, %l10], [%r143, %l9]
-    %r152 = phi i64 [%r163, %l10], [%r138, %l9]
-    %r153 = phi i64 [%r156, %l10], [%r141, %l9]
+    %r151 = phi ptr [%r143, %l9], [%r158, %l10]
+    %r152 = phi i64 [%r138, %l9], [%r163, %l10]
+    %r153 = phi i64 [%r141, %l9], [%r156, %l10]
     %r154 = getelementptr inbounds %struct._mini_node, ptr %r151, i32 0, i32 0
     %r155 = load i64, ptr %r154
     %r156 = add i64 %r153, %r155
@@ -173,7 +173,7 @@ l10:
     %r171 = icmp ne i1 %r170, %r172
     br i1 %r171, label %l10, label %l12
 l12:
-    %r177 = phi i64 [%r156, %l10], [%r141, %l9]
+    %r177 = phi i64 [%r141, %l9], [%r156, %l10]
     ret i64 %r177
 }
 define i64 @_mini_recurseList(ptr %r180) {
@@ -259,10 +259,10 @@ l18:
     %r227 = icmp ne i1 %r226, %r228
     br i1 %r227, label %l19, label %l21
 l19:
-    %r230 = phi ptr [%r230, %l19], [%r217, %l18]
-    %r231 = phi i64 [%r237, %l19], [%r215, %l18]
-    %r232 = phi i64 [%r232, %l19], [%r223, %l18]
-    %r234 = phi i64 [%r240, %l19], [%r213, %l18]
+    %r230 = phi ptr [%r217, %l18], [%r230, %l19]
+    %r231 = phi i64 [%r215, %l18], [%r237, %l19]
+    %r232 = phi i64 [%r223, %l18], [%r232, %l19]
+    %r234 = phi i64 [%r213, %l18], [%r240, %l19]
     %r236 = call i64 @_mini_recurseList(ptr %r230)
     %r237 = add i64 %r231, %r236
     %r240 = add i64 %r234, %r238
@@ -270,22 +270,22 @@ l19:
     %r250 = icmp ne i1 %r249, %r251
     br i1 %r250, label %l19, label %l21
 l21:
-    %r254 = phi i64 [%r237, %l19], [%r215, %l18]
-    %r255 = phi i64 [%r232, %l19], [%r223, %l18]
+    %r254 = phi i64 [%r215, %l18], [%r237, %l19]
+    %r255 = phi i64 [%r223, %l18], [%r232, %l19]
     %r260 = call i32 @printf(ptr @.r259, i64 %r254)
     %r263 = icmp ne i64 %r254, %r261
     %r264 = icmp ne i1 %r263, %r265
     br i1 %r264, label %l22, label %l24
 l22:
-    %r268 = phi i64 [%r275, %l22], [%r254, %l21]
-    %r269 = phi i64 [%r269, %l22], [%r255, %l21]
+    %r268 = phi i64 [%r254, %l21], [%r275, %l22]
+    %r269 = phi i64 [%r255, %l21], [%r269, %l22]
     %r275 = sub i64 %r268, %r273
     %r284 = icmp ne i64 %r275, %r282
     %r285 = icmp ne i1 %r284, %r286
     br i1 %r285, label %l22, label %l24
 l24:
-    %r289 = phi i64 [%r275, %l22], [%r254, %l21]
-    %r290 = phi i64 [%r269, %l22], [%r255, %l21]
+    %r289 = phi i64 [%r254, %l21], [%r275, %l22]
+    %r290 = phi i64 [%r255, %l21], [%r269, %l22]
     %r295 = call i32 @printf(ptr @.r294, i64 %r290)
     %r297 = call i32 @printf(ptr @.r296, i64 %r289)
     ret i64 %r298

@@ -539,10 +539,10 @@ l40:
 l42:
     br label %l36
 l45:
-    %r206 = phi ptr [%r179, %l38], [%r179, %l40]
+    %r206 = phi ptr [%r179, %l40], [%r179, %l38]
     br label %l46
 l46:
-    %r207 = phi ptr [%r179, %l37], [%r206, %l45]
+    %r207 = phi ptr [%r206, %l45], [%r179, %l37]
     %r208 = getelementptr inbounds %struct._mini_gameBoard, ptr %r207, i32 0, i32 0
     %r209 = load i64, ptr %r208
     %r212 = icmp eq i64 %r209, %r210
@@ -590,7 +590,7 @@ l63:
     %r262 = phi ptr [%r235, %l58], [%r235, %l56]
     br label %l64
 l64:
-    %r263 = phi ptr [%r262, %l63], [%r235, %l55]
+    %r263 = phi ptr [%r235, %l55], [%r262, %l63]
     %r264 = getelementptr inbounds %struct._mini_gameBoard, ptr %r263, i32 0, i32 3
     %r265 = load i64, ptr %r264
     %r268 = icmp eq i64 %r265, %r266
@@ -611,10 +611,10 @@ l67:
 l69:
     br label %l36
 l72:
-    %r290 = phi ptr [%r263, %l67], [%r263, %l65]
+    %r290 = phi ptr [%r263, %l65], [%r263, %l67]
     br label %l73
 l73:
-    %r291 = phi ptr [%r290, %l72], [%r263, %l64]
+    %r291 = phi ptr [%r263, %l64], [%r290, %l72]
     %r292 = getelementptr inbounds %struct._mini_gameBoard, ptr %r291, i32 0, i32 6
     %r293 = load i64, ptr %r292
     %r296 = icmp eq i64 %r293, %r294
@@ -635,10 +635,10 @@ l76:
 l78:
     br label %l36
 l81:
-    %r318 = phi ptr [%r291, %l74], [%r291, %l76]
+    %r318 = phi ptr [%r291, %l76], [%r291, %l74]
     br label %l82
 l82:
-    %r319 = phi ptr [%r318, %l81], [%r291, %l73]
+    %r319 = phi ptr [%r291, %l73], [%r318, %l81]
     %r320 = getelementptr inbounds %struct._mini_gameBoard, ptr %r319, i32 0, i32 6
     %r321 = load i64, ptr %r320
     %r324 = icmp eq i64 %r321, %r322
@@ -683,10 +683,10 @@ l94:
 l96:
     br label %l36
 l99:
-    %r374 = phi ptr [%r347, %l94], [%r347, %l92]
+    %r374 = phi ptr [%r347, %l92], [%r347, %l94]
     br label %l100
 l100:
-    %r375 = phi ptr [%r347, %l91], [%r374, %l99]
+    %r375 = phi ptr [%r374, %l99], [%r347, %l91]
     %r376 = getelementptr inbounds %struct._mini_gameBoard, ptr %r375, i32 0, i32 0
     %r377 = load i64, ptr %r376
     %r380 = icmp eq i64 %r377, %r378
@@ -707,10 +707,10 @@ l103:
 l105:
     br label %l36
 l108:
-    %r402 = phi ptr [%r375, %l101], [%r375, %l103]
+    %r402 = phi ptr [%r375, %l103], [%r375, %l101]
     br label %l109
 l109:
-    %r403 = phi ptr [%r402, %l108], [%r375, %l100]
+    %r403 = phi ptr [%r375, %l100], [%r402, %l108]
     %r404 = getelementptr inbounds %struct._mini_gameBoard, ptr %r403, i32 0, i32 1
     %r405 = load i64, ptr %r404
     %r408 = icmp eq i64 %r405, %r406
@@ -893,9 +893,9 @@ l147:
     %r561 = icmp ne i1 %r558, %r562
     br i1 %r561, label %l148, label %l150
 l148:
-    %r565 = phi ptr [%r591, %l153], [%r550, %l147]
-    %r566 = phi i64 [%r597, %l153], [%r534, %l147]
-    %r567 = phi i64 [%r593, %l153], [%r536, %l147]
+    %r565 = phi ptr [%r550, %l147], [%r591, %l153]
+    %r566 = phi i64 [%r534, %l147], [%r597, %l153]
+    %r567 = phi i64 [%r536, %l147], [%r593, %l153]
     call void @_mini_printBoard(ptr %r565)
     %r570 = icmp eq i64 %r567, %r568
     %r573 = icmp ne i1 %r570, %r571
@@ -913,9 +913,9 @@ l152:
     call void @_mini_placePiece(ptr %r565, i64 %r587, i64 %r589)
     br label %l153
 l153:
-    %r591 = phi ptr [%r565, %l152], [%r565, %l151]
-    %r592 = phi i64 [%r566, %l152], [%r566, %l151]
-    %r593 = phi i64 [%r584, %l152], [%r576, %l151]
+    %r591 = phi ptr [%r565, %l151], [%r565, %l152]
+    %r592 = phi i64 [%r566, %l151], [%r566, %l152]
+    %r593 = phi i64 [%r576, %l151], [%r584, %l152]
     %r594 = call i64 @_mini_checkWinner(ptr %r591)
     %r597 = add i64 %r592, %r595
     %r604 = icmp slt i64 %r594, %r602
@@ -925,7 +925,7 @@ l153:
     %r612 = icmp ne i1 %r609, %r613
     br i1 %r612, label %l148, label %l150
 l150:
-    %r615 = phi i64 [%r594, %l153], [%r633, %l147]
+    %r615 = phi i64 [%r633, %l147], [%r594, %l153]
     %r622 = add i64 %r615, %r620
     %r623 = call i32 @printf(ptr @.r619, i64 %r622)
     ret i64 %r624

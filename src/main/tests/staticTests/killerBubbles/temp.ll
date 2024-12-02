@@ -97,9 +97,9 @@ l11:
     store i64 %r57, ptr %r65
     br label %l13
 l13:
-    %r68 = phi ptr [%r43, %l8], [%r43, %l11]
-    %r70 = phi i64 [%r45, %l8], [%r66, %l11]
-    %r71 = phi ptr [%r46, %l8], [%r46, %l11]
+    %r68 = phi ptr [%r43, %l11], [%r43, %l8]
+    %r70 = phi i64 [%r66, %l11], [%r45, %l8]
+    %r71 = phi ptr [%r46, %l11], [%r46, %l8]
     %r72 = getelementptr inbounds %struct._mini_Node, ptr %r68, i32 0, i32 2
     %r73 = load ptr, ptr %r72
     %r78 = getelementptr inbounds %struct._mini_Node, ptr %r73, i32 0, i32 2
@@ -225,9 +225,9 @@ l23:
     %r195 = icmp ne i1 %r194, %r196
     br i1 %r195, label %l24, label %l26
 l24:
-    %r198 = phi ptr [%r205, %l24], [%r185, %l23]
-    %r200 = phi i64 [%r212, %l24], [%r191, %l23]
-    %r201 = phi ptr [%r201, %l24], [%r185, %l23]
+    %r198 = phi ptr [%r185, %l23], [%r205, %l24]
+    %r200 = phi i64 [%r191, %l23], [%r212, %l24]
+    %r201 = phi ptr [%r185, %l23], [%r201, %l24]
     %r204 = call ptr @malloc(i64 %r202)
     %r205 = bitcast ptr %r204 to %struct._mini_Node*
     %r206 = getelementptr inbounds %struct._mini_Node, ptr %r205, i32 0, i32 0
@@ -243,7 +243,7 @@ l24:
     %r220 = icmp ne i1 %r219, %r221
     br i1 %r220, label %l24, label %l26
 l26:
-    %r226 = phi ptr [%r201, %l24], [%r185, %l23]
+    %r226 = phi ptr [%r185, %l23], [%r201, %l24]
     call void @_mini_deathSort(ptr %r226)
     call void @_mini_printEVILList(ptr %r226)
     br label %l19

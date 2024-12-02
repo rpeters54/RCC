@@ -116,9 +116,9 @@ l5:
     %r26 = icmp ne i1 %r25, %r27
     br i1 %r26, label %l6, label %l8
 l6:
-    %r29 = phi ptr [%r9, %l5], [%r29, %l6]
-    %r30 = phi ptr [%r8, %l5], [%r33, %l6]
-    %r31 = phi ptr [%r8, %l5], [%r31, %l6]
+    %r29 = phi ptr [%r29, %l6], [%r9, %l5]
+    %r30 = phi ptr [%r33, %l6], [%r8, %l5]
+    %r31 = phi ptr [%r31, %l6], [%r8, %l5]
     %r32 = getelementptr inbounds %struct._mini_node, ptr %r30, i32 0, i32 1
     %r33 = load ptr, ptr %r32
     %r37 = getelementptr inbounds %struct._mini_node, ptr %r33, i32 0, i32 1
@@ -128,9 +128,9 @@ l6:
     %r43 = icmp ne i1 %r42, %r44
     br i1 %r43, label %l6, label %l8
 l8:
-    %r46 = phi ptr [%r9, %l5], [%r29, %l6]
-    %r47 = phi ptr [%r8, %l5], [%r33, %l6]
-    %r48 = phi ptr [%r8, %l5], [%r31, %l6]
+    %r46 = phi ptr [%r29, %l6], [%r9, %l5]
+    %r47 = phi ptr [%r33, %l6], [%r8, %l5]
+    %r48 = phi ptr [%r31, %l6], [%r8, %l5]
     %r49 = getelementptr inbounds %struct._mini_node, ptr %r47, i32 0, i32 1
     store ptr %r46, ptr %r49
     br label %l1
@@ -419,7 +419,7 @@ l54:
     store ptr %r243, ptr %r244
     br label %l55
 l55:
-    %r245 = phi ptr [%r206, %l54], [%r206, %l53]
+    %r245 = phi ptr [%r206, %l53], [%r206, %l54]
     br label %l48
 l48:
     %r248 = phi ptr [%r221, %l50], [%r245, %l55]
@@ -487,12 +487,12 @@ l60:
     %r295 = icmp ne i1 %r294, %r296
     br i1 %r295, label %l61, label %l63
 l61:
-    %r298 = phi ptr [%r250, %l60], [%r313, %l66]
-    %r299 = phi i64 [%r288, %l60], [%r314, %l66]
-    %r300 = phi ptr [%r266, %l60], [%r315, %l66]
-    %r301 = phi ptr [%r269, %l60], [%r316, %l66]
-    %r302 = phi ptr [%r250, %l60], [%r320, %l66]
-    %r303 = phi i64 [%r289, %l60], [%r323, %l66]
+    %r298 = phi ptr [%r313, %l66], [%r250, %l60]
+    %r299 = phi i64 [%r314, %l66], [%r288, %l60]
+    %r300 = phi ptr [%r315, %l66], [%r266, %l60]
+    %r301 = phi ptr [%r316, %l66], [%r269, %l60]
+    %r302 = phi ptr [%r320, %l66], [%r250, %l60]
+    %r303 = phi i64 [%r323, %l66], [%r289, %l60]
     %r304 = call i64 @_mini_get(ptr %r298, i64 %r303)
     %r305 = icmp sgt i64 %r304, %r299
     %r308 = icmp ne i1 %r305, %r306
@@ -506,12 +506,12 @@ l65:
     %r312 = call ptr @_mini_add(ptr %r300, i64 %r311)
     br label %l66
 l66:
-    %r313 = phi ptr [%r298, %l65], [%r298, %l64]
-    %r314 = phi i64 [%r299, %l65], [%r299, %l64]
-    %r315 = phi ptr [%r312, %l65], [%r300, %l64]
-    %r316 = phi ptr [%r301, %l65], [%r310, %l64]
-    %r317 = phi ptr [%r302, %l65], [%r302, %l64]
-    %r318 = phi i64 [%r303, %l65], [%r303, %l64]
+    %r313 = phi ptr [%r298, %l64], [%r298, %l65]
+    %r314 = phi i64 [%r299, %l64], [%r299, %l65]
+    %r315 = phi ptr [%r300, %l64], [%r312, %l65]
+    %r316 = phi ptr [%r310, %l64], [%r301, %l65]
+    %r317 = phi ptr [%r302, %l64], [%r302, %l65]
+    %r318 = phi i64 [%r303, %l64], [%r303, %l65]
     %r319 = getelementptr inbounds %struct._mini_node, ptr %r317, i32 0, i32 1
     %r320 = load ptr, ptr %r319
     %r323 = add i64 %r318, %r321
@@ -520,9 +520,9 @@ l66:
     %r334 = icmp ne i1 %r333, %r335
     br i1 %r334, label %l61, label %l63
 l63:
-    %r337 = phi ptr [%r250, %l60], [%r313, %l66]
-    %r339 = phi ptr [%r266, %l60], [%r315, %l66]
-    %r340 = phi ptr [%r269, %l60], [%r316, %l66]
+    %r337 = phi ptr [%r313, %l66], [%r250, %l60]
+    %r339 = phi ptr [%r315, %l66], [%r266, %l60]
+    %r340 = phi ptr [%r316, %l66], [%r269, %l60]
     call void @_mini_freeList(ptr %r337)
     %r343 = call ptr @_mini_quickSort(ptr %r339)
     %r344 = call ptr @_mini_quickSort(ptr %r340)
@@ -1003,8 +1003,8 @@ l109:
     %r800 = icmp ne i1 %r799, %r801
     br i1 %r800, label %l110, label %l112
 l110:
-    %r804 = phi i64 [%r817, %l110], [%r795, %l109]
-    %r806 = phi ptr [%r811, %l110], [%r788, %l109]
+    %r804 = phi i64 [%r795, %l109], [%r817, %l110]
+    %r806 = phi ptr [%r788, %l109], [%r811, %l110]
     %r809 = call i32 @scanf(ptr @.r808, ptr %r773)
     %r810 = load i64, ptr %r773
     %r811 = call ptr @_mini_add(ptr %r806, i64 %r810)
@@ -1018,9 +1018,9 @@ l110:
     %r826 = icmp ne i1 %r825, %r827
     br i1 %r826, label %l110, label %l112
 l112:
-    %r831 = phi ptr [%r813, %l110], [%r794, %l109]
-    %r832 = phi ptr [%r811, %l110], [%r788, %l109]
-    %r833 = phi ptr [%r812, %l110], [%r791, %l109]
+    %r831 = phi ptr [%r794, %l109], [%r813, %l110]
+    %r832 = phi ptr [%r788, %l109], [%r811, %l110]
+    %r833 = phi ptr [%r791, %l109], [%r812, %l110]
     call void @_mini_freeList(ptr %r832)
     call void @_mini_freeList(ptr %r833)
     call void @_mini_freeList(ptr %r831)

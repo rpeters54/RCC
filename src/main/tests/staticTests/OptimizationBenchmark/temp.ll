@@ -97,15 +97,15 @@ l8:
     %r239 = icmp ne i1 %r238, %r240
     br i1 %r239, label %l9, label %l11
 l9:
-    %r242 = phi i64 [%r247, %l9], [%r231, %l8]
-    %r243 = phi i64 [%r244, %l9], [%r234, %l8]
+    %r242 = phi i64 [%r231, %l8], [%r247, %l9]
+    %r243 = phi i64 [%r234, %l8], [%r244, %l9]
     %r244 = add i64 %r243, %r242
     %r247 = sub i64 %r242, %r245
     %r252 = icmp sgt i64 %r247, %r250
     %r253 = icmp ne i1 %r252, %r254
     br i1 %r253, label %l9, label %l11
 l11:
-    %r257 = phi i64 [%r244, %l9], [%r234, %l8]
+    %r257 = phi i64 [%r234, %l8], [%r244, %l9]
     ret i64 %r257
 }
 define i64 @_mini_doesntModifyGlobals() {
@@ -176,7 +176,7 @@ l18:
     %r301 = call i64 @_mini_sum(i64 %r299)
     br label %l20
 l20:
-    %r302 = phi i64 [%r281, %l17], [%r301, %l18]
+    %r302 = phi i64 [%r301, %l18], [%r281, %l17]
     %r303 = load i64, ptr @.r6
     %r306 = icmp eq i64 %r303, %r304
     %r309 = icmp ne i1 %r306, %r307
@@ -188,7 +188,7 @@ l23:
     %r313 = phi i64 [%r312, %l21], [%r302, %l20]
     br label %l24
 l24:
-    %r314 = phi i64 [%r313, %l23], [%r291, %l16]
+    %r314 = phi i64 [%r291, %l16], [%r313, %l23]
     ret i64 %r314
 }
 define i64 @_mini_commonSubexpressionElimination() {
@@ -225,14 +225,14 @@ l28:
     %r540 = icmp ne i1 %r539, %r541
     br i1 %r540, label %l29, label %l31
 l29:
-    %r545 = phi i64 [%r529, %l28], [%r545, %l29]
-    %r551 = phi i64 [%r535, %l28], [%r560, %l29]
+    %r545 = phi i64 [%r545, %l29], [%r529, %l28]
+    %r551 = phi i64 [%r560, %l29], [%r535, %l28]
     %r560 = add i64 %r551, %r558
     %r572 = icmp slt i64 %r560, %r570
     %r573 = icmp ne i1 %r572, %r574
     br i1 %r573, label %l29, label %l31
 l31:
-    %r578 = phi i64 [%r529, %l28], [%r545, %l29]
+    %r578 = phi i64 [%r545, %l29], [%r529, %l28]
     ret i64 %r578
 }
 define i64 @_mini_doubleIf() {
@@ -354,8 +354,8 @@ l56:
     %r753 = add i64 %r741, %r751
     br label %l57
 l57:
-    %r754 = phi i64 [%r740, %l55], [%r740, %l56]
-    %r755 = phi i64 [%r750, %l55], [%r753, %l56]
+    %r754 = phi i64 [%r740, %l56], [%r740, %l55]
+    %r755 = phi i64 [%r753, %l56], [%r750, %l55]
     %r760 = icmp slt i64 %r755, %r758
     %r761 = icmp ne i1 %r760, %r762
     br i1 %r761, label %l52, label %l54
@@ -447,17 +447,17 @@ l64:
     %r872 = icmp ne i1 %r871, %r873
     br i1 %r872, label %l65, label %l67
 l65:
-    %r875 = phi i64 [%r877, %l65], [%r1450, %l64]
-    %r876 = phi i64 [%r876, %l65], [%r851, %l64]
-    %r877 = phi i64 [%r881, %l65], [%r867, %l64]
-    %r878 = phi i64 [%r884, %l65], [%r869, %l64]
+    %r875 = phi i64 [%r1450, %l64], [%r877, %l65]
+    %r876 = phi i64 [%r851, %l64], [%r876, %l65]
+    %r877 = phi i64 [%r867, %l64], [%r881, %l65]
+    %r878 = phi i64 [%r869, %l64], [%r884, %l65]
     %r881 = add i64 %r877, %r875
     %r884 = add i64 %r878, %r882
     %r891 = icmp slt i64 %r884, %r876
     %r892 = icmp ne i1 %r891, %r893
     br i1 %r892, label %l65, label %l67
 l67:
-    %r897 = phi i64 [%r881, %l65], [%r867, %l64]
+    %r897 = phi i64 [%r867, %l64], [%r881, %l65]
     ret i64 %r897
 }
 define i64 @_mini_recursiveFibonacci(i64 %r903) {

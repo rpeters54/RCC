@@ -45,9 +45,8 @@ public class ConditionalBranchLLVM extends LLVMInstruction implements Jump {
     @Override
     public List<Instruction> toRisc(List<Register> localResults, List<Register> localRvalues) {
         List<Instruction> risc = new ArrayList<>();
-        Register result = LoadImmRisc.OptionalImmediateLoad(risc, localRvalues.get(0));
-        if (Objects.requireNonNull(result.type()) instanceof IntegerType) {
-            risc.add(new BranchRisc(result, Register.RiscZero(), BranchRisc.BranchType.NE, ifTrue));
+        if (Objects.requireNonNull(localRvalues.get(0).type()) instanceof IntegerType) {
+            risc.add(new BranchRisc(localRvalues.get(0), Register.RiscZero(), BranchRisc.BranchType.NE, ifTrue));
         } else {
             throw new IllegalArgumentException("Unexpected type: " + localRvalues.get(0).type());
         }

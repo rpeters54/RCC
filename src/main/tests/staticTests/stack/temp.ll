@@ -91,8 +91,8 @@ l5:
     %r61 = icmp ne i1 %r60, %r62
     br i1 %r61, label %l6, label %l8
 l6:
-    %r64 = phi ptr [%r64, %l6], [%r51, %l5]
-    %r65 = phi i32 [%r79, %l6], [%r56, %l5]
+    %r64 = phi ptr [%r51, %l5], [%r64, %l6]
+    %r65 = phi i32 [%r56, %l5], [%r79, %l6]
     %r67 = call ptr @pop(ptr %r64)
     %r68 = bitcast ptr %r67 to i32*
     %r70 = load i32, ptr %r68

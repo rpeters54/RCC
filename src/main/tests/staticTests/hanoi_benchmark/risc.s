@@ -153,8 +153,8 @@ l14:
 _mini_hanoi:
 l16:
     addi sp, sp, -64
-    sd s4, 40(sp)
-    sd s3, 32(sp)
+    sd s3, 40(sp)
+    sd s4, 32(sp)
     sd s1, 24(sp)
     sd s2, 16(sp)
     sd ra, 0(sp)
@@ -205,8 +205,8 @@ l15:
     ld fp, 8(sp)
     ld s2, 16(sp)
     ld s1, 24(sp)
-    ld s3, 32(sp)
-    ld s4, 40(sp)
+    ld s4, 32(sp)
+    ld s3, 40(sp)
     addi sp, sp, 64
     ret
 

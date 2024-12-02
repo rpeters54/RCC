@@ -94,8 +94,8 @@ l12:
     %r62 = call i32 @printf(ptr @.r61, i32 %r52)
     br label %l14
 l14:
-    %r64 = phi i32 [%r52, %l12], [%r52, %l11]
-    %r65 = phi i32 [%r53, %l12], [%r53, %l11]
+    %r64 = phi i32 [%r52, %l11], [%r52, %l12]
+    %r65 = phi i32 [%r53, %l11], [%r53, %l12]
     %r67 = call i32 @printf(ptr @.r66)
     %r70 = sext i32 %r64 to i64
     %r71 = add i64 %r70, %r68

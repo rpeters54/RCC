@@ -3,12 +3,12 @@
 _mini_getRands:
 l2:
     addi sp, sp, -96
-    sd s8, 72(sp)
-    sd s7, 64(sp)
-    sd s5, 56(sp)
+    sd s7, 72(sp)
+    sd s8, 64(sp)
+    sd s3, 56(sp)
     sd s4, 48(sp)
-    sd s3, 40(sp)
-    sd s6, 32(sp)
+    sd s6, 40(sp)
+    sd s5, 32(sp)
     sd s1, 24(sp)
     sd s2, 16(sp)
     sd ra, 0(sp)
@@ -111,12 +111,12 @@ l5:
     ld fp, 8(sp)
     ld s2, 16(sp)
     ld s1, 24(sp)
-    ld s6, 32(sp)
-    ld s3, 40(sp)
+    ld s5, 32(sp)
+    ld s6, 40(sp)
     ld s4, 48(sp)
-    ld s5, 56(sp)
-    ld s7, 64(sp)
-    ld s8, 72(sp)
+    ld s3, 56(sp)
+    ld s8, 64(sp)
+    ld s7, 72(sp)
     addi sp, sp, 96
     ret
 
@@ -314,12 +314,13 @@ l19:
 _mini_range:
 l25:
     addi sp, sp, -96
-    sd s8, 72(sp)
-    sd s7, 64(sp)
-    sd s5, 56(sp)
+    sd s9, 80(sp)
+    sd s7, 72(sp)
+    sd s8, 64(sp)
+    sd s3, 56(sp)
     sd s4, 48(sp)
-    sd s3, 40(sp)
-    sd s6, 32(sp)
+    sd s6, 40(sp)
+    sd s5, 32(sp)
     sd s1, 24(sp)
     sd s2, 16(sp)
     sd ra, 0(sp)
@@ -336,23 +337,23 @@ l25:
     li a0, 0
     sub t1, t1, a0
     sltu t1, zero, t1
-    add s7, s2, zero
-    add s5, s3, zero
-    add s4, a1, zero
-    add s6, s1, zero
-    add s1, s2, zero
-    add s8, s3, zero
+    add s8, s2, zero
+    add s4, s3, zero
+    add s7, a1, zero
+    add s5, s1, zero
+    add s6, s2, zero
+    add s9, s3, zero
     bne t1, zero, l26
     j l28
 l37.inter:
-    add s7, s2, zero
-    add s5, s3, zero
-    add s4, s4, zero
-    add s6, a1, zero
+    add s8, a1, zero
+    add s4, s2, zero
+    add s7, s3, zero
+    add s5, s1, zero
     j l26
 l26:
     li t1, 0
-    sub t1, s4, t1
+    sub t1, s7, t1
     sltu t1, zero, t1
     bne t1, zero, l29
     j l30
@@ -360,32 +361,32 @@ l29:
     li t1, 16
     li a0, 0
     mul t1, t1, a0
-    add t1, t1, s6
+    add t1, t1, s5
     addi t1, t1, 0
     add t1, t1, zero
     ld a1, (t1)
     li t1, 16
     li a0, 0
     mul t1, t1, a0
-    add t1, t1, s6
+    add t1, t1, s5
     addi t1, t1, 0
     add t1, t1, zero
     ld t1, (t1)
     li a0, 0
-    add s2, a1, zero
-    add s3, t1, zero
-    add s4, a0, zero
-    add a1, s6, zero
+    add a1, a1, zero
+    add s2, t1, zero
+    add s3, a0, zero
+    add s1, s5, zero
     j l37
 l30:
     li t1, 16
     li a0, 0
     mul t1, t1, a0
-    add t1, t1, s6
+    add t1, t1, s5
     addi t1, t1, 0
     add t1, t1, zero
     ld t1, (t1)
-    slt t1, t1, s7
+    slt t1, t1, s8
     li a0, 0
     sub t1, t1, a0
     sltu t1, zero, t1
@@ -395,87 +396,87 @@ l31:
     li t1, 16
     li a0, 0
     mul t1, t1, a0
-    add t1, t1, s6
+    add t1, t1, s5
     addi t1, t1, 0
     add t1, t1, zero
     ld t1, (t1)
-    add a0, t1, zero
-    add a1, s5, zero
-    add t1, s4, zero
-    add s1, s6, zero
+    add a1, t1, zero
+    add a0, s4, zero
+    add t1, s7, zero
+    add s1, s5, zero
     j l36
 l32:
     li t1, 16
     li a0, 0
     mul t1, t1, a0
-    add t1, t1, s6
+    add t1, t1, s5
     addi t1, t1, 0
     add t1, t1, zero
     ld t1, (t1)
-    slt t1, s5, t1
+    slt t1, s4, t1
     li a0, 0
     sub t1, t1, a0
-    sltu a0, zero, t1
-    add s1, s7, zero
-    add a1, s5, zero
-    add t1, s4, zero
-    add s2, s6, zero
-    bne a0, zero, l33
+    sltu s1, zero, t1
+    add a1, s8, zero
+    add a0, s4, zero
+    add t1, s7, zero
+    add s2, s5, zero
+    bne s1, zero, l33
     j l35
 l33:
     li t1, 16
     li a0, 0
     mul t1, t1, a0
-    add t1, t1, s6
+    add t1, t1, s5
     addi t1, t1, 0
     add t1, t1, zero
     ld t1, (t1)
-    add s1, s7, zero
-    add a1, t1, zero
-    add t1, s4, zero
-    add s2, s6, zero
+    add a1, s8, zero
+    add a0, t1, zero
+    add t1, s7, zero
+    add s2, s5, zero
     j l35
 l35:
-    add a0, s1, zero
     add a1, a1, zero
+    add a0, a0, zero
     add t1, t1, zero
     add s1, s2, zero
     j l36
 l36:
+    add a1, a1, zero
     add s2, a0, zero
-    add s3, a1, zero
-    add s4, t1, zero
-    add a1, s1, zero
+    add s3, t1, zero
+    add s1, s1, zero
     j l37
 l37:
     li t1, 16
     li a0, 0
     mul t1, t1, a0
-    add t1, t1, a1
+    add t1, t1, s1
     addi t1, t1, 8
     add t1, t1, zero
-    ld a1, (t1)
+    ld s1, (t1)
     li t1, 0
     add t1, t1, zero
-    sub t1, a1, t1
+    sub t1, s1, t1
     sltu t1, zero, t1
     li a0, 0
     sub t1, t1, a0
     sltu t1, zero, t1
-    add s1, s2, zero
-    add s8, s3, zero
+    add s6, a1, zero
+    add s9, s2, zero
     bne t1, zero, l37.inter
     j l28
 l28:
     la t1, L.291.string
     add a0, t1, zero
-    add a1, s1, zero
+    add a1, s6, zero
     la t1, printf
     jalr t1
     add t1, a0, zero
     la t1, L.293.string
     add a0, t1, zero
-    add a1, s8, zero
+    add a1, s9, zero
     la t1, printf
     jalr t1
     add t0, a0, zero
@@ -483,12 +484,13 @@ l28:
     ld fp, 8(sp)
     ld s2, 16(sp)
     ld s1, 24(sp)
-    ld s6, 32(sp)
-    ld s3, 40(sp)
+    ld s5, 32(sp)
+    ld s6, 40(sp)
     ld s4, 48(sp)
-    ld s5, 56(sp)
-    ld s7, 64(sp)
-    ld s8, 72(sp)
+    ld s3, 56(sp)
+    ld s8, 64(sp)
+    ld s7, 72(sp)
+    ld s9, 80(sp)
     addi sp, sp, 96
     ret
 

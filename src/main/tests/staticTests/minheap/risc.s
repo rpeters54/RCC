@@ -44,14 +44,14 @@ l1:
 heapify:
 l6:
     addi sp, sp, -112
-    sd s8, 100(sp)
-    sd s7, 92(sp)
-    sd s10, 84(sp)
-    sd s5, 76(sp)
-    sd s4, 68(sp)
-    sd s3, 60(sp)
-    sd s9, 52(sp)
-    sd s6, 44(sp)
+    sd s10, 100(sp)
+    sd s9, 92(sp)
+    sd s7, 84(sp)
+    sd s8, 76(sp)
+    sd s3, 68(sp)
+    sd s4, 60(sp)
+    sd s6, 52(sp)
+    sd s5, 44(sp)
     sd s1, 36(sp)
     sd s11, 28(sp)
     sd s2, 20(sp)
@@ -99,7 +99,7 @@ l6:
     sub a0, a0, a1
     sltu a0, zero, a0
     add t5, s8, zero
-    sd t5, 16(fp)
+    sw t5, 16(fp)
     add s6, s2, zero
     add s7, s4, zero
     add s5, s8, zero
@@ -111,7 +111,7 @@ l7:
     slli a0, a0, 32
     srai a0, a0, 32
     add t5, s8, zero
-    sd t5, 16(fp)
+    sw t5, 16(fp)
     add s6, a0, zero
     add s7, s4, zero
     add s5, s8, zero
@@ -140,7 +140,7 @@ l9:
     li a1, 0
     sub a0, a0, a1
     sltu a0, zero, a0
-    ld t5, 16(fp)
+    lw t5, 16(fp)
     add s9, t5, zero
     add s2, s6, zero
     add s10, s7, zero
@@ -152,7 +152,7 @@ l10:
     li a0, -1
     slli a0, a0, 32
     srai a0, a0, 32
-    ld t5, 16(fp)
+    lw t5, 16(fp)
     add s9, t5, zero
     add s2, s6, zero
     add s10, s7, zero
@@ -241,21 +241,21 @@ l13:
     slt a0, a0, a1
     li a1, 0
     sub a0, a0, a1
-    sltu a0, zero, a0
-    add a1, s2, zero
+    sltu a1, zero, a0
+    add a0, s2, zero
     add s2, s10, zero
     add s1, s4, zero
     add s3, s11, zero
-    bne a0, zero, l17
+    bne a1, zero, l17
     j l16
 l16:
-    add a1, s9, zero
+    add a0, s9, zero
     add s2, s10, zero
     add s1, s4, zero
     add s3, s11, zero
     j l17
 l17:
-    add s5, a1, zero
+    add s5, a0, zero
     add s6, s2, zero
     add s7, s1, zero
     add s8, s3, zero
@@ -425,14 +425,14 @@ l5:
     ld s2, 20(sp)
     ld s11, 28(sp)
     ld s1, 36(sp)
-    ld s6, 44(sp)
-    ld s9, 52(sp)
-    ld s3, 60(sp)
-    ld s4, 68(sp)
-    ld s5, 76(sp)
-    ld s10, 84(sp)
-    ld s7, 92(sp)
-    ld s8, 100(sp)
+    ld s5, 44(sp)
+    ld s6, 52(sp)
+    ld s4, 60(sp)
+    ld s3, 68(sp)
+    ld s8, 76(sp)
+    ld s7, 84(sp)
+    ld s9, 92(sp)
+    ld s10, 100(sp)
     addi sp, sp, 112
     ret
 
@@ -440,17 +440,17 @@ l5:
 make:
 l29:
     addi sp, sp, -80
-    sd s5, 56(sp)
+    sd s3, 56(sp)
     sd s4, 48(sp)
-    sd s3, 40(sp)
-    sd s6, 32(sp)
+    sd s6, 40(sp)
+    sd s5, 32(sp)
     sd s1, 24(sp)
     sd s2, 16(sp)
     sd ra, 0(sp)
     sd fp, 8(sp)
     add fp, sp, zero
-    add s3, a2, zero
-    add s2, a1, zero
+    add s2, a2, zero
+    add s3, a1, zero
     add s4, a0, zero
     li t1, 24
     add a0, t1, zero
@@ -501,7 +501,7 @@ l32:
     add t1, t1, s6
     addi t1, t1, 8
     add t1, t1, zero
-    sd s3, (t1)
+    sd s2, (t1)
     li a0, 8
     slli t1, s4, 32
     srai t1, t1, 32
@@ -553,7 +553,7 @@ l35:
     li a0, 0
     sub t1, t1, a0
     sltu t1, zero, t1
-    add s5, s2, zero
+    add s5, s3, zero
     add s3, s6, zero
     add s2, a1, zero
     add s1, s4, zero
@@ -674,10 +674,10 @@ l28:
     ld fp, 8(sp)
     ld s2, 16(sp)
     ld s1, 24(sp)
-    ld s6, 32(sp)
-    ld s3, 40(sp)
+    ld s5, 32(sp)
+    ld s6, 40(sp)
     ld s4, 48(sp)
-    ld s5, 56(sp)
+    ld s3, 56(sp)
     addi sp, sp, 80
     ret
 
@@ -809,13 +809,13 @@ l48:
     fsd fs0, 304(sp)
     sd s1, 296(sp)
     fsd fs1, 288(sp)
-    fsd fs8, 280(sp)
-    fsd fs7, 272(sp)
-    fsd fs5, 264(sp)
-    fsd fs6, 256(sp)
-    fsd fs2, 248(sp)
-    fsd fs4, 240(sp)
-    fsd fs3, 232(sp)
+    fsd fs5, 280(sp)
+    fsd fs4, 272(sp)
+    fsd fs3, 264(sp)
+    fsd fs2, 256(sp)
+    fsd fs6, 248(sp)
+    fsd fs7, 240(sp)
+    fsd fs8, 232(sp)
     sd ra, 0(sp)
     sd fp, 8(sp)
     add fp, sp, zero
@@ -1060,13 +1060,13 @@ l54:
     add a0, t0, zero
     ld ra, 0(sp)
     ld fp, 8(sp)
-    fld fs3, 232(sp)
-    fld fs4, 240(sp)
-    fld fs2, 248(sp)
-    fld fs6, 256(sp)
-    fld fs5, 264(sp)
-    fld fs7, 272(sp)
-    fld fs8, 280(sp)
+    fld fs8, 232(sp)
+    fld fs7, 240(sp)
+    fld fs6, 248(sp)
+    fld fs2, 256(sp)
+    fld fs3, 264(sp)
+    fld fs4, 272(sp)
+    fld fs5, 280(sp)
     fld fs1, 288(sp)
     ld s1, 296(sp)
     fld fs0, 304(sp)

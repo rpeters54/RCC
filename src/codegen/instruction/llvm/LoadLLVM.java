@@ -22,6 +22,6 @@ public class LoadLLVM extends LLVMInstruction implements Critical {
 
     @Override
     public List<Instruction> toRisc(List<Register> localResults, List<Register> localRvalues) {
-        return List.of(new LoadRisc(localResults.getFirst(), localRvalues.getFirst()));
+        return List.of(new LoadRisc(localResults.getFirst(), localRvalues.getFirst(), localResults.getFirst().type()));
     }
 }

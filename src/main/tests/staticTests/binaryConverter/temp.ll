@@ -97,9 +97,9 @@ l15:
     %r92 = add i64 %r62, %r91
     br label %l17
 l17:
-    %r93 = phi i64 [%r61, %l13], [%r61, %l15]
-    %r97 = phi i64 [%r62, %l13], [%r92, %l15]
-    %r98 = phi i64 [%r63, %l13], [%r63, %l15]
+    %r93 = phi i64 [%r61, %l15], [%r61, %l13]
+    %r97 = phi i64 [%r92, %l15], [%r62, %l13]
+    %r98 = phi i64 [%r63, %l15], [%r63, %l13]
     %r101 = sdiv i64 %r93, %r99
     %r104 = add i64 %r98, %r102
     %r105 = call i64 @_mini_recursiveDecimalSum(i64 %r101, i64 %r97, i64 %r104)

@@ -4,6 +4,8 @@ import ast.declarations.Declaration;
 
 import ast.expr.Expression;
 import ast.statements.*;
+import ast.types.ArrayType;
+import ast.types.CompoundType;
 import ast.types.DefinedType;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -80,8 +82,15 @@ public class ASTStatementVisitor extends CBaseVisitor<Statement> {
                     if (!items.isEmpty()
                             && items.getFirst() instanceof Declaration) {
                         List<Declaration> decls = (List<Declaration>) items;
-                        if (decls.getFirst().declSpec().getType() instanceof DefinedType dt) {
-                            if (!baseVisitor.typeNames.contains(dt.getName())) {
+
+                        DefinedType defType = switch (decls.getFirst().declSpec().getType()) {
+                            case DefinedType dt -> dt;
+                            case CompoundType ct when ct.base() instanceof DefinedType dt -> dt;
+                            case null, default -> null;
+                        };
+
+                        if (defType != null) {
+                            if (!baseVisitor.typeNames.contains(defType.getName())) {
                                 String datum = dlctx.getText();
                                 CLexer lexer = new CLexer(CharStreams.fromString(datum));
                                 CParser parser = new CParser(new CommonTokenStream(lexer));

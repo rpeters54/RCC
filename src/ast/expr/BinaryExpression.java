@@ -105,7 +105,7 @@ public class BinaryExpression extends Expression implements ConstantExpression {
 
         PrimitiveType resultType;
         switch (operator) {
-            case PLUS, MINUS -> {
+            case PLUS -> {
                 boolean left = primLeft instanceof CompoundType;
                 boolean right = primRight instanceof CompoundType;
                 if (left && !right || !left && right) {
@@ -117,6 +117,18 @@ public class BinaryExpression extends Expression implements ConstantExpression {
                     resultType = PrimitiveType.implicitConversion(primLeft, primRight);
                 }
             }
+            case MINUS -> {
+                boolean left = primLeft instanceof CompoundType;
+                boolean right = primRight instanceof CompoundType;
+                if (left && !right || !left && right) {
+                    resultType = primLeft instanceof CompoundType ? primLeft : primRight;
+                } else if (left || right) {
+                    resultType = new IntegerType(IntegerType.Width.LONG, true);
+                } else {
+                    resultType = PrimitiveType.implicitConversion(primLeft, primRight);
+                }
+            }
+
             case TIMES, DIVIDE -> {
                 boolean left = primLeft instanceof CompoundType;
                 boolean right = primRight instanceof CompoundType;
@@ -180,7 +192,14 @@ public class BinaryExpression extends Expression implements ConstantExpression {
                 }
             }
             case MINUS -> {
-                if (leftReg.type() instanceof PointerType ^ rightReg.type() instanceof PointerType) {
+                if (leftReg.type() instanceof PointerType && rightReg.type() instanceof PointerType) {
+                    result = Register.LLVM_Register(new IntegerType(IntegerType.Width.LONG, true));
+                    ConversionLLVM leftConv = ConversionLLVM.make(leftReg, (PrimitiveType) result.type());
+                    ConversionLLVM rightConv = ConversionLLVM.make(rightReg, (PrimitiveType) result.type());
+                    block.addInstruction(leftConv);
+                    block.addInstruction(rightConv);
+                    block.addInstruction(new BinaryLLVM(result, operator, leftConv.result(), rightConv.result()));
+                } else if (leftReg.type() instanceof PointerType ^ rightReg.type() instanceof PointerType) {
                     Register ptr = leftReg.type() instanceof PointerType ? leftReg : rightReg;
                     Register operand = leftReg.type() instanceof PointerType ? rightReg : leftReg;
                     Register zero = Literal.nill(new IntegerType(IntegerType.Width.LONG, true), unit,cfg,block);

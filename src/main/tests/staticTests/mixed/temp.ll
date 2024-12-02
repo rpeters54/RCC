@@ -119,9 +119,9 @@ l9:
     %r66 = icmp ne i1 %r65, %r67
     br i1 %r66, label %l10, label %l12
 l10:
-    %r69 = phi i64 [%r100, %l10], [%r22, %l9]
-    %r71 = phi ptr [%r71, %l10], [%r34, %l9]
-    %r72 = phi ptr [%r72, %l10], [%r43, %l9]
+    %r69 = phi i64 [%r22, %l9], [%r100, %l10]
+    %r71 = phi ptr [%r34, %l9], [%r71, %l10]
+    %r72 = phi ptr [%r43, %l9], [%r72, %l10]
     %r73 = getelementptr inbounds %struct._mini_foo, ptr %r71, i32 0, i32 0
     %r74 = load i64, ptr %r73
     %r75 = getelementptr inbounds %struct._mini_foo, ptr %r72, i32 0, i32 0
@@ -148,8 +148,8 @@ l10:
     %r108 = icmp ne i1 %r107, %r109
     br i1 %r108, label %l10, label %l12
 l12:
-    %r113 = phi ptr [%r71, %l10], [%r34, %l9]
-    %r114 = phi ptr [%r72, %l10], [%r43, %l9]
+    %r113 = phi ptr [%r34, %l9], [%r71, %l10]
+    %r114 = phi ptr [%r43, %l9], [%r72, %l10]
     %r115 = bitcast ptr %r113 to i8*
     call void @free(ptr %r115)
     %r116 = bitcast ptr %r114 to i8*
@@ -180,7 +180,7 @@ l14:
     %r125 = icmp ne i1 %r124, %r126
     br i1 %r125, label %l15, label %l13
 l15:
-    %r128 = phi i64 [%r137, %l15], [%r118, %l14]
+    %r128 = phi i64 [%r118, %l14], [%r137, %l15]
     %r132 = call ptr @malloc(i64 %r130)
     %r133 = bitcast ptr %r132 to %struct._mini_foo*
     %r134 = bitcast ptr %r133 to i8*

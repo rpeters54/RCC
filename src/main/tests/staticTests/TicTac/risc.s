@@ -1138,9 +1138,9 @@ l36:
 _mini_main:
 l147:
     addi sp, sp, -80
-    sd s5, 64(sp)
+    sd s3, 64(sp)
     sd s4, 56(sp)
-    sd s3, 48(sp)
+    sd s5, 48(sp)
     sd s1, 40(sp)
     sd s2, 32(sp)
     sd ra, 0(sp)
@@ -1280,9 +1280,9 @@ l150:
     ld fp, 8(sp)
     ld s2, 32(sp)
     ld s1, 40(sp)
-    ld s3, 48(sp)
+    ld s5, 48(sp)
     ld s4, 56(sp)
-    ld s5, 64(sp)
+    ld s3, 64(sp)
     addi sp, sp, 80
     ret
 

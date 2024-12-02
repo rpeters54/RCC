@@ -14,21 +14,21 @@ import java.util.List;
 public class BinaryRisc extends RiscInstruction {
 
     private final BinaryExpression.Operator op;
-    private final PrimitiveType resultType;
+    private final PrimitiveType operationType;
 
     public BinaryRisc(Register result, BinaryExpression.Operator op, Register op1, Register op2) {
         super(Arrays.asList(result), Arrays.asList(op1, op2));
 
         assert result.type() instanceof PrimitiveType;
-        this.resultType = (PrimitiveType) op1.type();
+        this.operationType = (PrimitiveType) op1.type();
         this.op = op;
     }
 
     public BinaryRisc(Register result, BinaryExpression.Operator op, Register op1, Register op2,
-                         PrimitiveType resultType) {
+                         PrimitiveType operationType) {
         super(Arrays.asList(result), Arrays.asList(op1, op2));
 
-        this.resultType = resultType;
+        this.operationType = operationType;
         this.op = op;
     }
 
@@ -86,7 +86,7 @@ public class BinaryRisc extends RiscInstruction {
     @Override
     public String toString() {
         String opString;
-        switch (resultType) {
+        switch (operationType) {
             case PointerType p -> {
                 opString = switch(op) {
                     case PLUS -> "add";

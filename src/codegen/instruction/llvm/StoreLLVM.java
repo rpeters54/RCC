@@ -22,6 +22,6 @@ public class StoreLLVM extends LLVMInstruction implements Critical {
 
     @Override
     public List<Instruction> toRisc(List<Register> localResults, List<Register> localRvalues) {
-        return List.of(new StoreRisc(localRvalues.get(0).clone(), localRvalues.get(1).clone()));
+        return List.of(new StoreRisc(localRvalues.get(0).clone(), localRvalues.get(1).clone(), localRvalues.get(0).type()));
     }
 }

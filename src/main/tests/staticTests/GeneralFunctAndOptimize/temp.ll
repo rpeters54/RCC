@@ -161,17 +161,17 @@ l9:
     %r94 = icmp ne i1 %r93, %r95
     br i1 %r94, label %l10, label %l12
 l10:
-    %r99 = phi ptr [%r201, %l15], [%r72, %l9]
-    %r102 = phi i64 [%r209, %l15], [%r85, %l9]
-    %r103 = phi i64 [%r205, %l15], [%r89, %l9]
+    %r99 = phi ptr [%r72, %l9], [%r201, %l15]
+    %r102 = phi i64 [%r85, %l9], [%r209, %l15]
+    %r103 = phi i64 [%r89, %l9], [%r205, %l15]
     %r107 = load i64, ptr @.r5
     %r108 = icmp sle i64 %r105, %r107
     %r109 = icmp ne i1 %r108, %r110
     br i1 %r109, label %l13, label %l15
 l13:
-    %r113 = phi i64 [%r185, %l18], [%r105, %l10]
-    %r114 = phi ptr [%r179, %l18], [%r99, %l10]
-    %r117 = phi i64 [%r182, %l18], [%r102, %l10]
+    %r113 = phi i64 [%r105, %l10], [%r185, %l18]
+    %r114 = phi ptr [%r99, %l10], [%r179, %l18]
+    %r117 = phi i64 [%r102, %l10], [%r182, %l18]
     %r154 = add i64 %r113, %r152
     %r155 = getelementptr inbounds %struct._mini_IntHolder, ptr %r114, i32 0, i32 0
     store i64 %r154, ptr %r155
@@ -187,28 +187,28 @@ l13:
 l16:
     br label %l18
 l18:
-    %r177 = phi i64 [%r164, %l13], [%r175, %l16]
-    %r178 = phi i64 [%r154, %l13], [%r154, %l16]
-    %r179 = phi ptr [%r114, %l13], [%r114, %l16]
-    %r182 = phi i64 [%r117, %l13], [%r117, %l16]
-    %r183 = phi i64 [%r261, %l13], [%r261, %l16]
+    %r177 = phi i64 [%r175, %l16], [%r164, %l13]
+    %r178 = phi i64 [%r154, %l16], [%r154, %l13]
+    %r179 = phi ptr [%r114, %l16], [%r114, %l13]
+    %r182 = phi i64 [%r117, %l16], [%r117, %l13]
+    %r183 = phi i64 [%r261, %l16], [%r261, %l13]
     %r185 = add i64 %r178, %r177
     %r194 = load i64, ptr @.r5
     %r195 = icmp sle i64 %r185, %r194
     %r196 = icmp ne i1 %r195, %r197
     br i1 %r196, label %l13, label %l15
 l15:
-    %r200 = phi i64 [%r185, %l18], [%r105, %l10]
-    %r201 = phi ptr [%r179, %l18], [%r99, %l10]
-    %r204 = phi i64 [%r182, %l18], [%r102, %l10]
-    %r205 = phi i64 [%r183, %l18], [%r103, %l10]
+    %r200 = phi i64 [%r105, %l10], [%r185, %l18]
+    %r201 = phi ptr [%r99, %l10], [%r179, %l18]
+    %r204 = phi i64 [%r102, %l10], [%r182, %l18]
+    %r205 = phi i64 [%r103, %l10], [%r183, %l18]
     %r209 = add i64 %r204, %r207
     %r220 = icmp slt i64 %r209, %r218
     %r221 = icmp ne i1 %r220, %r222
     br i1 %r221, label %l10, label %l12
 l12:
-    %r225 = phi i64 [%r200, %l15], [%r87, %l9]
-    %r230 = phi i64 [%r205, %l15], [%r89, %l9]
+    %r225 = phi i64 [%r87, %l9], [%r200, %l15]
+    %r230 = phi i64 [%r89, %l9], [%r205, %l15]
     %r233 = call i32 @printf(ptr @.r232, i64 %r225)
     %r235 = call i32 @printf(ptr @.r234, i64 %r230)
     ret i64 %r236

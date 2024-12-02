@@ -144,7 +144,7 @@ l17:
     %r108 = icmp ne i1 %r107, %r109
     br i1 %r108, label %l18, label %l20
 l18:
-    %r111 = phi i64 [%r104, %l17], [%r121, %l23]
+    %r111 = phi i64 [%r121, %l23], [%r104, %l17]
     %r112 = call i64 @_mini_prime(i64 %r111)
     %r115 = icmp ne i64 %r112, %r113
     br i1 %r115, label %l21, label %l23

@@ -133,8 +133,8 @@ l5:
     %r86 = icmp ne i1 %r85, %r87
     br i1 %r86, label %l6, label %l8
 l6:
-    %r89 = phi ptr [%r78, %l5], [%r96, %l6]
-    %r90 = phi i32 [%r81, %l5], [%r103, %l6]
+    %r89 = phi ptr [%r96, %l6], [%r78, %l5]
+    %r90 = phi i32 [%r103, %l6], [%r81, %l5]
     %r92 = getelementptr inbounds %struct.Node, ptr %r89, i32 0, i32 0
     %r93 = load i8, ptr %r92
     %r94 = call i32 @printf(ptr @.r91, i8 %r93)

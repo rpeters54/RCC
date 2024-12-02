@@ -34,16 +34,15 @@ public class ReturnLLVM extends LLVMInstruction implements Critical {
     public List<Instruction> toRisc(List<Register> localResults, List<Register> localRvalues) {
         List<Instruction> risc = new ArrayList<>();
         if (!localRvalues.isEmpty()) {
-            Register result = LoadImmRisc.OptionalImmediateLoad(risc, localRvalues.get(0));
-            switch (result.type()) {
+            switch (localRvalues.get(0).type()) {
                 case PointerType pt -> {
-                    risc.addAll(BinaryRisc.Mov(Register.RiscIntArg(0), result));
+                    risc.addAll(BinaryRisc.Mov(Register.RiscIntArg(0), localRvalues.get(0)));
                 }
                 case IntegerType it -> {
-                    risc.addAll(BinaryRisc.Mov(Register.RiscIntArg(0), result));
+                    risc.addAll(BinaryRisc.Mov(Register.RiscIntArg(0), localRvalues.get(0)));
                 }
                 case FloatingType ft -> {
-                    risc.addAll(BinaryRisc.FMovToFloatReg(Register.RiscFloatArg(0), result));
+                    risc.addAll(BinaryRisc.FMovToFloatReg(Register.RiscFloatArg(0), localRvalues.get(0)));
                 }
                 default -> throw new IllegalArgumentException("Unexpected type: " + localRvalues.get(0).type());
             }

@@ -22,7 +22,8 @@ public class LoadLiteralLLVM extends LLVMInstruction {
 
     public LoadLiteralLLVM(Literal value, Register local) {
         super(Arrays.asList(local), new ArrayList<>());
-        Register address = Register.LLVM_Register(new PointerType(local.type()));
+        Register address = Register.LLVM_Register(new PointerType(value.type()));
+
         addRValue(address);
         this.value = value;
     }
@@ -53,17 +54,18 @@ public class LoadLiteralLLVM extends LLVMInstruction {
                 Register intermediate = Register.LLVM_Register(new IntegerType(IntegerType.Width.LONG, true));
                 risc.add(new AllocaLLVM(localRvalues.get(0).clone()));
                 risc.add(new LoadImmRisc(intermediate.clone(), value.clone()));
-                risc.add(new StoreRisc(intermediate, localRvalues.get(0).clone()));
-                switch (ft.size()) {
-                    case DOUBLE -> {
-                        risc.add(new LoadRisc(localResult.clone(), localRvalues.get(0).clone()));
-                    }
-                    case FLOAT -> {
-                        Register temp = Register.LLVM_Register(new FloatingType(FloatingType.Width.DOUBLE));
-                        risc.add(new LoadRisc(temp.clone(), localRvalues.get(0).clone()));
-                        risc.add(new FloatConversionRisc(localResult.clone(), temp));
-                    }
-                }
+                risc.add(new StoreRisc(intermediate, localRvalues.get(0).clone(), intermediate.type()));
+                risc.add(new LoadRisc(localResult.clone(), localRvalues.get(0).clone(), localResult.clone().type()));
+//                switch (ft.size()) {
+//                    case DOUBLE -> {
+//                        risc.add(new LoadRisc(localResult.clone(), localRvalues.get(0).clone(), localResult.clone().type()));
+//                    }
+//                    case FLOAT -> {
+//                        Register temp = Register.LLVM_Register(new FloatingType(FloatingType.Width.DOUBLE));
+//                        risc.add(new LoadRisc(temp.clone(), localRvalues.get(0).clone(), localResult.clone().type()));
+//                        risc.add(new FloatConversionRisc(localResult.clone(), temp));
+//                    }
+//                }
             }
             default -> throw new RuntimeException("invalid type");
         }

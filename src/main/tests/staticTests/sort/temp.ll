@@ -75,7 +75,7 @@ l5:
     %r45 = icmp ne i1 %r44, %r46
     br i1 %r45, label %l6, label %l8
 l6:
-    %r48 = phi i32 [%r40, %l5], [%r58, %l6]
+    %r48 = phi i32 [%r58, %l6], [%r40, %l5]
     %r50 = getelementptr inbounds [250 x i32], ptr %r6, i32 0, i32 %r48
     %r51 = load i32, ptr %r50
     %r52 = call i32 @printf(ptr @.r49, i32 %r51)
@@ -153,10 +153,10 @@ l14:
 l18:
     br label %l19
 l19:
-    %r109 = phi ptr [%r96, %l14], [%r96, %l18]
-    %r111 = phi i32 [%r98, %l14], [%r98, %l18]
-    %r112 = phi i32 [%r100, %l14], [%r99, %l18]
-    %r113 = phi i32 [%r100, %l14], [%r100, %l18]
+    %r109 = phi ptr [%r96, %l18], [%r96, %l14]
+    %r111 = phi i32 [%r98, %l18], [%r98, %l14]
+    %r112 = phi i32 [%r99, %l18], [%r100, %l14]
+    %r113 = phi i32 [%r100, %l18], [%r100, %l14]
     %r121 = sext i32 %r113 to i64
     %r122 = add i64 %r121, %r119
     %r123 = trunc i64 %r122 to i32

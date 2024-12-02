@@ -64,10 +64,10 @@ l6:
 main:
 l8:
     addi sp, sp, -80
-    sd s5, 56(sp)
+    sd s3, 56(sp)
     sd s4, 48(sp)
-    sd s3, 40(sp)
-    sd s6, 32(sp)
+    sd s6, 40(sp)
+    sd s5, 32(sp)
     sd s1, 24(sp)
     sd s2, 16(sp)
     sd ra, 0(sp)
@@ -130,10 +130,10 @@ l11:
     ld fp, 8(sp)
     ld s2, 16(sp)
     ld s1, 24(sp)
-    ld s6, 32(sp)
-    ld s3, 40(sp)
+    ld s5, 32(sp)
+    ld s6, 40(sp)
     ld s4, 48(sp)
-    ld s5, 56(sp)
+    ld s3, 56(sp)
     addi sp, sp, 80
     ret
 

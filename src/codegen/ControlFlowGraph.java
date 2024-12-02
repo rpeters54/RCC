@@ -1293,8 +1293,8 @@ public class ControlFlowGraph {
         assert last.getMutableInstructions().removeLast() instanceof BinaryImmRisc;
 
         for (Register use : used) {
-            start.getMutableInstructions().addFirst(new StoreRisc(use, Register.RiscSp(), riscmetadata.stackOffset));
-            last.getMutableInstructions().addLast(new LoadRisc(use, Register.RiscSp(), riscmetadata.stackOffset));
+            start.getMutableInstructions().addFirst(new StoreRisc(use, Register.RiscSp(), riscmetadata.stackOffset, use.type()));
+            last.getMutableInstructions().addLast(new LoadRisc(use, Register.RiscSp(), riscmetadata.stackOffset, use.type()));
             riscmetadata.stackOffset += use.type().sizeof();
         }
 
@@ -1551,7 +1551,7 @@ public class ControlFlowGraph {
                             case null, default -> throw new IllegalStateException("Can't handle > 2 rvalue spills");
                         }
                         inst.setRvalue(i, spillReg);
-                        translation.add(new LoadRisc(spillReg, Register.RiscFp(), offset));
+                        translation.add(new LoadRisc(spillReg, Register.RiscFp(), offset, rvalue.type()));
                     } else {
                         throw new RuntimeException("Register not in regMap or spillMap" + rvalue);
                     }
@@ -1583,7 +1583,7 @@ public class ControlFlowGraph {
                             }
                         }
                         inst.setResult(i, spillReg);
-                        translation.add(new StoreRisc(spillReg, Register.RiscFp(), offset));
+                        translation.add(new StoreRisc(spillReg, Register.RiscFp(), offset, result.type()));
                     } else {
                         throw new RuntimeException("Register not in regMap or spillMap" + result);
                     }

@@ -333,8 +333,8 @@ l22:
     %r140 = call i32 @printf(ptr @.r139, i64 %r121)
     br label %l23
 l23:
-    %r141 = phi i64 [%r117, %l22], [%r117, %l21]
-    %r146 = phi i64 [%r122, %l22], [%r122, %l21]
+    %r141 = phi i64 [%r117, %l21], [%r117, %l22]
+    %r146 = phi i64 [%r122, %l21], [%r122, %l22]
     %r151 = icmp eq i64 %r146, %r149
     %r154 = icmp ne i1 %r151, %r152
     br i1 %r154, label %l24, label %l25
@@ -1466,7 +1466,7 @@ l126:
     %r973 = call i32 @printf(ptr @.r970, i64 %r971)
     br label %l127
 l127:
-    %r978 = phi i64 [%r957, %l126], [%r957, %l125]
+    %r978 = phi i64 [%r957, %l125], [%r957, %l126]
     %r983 = icmp ne i64 %r978, %r981
     br i1 %r983, label %l128, label %l129
 l128:
@@ -1529,7 +1529,7 @@ l141:
     %r1110 = call i32 @printf(ptr @.r1107, i64 %r1109)
     br label %l142
 l142:
-    %r1114 = phi ptr [%r1084, %l140], [%r1084, %l141]
+    %r1114 = phi ptr [%r1084, %l141], [%r1084, %l140]
     %r1118 = getelementptr inbounds %struct._mini_thing, ptr %r1114, i32 0, i32 1
     %r1119 = load i64, ptr %r1118
     %r1122 = icmp ne i64 %r1119, %r1120
@@ -1573,7 +1573,7 @@ l147:
     %r1176 = call i32 @printf(ptr @.r1171, i64 %r1175)
     br label %l148
 l148:
-    %r1180 = phi ptr [%r1134, %l147], [%r1134, %l146]
+    %r1180 = phi ptr [%r1134, %l146], [%r1134, %l147]
     %r1184 = getelementptr inbounds %struct._mini_thing, ptr %r1180, i32 0, i32 2
     %r1185 = load ptr, ptr %r1184
     %r1186 = getelementptr inbounds %struct._mini_thing, ptr %r1185, i32 0, i32 1
@@ -1599,7 +1599,7 @@ l153:
     %r1220 = call i32 @printf(ptr @.r1217, i64 %r1218)
     br label %l154
 l154:
-    %r1224 = phi ptr [%r1205, %l153], [%r1205, %l152]
+    %r1224 = phi ptr [%r1205, %l152], [%r1205, %l153]
     %r1228 = getelementptr inbounds %struct._mini_thing, ptr %r1224, i32 0, i32 2
     %r1229 = load ptr, ptr %r1228
     %r1230 = icmp ne ptr %r1224, %r1229

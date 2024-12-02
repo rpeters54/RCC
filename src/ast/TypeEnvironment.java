@@ -129,17 +129,36 @@ public class TypeEnvironment {
     public void addClassHelper(Declaration declaration) {
         switch(declaration.declSpec().getType()) {
             case StructType struct -> {
-                if (struct.name() != null && !struct.members().isEmpty()) {
-                    this.tryAddStruct(struct.name(), struct);
-                } else {
-                    throw new RuntimeException("TypeEnvironment::addClassHelper: Malformed struct declaration");
+//                if (struct.name() != null && !struct.members().isEmpty()) {
+//                    this.tryAddStruct(struct.name(), struct);
+//                } else {
+//                    throw new RuntimeException("TypeEnvironment::addClassHelper: Malformed struct declaration");
+//                }
+                if (struct.name() != null) {
+                    if (objects.get(struct.name()) == null) {
+                        if (!struct.members().isEmpty()) {
+                            this.addStruct(struct.name(), struct);
+                        } else {
+                            throw new RuntimeException("TypeEnvironment::addClassHelper: Malformed union declaration");
+                        }
+                    }
+                }
+                for (Declaration decl : struct.members()) {
+                    addClassHelper(decl);
                 }
             }
             case UnionType union -> {
-                if (union.name() != null && !union.members().isEmpty()) {
-                    this.tryAddUnion(union.name(), union);
-                } else {
-                    throw new RuntimeException("TypeEnvironment::addClassHelper: Malformed union declaration");
+                if (union.name() != null) {
+                    if (objects.get(union.name()) == null) {
+                        if (!union.members().isEmpty()) {
+                            this.addUnion(union.name(), union);
+                        } else {
+                            throw new RuntimeException("TypeEnvironment::addClassHelper: Malformed union declaration");
+                        }
+                    }
+                }
+                for (Declaration decl : union.members()) {
+                    addClassHelper(decl);
                 }
             }
             case EnumType enumeration -> {

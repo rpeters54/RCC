@@ -111,10 +111,10 @@ l10:
     %r87 = call i32 @printf(ptr @.r86)
     br label %l11
 l11:
-    %r88 = phi double [%r85, %l10], [%r82, %l9]
+    %r88 = phi double [%r82, %l9], [%r85, %l10]
     br label %l12
 l12:
-    %r89 = phi double [%r65, %l7], [%r88, %l11]
+    %r89 = phi double [%r88, %l11], [%r65, %l7]
     %r91 = call i32 @printf(ptr @.r90, double %r89)
     %r94 = trunc i64 %r92 to i32
     ret i32 %r94

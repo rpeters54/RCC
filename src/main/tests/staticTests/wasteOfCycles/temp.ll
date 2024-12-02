@@ -45,8 +45,8 @@ l5:
     %r22 = icmp ne i1 %r21, %r23
     br i1 %r22, label %l6, label %l8
 l6:
-    %r26 = phi i64 [%r33, %l6], [%r18, %l5]
-    %r27 = phi i64 [%r27, %l6], [%r5, %l5]
+    %r26 = phi i64 [%r18, %l5], [%r33, %l6]
+    %r27 = phi i64 [%r5, %l5], [%r27, %l6]
     %r28 = add i64 %r26, %r27
     %r30 = call i32 @printf(ptr @.r29, i64 %r28)
     %r33 = add i64 %r26, %r31
@@ -55,7 +55,7 @@ l6:
     %r39 = icmp ne i1 %r38, %r40
     br i1 %r39, label %l6, label %l8
 l8:
-    %r44 = phi i64 [%r27, %l6], [%r5, %l5]
+    %r44 = phi i64 [%r5, %l5], [%r27, %l6]
     %r47 = sub i64 %r44, %r45
     %r48 = call i64 @_mini_function(i64 %r47)
     br label %l1

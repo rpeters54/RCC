@@ -95,7 +95,7 @@ public class Literal implements Source {
                         return "0x"+Long.toHexString(Double.doubleToLongBits(Double.parseDouble(value)));
                     }
                     case FLOAT -> {
-                        return "0x"+Long.toHexString(Double.doubleToLongBits(Double.parseDouble(value)) & 0xFFFFFFFF_00000000L);
+                        return "0x"+Integer.toHexString(Float.floatToIntBits(Float.parseFloat(value)));
                     }
                     case null, default -> {
                         throw new RuntimeException("not sure how i got here?");

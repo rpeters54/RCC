@@ -163,8 +163,8 @@ l17:
     %r88 = icmp ne i1 %r87, %r89
     br i1 %r88, label %l18, label %l20
 l18:
-    %r91 = phi ptr [%r83, %l17], [%r94, %l18]
-    %r92 = phi i64 [%r79, %l17], [%r92, %l18]
+    %r91 = phi ptr [%r94, %l18], [%r83, %l17]
+    %r92 = phi i64 [%r92, %l18], [%r79, %l17]
     %r93 = load i64, ptr @.r4
     %r94 = call ptr @_mini_addToFront(ptr %r91, i64 %r93)
     %r96 = getelementptr inbounds %struct._mini_intList, ptr %r94, i32 0, i32 0
@@ -178,8 +178,8 @@ l18:
     %r109 = icmp ne i1 %r108, %r110
     br i1 %r109, label %l18, label %l20
 l20:
-    %r112 = phi ptr [%r83, %l17], [%r94, %l18]
-    %r113 = phi i64 [%r79, %l17], [%r92, %l18]
+    %r112 = phi ptr [%r94, %l18], [%r83, %l17]
+    %r113 = phi i64 [%r92, %l18], [%r79, %l17]
     %r115 = call i64 @_mini_length(ptr %r112)
     %r116 = call i32 @printf(ptr @.r114, i64 %r115)
     %r117 = call i64 @_mini_length(ptr %r112)
@@ -187,8 +187,8 @@ l20:
     %r121 = icmp ne i1 %r120, %r122
     br i1 %r121, label %l21, label %l23
 l21:
-    %r124 = phi ptr [%r112, %l20], [%r132, %l21]
-    %r125 = phi i64 [%r113, %l20], [%r128, %l21]
+    %r124 = phi ptr [%r132, %l21], [%r112, %l20]
+    %r125 = phi i64 [%r128, %l21], [%r113, %l20]
     %r126 = getelementptr inbounds %struct._mini_intList, ptr %r124, i32 0, i32 0
     %r127 = load i64, ptr %r126
     %r128 = add i64 %r125, %r127
@@ -200,7 +200,7 @@ l21:
     %r139 = icmp ne i1 %r138, %r140
     br i1 %r139, label %l21, label %l23
 l23:
-    %r143 = phi i64 [%r113, %l20], [%r128, %l21]
+    %r143 = phi i64 [%r128, %l21], [%r113, %l20]
     %r145 = call i32 @printf(ptr @.r144, i64 %r143)
     ret i64 %r146
 }

@@ -3,8 +3,8 @@
 main:
 l2:
     addi sp, sp, -64
-    sd s4, 48(sp)
-    sd s3, 40(sp)
+    sd s3, 48(sp)
+    sd s4, 40(sp)
     fsd fs0, 32(sp)
     sd s1, 24(sp)
     sd s2, 16(sp)
@@ -117,8 +117,8 @@ l2:
     ld s2, 16(sp)
     ld s1, 24(sp)
     fld fs0, 32(sp)
-    ld s3, 40(sp)
-    ld s4, 48(sp)
+    ld s4, 40(sp)
+    ld s3, 48(sp)
     addi sp, sp, 64
     ret
 

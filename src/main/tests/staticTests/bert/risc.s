@@ -685,14 +685,14 @@ l48:
 _mini_quickSort:
 l57:
     addi sp, sp, -112
-    sd s8, 96(sp)
-    sd s7, 88(sp)
-    sd s10, 80(sp)
-    sd s5, 72(sp)
-    sd s4, 64(sp)
-    sd s3, 56(sp)
-    sd s9, 48(sp)
-    sd s6, 40(sp)
+    sd s10, 96(sp)
+    sd s9, 88(sp)
+    sd s7, 80(sp)
+    sd s8, 72(sp)
+    sd s3, 64(sp)
+    sd s4, 56(sp)
+    sd s6, 48(sp)
+    sd s5, 40(sp)
     sd s1, 32(sp)
     sd s11, 24(sp)
     sd s2, 16(sp)
@@ -861,14 +861,14 @@ l56:
     ld s2, 16(sp)
     ld s11, 24(sp)
     ld s1, 32(sp)
-    ld s6, 40(sp)
-    ld s9, 48(sp)
-    ld s3, 56(sp)
-    ld s4, 64(sp)
-    ld s5, 72(sp)
-    ld s10, 80(sp)
-    ld s7, 88(sp)
-    ld s8, 96(sp)
+    ld s5, 40(sp)
+    ld s6, 48(sp)
+    ld s4, 56(sp)
+    ld s3, 64(sp)
+    ld s8, 72(sp)
+    ld s7, 80(sp)
+    ld s9, 88(sp)
+    ld s10, 96(sp)
     addi sp, sp, 112
     ret
 
@@ -1239,8 +1239,8 @@ l86:
 _mini_buildTree:
 l97:
     addi sp, sp, -64
-    sd s4, 40(sp)
-    sd s3, 32(sp)
+    sd s3, 40(sp)
+    sd s4, 32(sp)
     sd s1, 24(sp)
     sd s2, 16(sp)
     sd ra, 0(sp)
@@ -1300,8 +1300,8 @@ l100:
     ld fp, 8(sp)
     ld s2, 16(sp)
     ld s1, 24(sp)
-    ld s3, 32(sp)
-    ld s4, 40(sp)
+    ld s4, 32(sp)
+    ld s3, 40(sp)
     addi sp, sp, 64
     ret
 
@@ -1709,10 +1709,10 @@ l103:
 _mini_main:
 l109:
     addi sp, sp, -80
-    sd s5, 64(sp)
+    sd s3, 64(sp)
     sd s4, 56(sp)
-    sd s3, 48(sp)
-    sd s6, 40(sp)
+    sd s6, 48(sp)
+    sd s5, 40(sp)
     sd s1, 32(sp)
     sd s2, 24(sp)
     sd ra, 0(sp)
@@ -1801,10 +1801,10 @@ l112:
     ld fp, 8(sp)
     ld s2, 24(sp)
     ld s1, 32(sp)
-    ld s6, 40(sp)
-    ld s3, 48(sp)
+    ld s5, 40(sp)
+    ld s6, 48(sp)
     ld s4, 56(sp)
-    ld s5, 64(sp)
+    ld s3, 64(sp)
     addi sp, sp, 80
     ret
 

@@ -15,23 +15,23 @@ public class BinaryImmRisc extends RiscInstruction {
 
     private final BinaryExpression.Operator op;
     private Literal imm;
-    private final PrimitiveType resultType;
+    private final PrimitiveType operationType;
 
     public BinaryImmRisc(Register result, BinaryExpression.Operator op, Register op1, Literal imm) {
         super(Arrays.asList(result), Arrays.asList(op1));
 
         assert result.type() instanceof PrimitiveType;
-        this.resultType = (PrimitiveType) result.type();
+        this.operationType = (PrimitiveType) op1.type();
 
         this.imm = imm;
         this.op = op;
     }
 
     public BinaryImmRisc(Register result, BinaryExpression.Operator op, Register op1, Literal imm,
-                         PrimitiveType resultType) {
+                         PrimitiveType operationType) {
         super(Arrays.asList(result), Arrays.asList(op1));
 
-        this.resultType = resultType;
+        this.operationType = operationType;
         this.imm = imm;
         this.op = op;
     }
@@ -41,7 +41,7 @@ public class BinaryImmRisc extends RiscInstruction {
         super(Arrays.asList(result), Arrays.asList(op1));
 
         assert result.type() instanceof PrimitiveType;
-        this.resultType = (PrimitiveType) result.type();
+        this.operationType = (PrimitiveType) op1.type();
 
         this.op = op;
         this.imm = new Literal(Long.toString(imm), new IntegerType(IntegerType.Width.LONG, true));
@@ -54,7 +54,7 @@ public class BinaryImmRisc extends RiscInstruction {
     @Override
     public String toString() {
         String opString;
-        switch (resultType) {
+        switch (operationType) {
             case PointerType p -> {
                 opString = switch(op) {
                     case PLUS -> "addi";

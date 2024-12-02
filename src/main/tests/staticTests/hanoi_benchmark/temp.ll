@@ -87,8 +87,8 @@ l7:
     %r40 = phi ptr [%r34, %l6], [%r30, %l5]
     br label %l8
 l8:
-    %r42 = phi i64 [%r39, %l7], [%r10, %l3]
-    %r43 = phi ptr [%r40, %l7], [%r20, %l3]
+    %r42 = phi i64 [%r10, %l3], [%r39, %l7]
+    %r43 = phi ptr [%r20, %l3], [%r40, %l7]
     %r46 = icmp eq i64 %r42, %r44
     %r49 = icmp ne i1 %r46, %r47
     br i1 %r49, label %l9, label %l10

@@ -71,9 +71,9 @@ l4:
 main:
 l6:
     addi sp, sp, -80
-    fsd fs2, 68(sp)
-    fsd fs3, 60(sp)
-    fsd fs0, 52(sp)
+    fsd fs3, 68(sp)
+    fsd fs0, 60(sp)
+    fsd fs2, 52(sp)
     sd s1, 44(sp)
     fsd fs1, 36(sp)
     sd s2, 28(sp)
@@ -175,8 +175,8 @@ l9:
     fmv.d.x fs0, zero
     fadd.d fs1, fa0, fs0
     fmv.d.x fs0, zero
-    fadd.d fs0, fs3, fs0
-    fmv.d.x fs3, zero
+    fadd.d fs0, fs2, fs0
+    fmv.d.x fs2, zero
     fadd.d fs1, fs1, fs0
     j l11
 l10:
@@ -188,14 +188,14 @@ l10:
     jalr t1
     add t1, a0, zero
     fmv.d.x fs0, zero
-    fadd.d fs0, fs3, fs0
-    fmv.d.x fs3, zero
+    fadd.d fs0, fs2, fs0
+    fmv.d.x fs2, zero
     fadd.d fs1, fs1, fs0
     j l11
 l11:
     fmv.d.x fs0, zero
-    fadd.d fs0, fs2, fs0
-    fmv.d.x fs2, zero
+    fadd.d fs0, fs3, fs0
+    fmv.d.x fs3, zero
     fadd.d fs0, fs1, fs0
     j l12
 l12:
@@ -215,9 +215,9 @@ l12:
     ld s2, 28(sp)
     fld fs1, 36(sp)
     ld s1, 44(sp)
-    fld fs0, 52(sp)
-    fld fs3, 60(sp)
-    fld fs2, 68(sp)
+    fld fs2, 52(sp)
+    fld fs0, 60(sp)
+    fld fs3, 68(sp)
     addi sp, sp, 80
     ret
 

@@ -235,15 +235,15 @@ l2:
     %r106 = icmp ne i1 %r105, %r107
     br i1 %r106, label %l3, label %l5
 l3:
-    %r110 = phi i32 [%r202, %l8], [%r101, %l2]
+    %r110 = phi i32 [%r101, %l2], [%r202, %l8]
     %r115 = trunc i64 %r113 to i32
     %r118 = sext i32 %r115 to i64
     %r119 = icmp slt i64 %r118, %r116
     %r120 = icmp ne i1 %r119, %r121
     br i1 %r120, label %l6, label %l8
 l6:
-    %r124 = phi i32 [%r110, %l3], [%r171, %l11]
-    %r125 = phi i32 [%r115, %l3], [%r182, %l11]
+    %r124 = phi i32 [%r171, %l11], [%r110, %l3]
+    %r125 = phi i32 [%r182, %l11], [%r115, %l3]
     %r129 = trunc i64 %r127 to i32
     %r132 = sext i32 %r129 to i64
     %r133 = icmp slt i64 %r132, %r130
@@ -285,7 +285,7 @@ l11:
     %r187 = icmp ne i1 %r186, %r188
     br i1 %r187, label %l6, label %l8
 l8:
-    %r191 = phi i32 [%r110, %l3], [%r171, %l11]
+    %r191 = phi i32 [%r171, %l11], [%r110, %l3]
     %r200 = sext i32 %r191 to i64
     %r201 = add i64 %r200, %r198
     %r202 = trunc i64 %r201 to i32
@@ -300,15 +300,15 @@ l5:
     %r221 = icmp ne i1 %r220, %r222
     br i1 %r221, label %l12, label %l14
 l12:
-    %r227 = phi i32 [%r275, %l17], [%r216, %l5]
+    %r227 = phi i32 [%r216, %l5], [%r275, %l17]
     %r230 = trunc i64 %r228 to i32
     %r233 = sext i32 %r230 to i64
     %r234 = icmp slt i64 %r233, %r231
     %r235 = icmp ne i1 %r234, %r236
     br i1 %r235, label %l15, label %l17
 l15:
-    %r238 = phi i32 [%r255, %l15], [%r230, %l12]
-    %r241 = phi i32 [%r241, %l15], [%r227, %l12]
+    %r238 = phi i32 [%r230, %l12], [%r255, %l15]
+    %r241 = phi i32 [%r227, %l12], [%r241, %l15]
     %r243 = getelementptr inbounds [4 x [4 x i64]], ptr %r11, i32 0, i32 %r241
     %r244 = getelementptr inbounds [4 x i64], ptr %r243, i32 0, i32 %r238
     %r245 = load i64, ptr %r244
@@ -321,7 +321,7 @@ l15:
     %r260 = icmp ne i1 %r259, %r261
     br i1 %r260, label %l15, label %l17
 l17:
-    %r266 = phi i32 [%r241, %l15], [%r227, %l12]
+    %r266 = phi i32 [%r227, %l12], [%r241, %l15]
     %r273 = sext i32 %r266 to i64
     %r274 = add i64 %r273, %r271
     %r275 = trunc i64 %r274 to i32

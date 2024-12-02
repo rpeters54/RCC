@@ -57,7 +57,7 @@ l2:
     %r19 = icmp ne i1 %r18, %r20
     br i1 %r19, label %l3, label %l5
 l3:
-    %r23 = phi i32 [%r34, %l3], [%r14, %l2]
+    %r23 = phi i32 [%r14, %l2], [%r34, %l3]
     %r24 = call i32 @rand()
     %r26 = call i32 @printf(ptr @.r25, i32 %r23, i32 %r24)
     %r27 = getelementptr inbounds [100 x i32], ptr %r8, i32 0, i32 %r23

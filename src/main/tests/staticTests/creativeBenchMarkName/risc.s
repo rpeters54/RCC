@@ -3,10 +3,10 @@
 _mini_buildList:
 l2:
     addi sp, sp, -80
-    sd s5, 56(sp)
+    sd s3, 56(sp)
     sd s4, 48(sp)
-    sd s3, 40(sp)
-    sd s6, 32(sp)
+    sd s6, 40(sp)
+    sd s5, 32(sp)
     sd s1, 24(sp)
     sd s2, 16(sp)
     sd ra, 0(sp)
@@ -169,10 +169,10 @@ l2:
     ld fp, 8(sp)
     ld s2, 16(sp)
     ld s1, 24(sp)
-    ld s6, 32(sp)
-    ld s3, 40(sp)
+    ld s5, 32(sp)
+    ld s6, 40(sp)
     ld s4, 48(sp)
-    ld s5, 56(sp)
+    ld s3, 56(sp)
     addi sp, sp, 80
     ret
 
@@ -180,8 +180,8 @@ l2:
 _mini_multiple:
 l4:
     addi sp, sp, -64
-    sd s4, 40(sp)
-    sd s3, 32(sp)
+    sd s3, 40(sp)
+    sd s4, 32(sp)
     sd s1, 24(sp)
     sd s2, 16(sp)
     sd ra, 0(sp)
@@ -257,8 +257,8 @@ l7:
     ld fp, 8(sp)
     ld s2, 16(sp)
     ld s1, 24(sp)
-    ld s3, 32(sp)
-    ld s4, 40(sp)
+    ld s4, 32(sp)
+    ld s3, 40(sp)
     addi sp, sp, 64
     ret
 
@@ -266,8 +266,8 @@ l7:
 _mini_add:
 l9:
     addi sp, sp, -64
-    sd s4, 40(sp)
-    sd s3, 32(sp)
+    sd s3, 40(sp)
+    sd s4, 32(sp)
     sd s1, 24(sp)
     sd s2, 16(sp)
     sd ra, 0(sp)
@@ -343,8 +343,8 @@ l12:
     ld fp, 8(sp)
     ld s2, 16(sp)
     ld s1, 24(sp)
-    ld s3, 32(sp)
-    ld s4, 40(sp)
+    ld s4, 32(sp)
+    ld s3, 40(sp)
     addi sp, sp, 64
     ret
 
@@ -420,10 +420,10 @@ _mini_main:
 l18:
     addi sp, sp, -80
     sd s7, 64(sp)
-    sd s5, 56(sp)
+    sd s3, 56(sp)
     sd s4, 48(sp)
-    sd s3, 40(sp)
-    sd s6, 32(sp)
+    sd s6, 40(sp)
+    sd s5, 32(sp)
     sd s1, 24(sp)
     sd s2, 16(sp)
     sd ra, 0(sp)
@@ -539,10 +539,10 @@ l24:
     ld fp, 8(sp)
     ld s2, 16(sp)
     ld s1, 24(sp)
-    ld s6, 32(sp)
-    ld s3, 40(sp)
+    ld s5, 32(sp)
+    ld s6, 40(sp)
     ld s4, 48(sp)
-    ld s5, 56(sp)
+    ld s3, 56(sp)
     ld s7, 64(sp)
     addi sp, sp, 80
     ret

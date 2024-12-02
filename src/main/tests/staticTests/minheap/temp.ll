@@ -192,16 +192,16 @@ l13:
 l16:
     br label %l17
 l17:
-    %r151 = phi i32 [%r109, %l16], [%r110, %l13]
-    %r153 = phi ptr [%r111, %l16], [%r111, %l13]
-    %r154 = phi i32 [%r112, %l16], [%r112, %l13]
-    %r155 = phi i32 [%r113, %l16], [%r113, %l13]
+    %r151 = phi i32 [%r110, %l13], [%r109, %l16]
+    %r153 = phi ptr [%r111, %l13], [%r111, %l16]
+    %r154 = phi i32 [%r112, %l13], [%r112, %l16]
+    %r155 = phi i32 [%r113, %l13], [%r113, %l16]
     br label %l18
 l18:
-    %r157 = phi i32 [%r109, %l12], [%r151, %l17]
-    %r159 = phi ptr [%r111, %l12], [%r153, %l17]
-    %r160 = phi i32 [%r112, %l12], [%r154, %l17]
-    %r161 = phi i32 [%r113, %l12], [%r155, %l17]
+    %r157 = phi i32 [%r151, %l17], [%r109, %l12]
+    %r159 = phi ptr [%r153, %l17], [%r111, %l12]
+    %r160 = phi i32 [%r154, %l17], [%r112, %l12]
+    %r161 = phi i32 [%r155, %l17], [%r113, %l12]
     %r167 = sext i32 %r161 to i64
     %r168 = icmp ne i64 %r167, %r533
     %r171 = icmp ne i1 %r168, %r169
@@ -233,14 +233,14 @@ l19:
 l22:
     br label %l23
 l23:
-    %r199 = phi i32 [%r157, %l22], [%r161, %l19]
-    %r201 = phi ptr [%r159, %l22], [%r159, %l19]
-    %r202 = phi i32 [%r160, %l22], [%r160, %l19]
+    %r199 = phi i32 [%r161, %l19], [%r157, %l22]
+    %r201 = phi ptr [%r159, %l19], [%r159, %l22]
+    %r202 = phi i32 [%r160, %l19], [%r160, %l22]
     br label %l24
 l24:
-    %r205 = phi i32 [%r199, %l23], [%r157, %l18]
-    %r207 = phi ptr [%r201, %l23], [%r159, %l18]
-    %r208 = phi i32 [%r202, %l23], [%r160, %l18]
+    %r205 = phi i32 [%r157, %l18], [%r199, %l23]
+    %r207 = phi ptr [%r159, %l18], [%r201, %l23]
+    %r208 = phi i32 [%r160, %l18], [%r202, %l23]
     %r210 = icmp ne i32 %r205, %r208
     %r213 = icmp ne i1 %r210, %r211
     br i1 %r213, label %l25, label %l5
@@ -574,7 +574,7 @@ l48:
     %r459 = icmp ne i1 %r458, %r460
     br i1 %r459, label %l49, label %l51
 l49:
-    %r463 = phi i32 [%r474, %l49], [%r454, %l48]
+    %r463 = phi i32 [%r454, %l48], [%r474, %l49]
     %r465 = getelementptr inbounds [9 x double], ptr %r442, i32 0, i32 %r463
     %r466 = getelementptr inbounds [9 x i8*], ptr %r423, i32 0, i32 %r463
     store ptr %r465, ptr %r466

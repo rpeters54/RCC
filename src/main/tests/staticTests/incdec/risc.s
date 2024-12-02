@@ -3,12 +3,12 @@
 main:
 l2:
     addi sp, sp, -160
-    sd s5, 136(sp)
-    sd s4, 128(sp)
-    sd s3, 120(sp)
-    fsd fs2, 112(sp)
-    fsd fs3, 104(sp)
-    fsd fs0, 96(sp)
+    fsd fs3, 136(sp)
+    sd s3, 128(sp)
+    sd s4, 120(sp)
+    fsd fs0, 112(sp)
+    fsd fs2, 104(sp)
+    sd s5, 96(sp)
     sd s1, 88(sp)
     fsd fs1, 80(sp)
     sd s2, 72(sp)
@@ -262,10 +262,9 @@ l2:
     la t1, printf
     jalr t1
     add t1, a0, zero
-    li t1, 0x3ff0000000000000
+    li t1, 0x3f800000
     sd t1, 24(fp)
-    fld fs0, 24(fp)
-    fcvt.s.d fs0, fs0
+    flw fs0, 24(fp)
     fadd.s fs2, fs1, fs0
     fcvt.d.s fs0, fs1
     la t1, L.134.string
@@ -283,10 +282,9 @@ l2:
     la t1, printf
     jalr t1
     add t1, a0, zero
-    li t1, 0x3ff0000000000000
+    li t1, 0x3f800000
     sd t1, 28(fp)
-    fld fs0, 28(fp)
-    fcvt.s.d fs0, fs0
+    flw fs0, 28(fp)
     fsub.s fs1, fs2, fs0
     fcvt.d.s fs0, fs2
     la t1, L.143.string
@@ -304,10 +302,9 @@ l2:
     la t1, printf
     jalr t1
     add t1, a0, zero
-    li t1, 0x3ff0000000000000
+    li t1, 0x3f800000
     sd t1, 32(fp)
-    fld fs0, 32(fp)
-    fcvt.s.d fs0, fs0
+    flw fs0, 32(fp)
     fadd.s fs1, fs1, fs0
     fcvt.d.s fs0, fs1
     la t1, L.152.string
@@ -325,10 +322,9 @@ l2:
     la t1, printf
     jalr t1
     add t1, a0, zero
-    li t1, 0x3ff0000000000000
+    li t1, 0x3f800000
     sd t1, 36(fp)
-    fld fs0, 36(fp)
-    fcvt.s.d fs0, fs0
+    flw fs0, 36(fp)
     fsub.s fs1, fs1, fs0
     fcvt.d.s fs0, fs1
     la t1, L.161.string
@@ -423,12 +419,12 @@ l2:
     ld s2, 72(sp)
     fld fs1, 80(sp)
     ld s1, 88(sp)
-    fld fs0, 96(sp)
-    fld fs3, 104(sp)
-    fld fs2, 112(sp)
-    ld s3, 120(sp)
-    ld s4, 128(sp)
-    ld s5, 136(sp)
+    ld s5, 96(sp)
+    fld fs2, 104(sp)
+    fld fs0, 112(sp)
+    ld s4, 120(sp)
+    ld s3, 128(sp)
+    fld fs3, 136(sp)
     addi sp, sp, 160
     ret
 

@@ -19,6 +19,7 @@ Because of time constraints, I did not get all features up and running, but here
 - [x] Unions
 
 ### Todo:
+- [ ] Global Variables With Intial Value (Global Variables are initialized to zero by default)
 - [ ] Enumerations
 - [ ] Switch Statements
 - [ ] Goto / Arbitrary Jumps

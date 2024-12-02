@@ -16,26 +16,18 @@ public class LoadRisc extends RiscInstruction {
     private final PrimitiveType loadType;
 
 
-    public LoadRisc(Register result, Register location) {
+    public LoadRisc(Register result, Register location, Type explicitType) {
         super(Arrays.asList(result), Arrays.asList(location));
-        assert result.type() instanceof PrimitiveType;
-        this.loadType = (PrimitiveType) result.type();
+        assert explicitType instanceof PrimitiveType;
+        this.loadType = (PrimitiveType) explicitType;
         this.offset = null;
     }
 
-    private LoadRisc(Register result, Register location, Literal offset) {
+    public LoadRisc(Register result, Register location, long offset, Type explicitType) {
         super(Arrays.asList(result), Arrays.asList(location));
-        assert result.type() instanceof PrimitiveType;
-        this.loadType = (PrimitiveType) result.type();
-        this.offset = offset;
-    }
-
-    public LoadRisc(Register result, Register location, long offset) {
-        super(Arrays.asList(result), Arrays.asList(location));
-        assert result.type() instanceof PrimitiveType;
-        this.loadType = (PrimitiveType) result.type();
-        Literal offsetLit = new Literal(Long.toString(offset), new IntegerType(IntegerType.Width.LONG, true));
-        this.offset = offsetLit;
+        assert explicitType instanceof PrimitiveType;
+        this.loadType = (PrimitiveType) explicitType;
+        this.offset = new Literal(Long.toString(offset), new IntegerType(IntegerType.Width.LONG, true));
     }
 
 //    public static List<Instruction> withOffset(Register value, Register location, long offset) {
@@ -83,9 +75,9 @@ public class LoadRisc extends RiscInstruction {
     public static List<Instruction> collapseDefaultStack(long offset) {
         List<Instruction> result = new ArrayList<>();
         long base = 0;
-        result.add(new LoadRisc(Register.RiscRa(), Register.RiscSp(), base));
+        result.add(new LoadRisc(Register.RiscRa(), Register.RiscSp(), base, Register.RiscRa().type()));
         base+=8;
-        result.add(new LoadRisc(Register.RiscFp(), Register.RiscSp(), base));
+        result.add(new LoadRisc(Register.RiscFp(), Register.RiscSp(), base, Register.RiscRa().type()));
         base+=8;
 //        for (Register saved : Register.SavedRiscRegisters()) {
 //            result.add(new LoadRisc(saved, Register.RiscSp(), base));

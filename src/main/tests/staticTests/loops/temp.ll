@@ -98,7 +98,7 @@ l5:
     %r40 = icmp ne i1 %r39, %r41
     br i1 %r40, label %l6, label %l8
 l6:
-    %r43 = phi i32 [%r35, %l5], [%r51, %l6]
+    %r43 = phi i32 [%r51, %l6], [%r35, %l5]
     %r45 = call i32 @printf(ptr @.r44, i32 %r43)
     %r49 = sext i32 %r43 to i64
     %r50 = add i64 %r49, %r47
@@ -108,11 +108,11 @@ l6:
     %r56 = icmp ne i1 %r55, %r57
     br i1 %r56, label %l6, label %l8
 l8:
-    %r59 = phi i32 [%r35, %l5], [%r51, %l6]
+    %r59 = phi i32 [%r51, %l6], [%r35, %l5]
     %r61 = call i32 @printf(ptr @.r60)
     br label %l9
 l9:
-    %r62 = phi i32 [%r62, %l9], [%r59, %l8]
+    %r62 = phi i32 [%r59, %l8], [%r62, %l9]
     %r64 = call i32 @printf(ptr @.r63)
     %r68 = sext i32 %r62 to i64
     %r69 = icmp slt i64 %r68, %r66
@@ -123,7 +123,7 @@ l11:
     %r78 = trunc i64 %r76 to i32
     br label %l12
 l12:
-    %r79 = phi i32 [%r78, %l11], [%r95, %l17]
+    %r79 = phi i32 [%r95, %l17], [%r78, %l11]
     %r81 = call i32 @printf(ptr @.r80, i32 %r79)
     %r84 = sext i32 %r79 to i64
     %r85 = icmp eq i64 %r84, %r82
